@@ -1,0 +1,118 @@
+###############################################################################
+# Package: calendar_cheapest_hours_automations.yaml
+# Purpose:
+#   Use calendar.electricity "Cheapest electricity hours" events
+#   to drive automations for EV charging and battery charging.
+#
+# Depends on:
+#   - calendar.electricity (events created by nordpool_cheapest_hours.yaml)
+#   - sensor.nordpool_kwh_se3_sek_2_095_025
+#   - sensor.ha1_ev_id4_battery_level
+#   - input_boolean.ev_home
+#   - binary_sensor.ehxdyl83_online
+#   - easee.action_command (your Easee charger)
+#   - huawei_solar.forcible_charge_soc (Huawei battery)
+###############################################################################
+
+###############################################################################
+# 1. Template binary_sensor – electricity_cheapest_now
+#    ON when calendar.electricity currently has an active event with
+#    summary "Cheapest electricity hours".
+###############################################################################
+template:
+  - binary_sensor:
+      - name: "Electricity Cheapest Now"
+        unique_id: electricity_cheapest_now
+        device_class: running
+        state: >
+          {% set cal_state = states('calendar.electricity') %}
+          {% set msg = state_attr('calendar.electricity', 'message') | default('', true) %}
+          {{ cal_state == 'on' and 'Cheapest electricity hours' in msg }}
+
+###############################################################################
+# 2. Input number – battery_cheapest_hours_target_soc
+#    Target SoC used when grid-charging battery during cheapest hours
+###############################################################################
+input_number:
+  battery_cheapest_hours_target_soc:
+    name: "Battery target SoC during cheapest hours"
+    min: 20
+    max: 100
+    step: 5
+    unit_of_measurement: "%"
+    icon: mdi:battery-charging-80
+
+###############################################################################
+# 3. Automation – EV charging during cheapest hours
+###############################################################################
+automation:
+  - alias: "[1.2] EV – Start charging during cheapest electricity hours"
+    id: ev_start_charging_during_cheapest_hours_1_2
+    initial_state: false
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.electricity_cheapest_now
+        from: "off"
+        to: "on"
+    condition:
+      - condition: state
+        entity_id: input_boolean.ev_home
+        state: "on"
+      - condition: numeric_state
+        entity_id: sensor.ha1_ev_id4_battery_level
+        below: 80
+      - condition: state
+        entity_id: binary_sensor.ehxdyl83_online
+        state: "on"
+    action:
+      - service: easee.action_command
+        data:
+          device_id: f0e8850e90d3ff8ce4e4c2870ec4de6d   # din Easee-laddares device_id
+          action_command: start
+
+  ###########################################################################
+  # 4. Automation – Battery grid-charging during cheapest hours
+  ###########################################################################
+  - alias: "[1.2] Battery – Forcible charge during cheapest electricity hours"
+    id: battery_charge_during_cheapest_hours_1_2
+    initial_state: false
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.electricity_cheapest_now
+        from: "off"
+        to: "on"
+    condition:
+      - condition: template
+        value_template: >
+          {% set soc = states('sensor.ha1_battery_soc') | float(0) %}
+          {% set target = states('input_number.battery_cheapest_hours_target_soc') | float(80) %}
+          {{ soc < target }}
+    action:
+      - variables:
+          target_soc: "{{ states('input_number.battery_cheapest_hours_target_soc') | float(80) | int }}"
+      - service: huawei_solar.forcible_charge_soc
+        data:
+          entity_id: sensor.ha1_battery_soc
+          forcible_charge_soc: "{{ target_soc }}"
+
+  ###########################################################################
+  # 5. Automation – Stop EV charging when cheap window ends
+  ###########################################################################
+  - alias: "[1.2] EV – Stop charging when cheapest electricity hours end"
+    id: ev_stop_charging_after_cheapest_hours_1_2
+    initial_state: false
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.electricity_cheapest_now
+        from: "on"
+        to: "off"
+    condition: []
+    action:
+      - service: easee.action_command
+        data:
+          device_id: f0e8850e90d3ff8ce4e4c2870ec4de6d
+          action_command: stop
+

@@ -44,3 +44,10 @@ This document collects every automation that touches energy, pricing, battery or
 | `sensor.cheapest_hours_energy_1` / `_2` | 2 | Cheapest hours: Calendar trigger (1/2) |
 
 For now none of the automations reference the HA1 aliases such as `sensor.ha1_solar_power`, `sensor.ha1_house_power`, or `sensor.ha1_flow_*`; migrations will need to swap the legacy sensors shown above for their HA1 counterparts before we can retire the older sources.
+
+## 1.2 Candidate Automations (ha1_*)
+- New HA1-aware clones exist in:
+  - `packages/version 1.2/battery_optimization_1_2.yaml`
+  - `packages/version 1.2/calendar_cheapest_hours_automations_1_2.yaml`
+- Each automation mirrors the 1.1 logic but uses `sensor.ha1_*` aliases and flow sensors from `packages/energy_core.yaml`. They are created with `initial_state: false` so they remain disabled until you explicitly enable and test them alongside the legacy 1.1 versions.
+- As you enable these, disable the corresponding 1.1 automation to avoid duplicate actions. Keep an eye on the new IDs (they carry `_1_2`) and update your automation references if you expose them elsewhere.
