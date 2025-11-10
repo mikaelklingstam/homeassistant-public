@@ -30,8 +30,8 @@ template:
           {{ cal_state == 'on' and 'Cheapest electricity hours' in msg }}
 
 ###############################################################################
-# 2. Input number – battery_cheapest_hours_target_soc
-#    Target SoC used when grid-charging battery during cheapest hours
+###############################################################################
+# 2. Input numbers – battery_cheapest_hours_target_soc
 ###############################################################################
 input_number:
   battery_cheapest_hours_target_soc:
@@ -41,8 +41,6 @@ input_number:
     step: 5
     unit_of_measurement: "%"
     icon: mdi:battery-charging-80
-
-###############################################################################
 # 3. Automation – EV charging during cheapest hours
 ###############################################################################
 automation:

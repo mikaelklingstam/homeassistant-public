@@ -25,6 +25,9 @@
 ###############################################################################
 # INPUT NUMBERS – Battery-specific thresholds
 ###############################################################################
+###############################################################################
+# INPUT NUMBERS – Battery-specific thresholds
+###############################################################################
 input_number:
   battery_low_price_threshold:
     name: "Battery – Low price threshold"
@@ -34,7 +37,6 @@ input_number:
     unit_of_measurement: "SEK/kWh"
     mode: box
     icon: mdi:currency-sek
-
   battery_high_price_threshold:
     name: "Battery – High price threshold"
     min: 0.00
@@ -43,7 +45,6 @@ input_number:
     unit_of_measurement: "SEK/kWh"
     mode: box
     icon: mdi:currency-sek
-
   battery_reserve_threshold:
     name: "Battery – Minimum reserve SoC"
     min: 5
@@ -52,7 +53,6 @@ input_number:
     unit_of_measurement: "%"
     mode: slider
     icon: mdi:battery-heart
-
   battery_max_grid_charge_soc:
     name: "Battery – Max SoC for grid charge in cheap hours"
     min: 20
@@ -61,7 +61,6 @@ input_number:
     unit_of_measurement: "%"
     mode: slider
     icon: mdi:battery-charging-100
-
   battery_max_grid_charge_power_kw:
     name: "Battery – Max grid charge power"
     min: 0.5
@@ -78,20 +77,15 @@ input_boolean:
   battery_automation_enabled:
     name: "Battery – Automation enabled"
     icon: mdi:battery-sync
-
   battery_ai_mode:
     name: "Battery – AI / learning mode"
     icon: mdi:brain
-
   battery_allow_grid_charge:
     name: "Battery – Allow grid charging"
     icon: mdi:transmission-tower-import
-
   battery_peak_helper_enabled:
     name: "Battery – Peak shaving helper"
     icon: mdi:chart-areaspline
-
-###############################################################################
 # TEMPLATE SENSORS & BINARY SENSORS – Decision helpers
 ###############################################################################
 template:
