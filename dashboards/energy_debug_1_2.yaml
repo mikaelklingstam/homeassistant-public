@@ -1,0 +1,103 @@
+title: Energy 1.2 Debug
+
+views:
+  - title: Energy 1.2 Debug
+    path: energy_debug
+    panel: false
+    cards:
+
+      ##########################################################
+      # Card A – Raw vs ha1 aliases (grid + house)
+      ##########################################################
+      - type: entities
+        title: Grid & House - raw vs ha1
+        show_header_toggle: false
+        entities:
+          - entity: sensor.power_meter_active_power
+            name: Grid (raw)
+          - entity: sensor.ha1_grid_power
+            name: Grid (ha1)
+          - entity: sensor.ha1_flow_grid_import
+            name: Grid import flow
+          - entity: sensor.ha1_flow_grid_export
+            name: Grid export flow
+          - type: divider
+          - entity: sensor.inverter_active_power
+            name: House load (raw, kW)
+          - entity: sensor.ha1_house_power
+            name: House load (ha1, W)
+
+      ##########################################################
+      # Card A (part 2) – Solar + Battery comparisons
+      ##########################################################
+      - type: entities
+        title: Solar & Battery - raw vs ha1
+        show_header_toggle: false
+        entities:
+          - entity: sensor.inverter_input_power
+            name: Solar PV (raw)
+          - entity: sensor.ha1_solar_power
+            name: Solar PV (ha1)
+          - type: divider
+          - entity: sensor.battery_state_of_capacity
+            name: Battery SOC (raw)
+          - entity: sensor.ha1_battery_soc
+            name: Battery SOC (ha1)
+          - entity: sensor.battery_charge_discharge_power
+            name: Battery power (raw, kW)
+          - entity: sensor.ha1_battery_power
+            name: Battery power (ha1, W)
+
+      ##########################################################
+      # Card B – Key ha1 flow sensors
+      ##########################################################
+      - type: entities
+        title: HA1 flow sensors
+        show_header_toggle: false
+        entities:
+          - sensor.ha1_flow_solar_to_house_ac
+          - sensor.ha1_flow_solar_to_grid_ac
+          - sensor.ha1_flow_battery_to_house_ac
+          - sensor.ha1_flow_battery_to_grid_ac
+          - sensor.ha1_flow_solar_total
+          - sensor.ha1_flow_battery_discharge
+          - sensor.ha1_flow_battery_charge
+
+      ##########################################################
+      # Card C – History graph
+      ##########################################################
+      - type: history-graph
+        title: HA1 trends (recent)
+        entities:
+          - sensor.ha1_solar_power
+          - sensor.ha1_house_power
+          - sensor.ha1_grid_power
+          - sensor.ha1_battery_power
+        hours_to_show: 4
+        refresh_interval: 300
+
+      ##########################################################
+      # Card D – 1.2 automations overview
+      ##########################################################
+      - type: entities
+        title: [1.2] automations (ha1)
+        show_header_toggle: false
+        entities:
+          - type: section
+            label: Battery 1.2
+          - entity: automation.battery_start_grid_charge_in_cheap_hours_1_2
+            name: [1.2] Start grid charging (cheap hours)
+          - entity: automation.battery_stop_grid_charge_when_done_or_not_cheap_1_2
+            name: [1.2] Stop grid charging when done / not cheap
+          - entity: automation.battery_discharge_for_peak_and_high_price_1_2
+            name: [1.2] Discharge for peak shaving / high price
+          - entity: automation.battery_stop_discharge_when_safe_1_2
+            name: [1.2] Stop forcible discharge when safe
+          - type: section
+            label: Calendar / EV 1.2
+          - entity: automation.ev_start_charging_during_cheapest_hours_1_2
+            name: [1.2] EV start charging (cheapest hours)
+          - entity: automation.battery_charge_during_cheapest_hours_1_2
+            name: [1.2] Battery cheapest-hours charge
+          - entity: automation.ev_stop_charging_after_cheapest_hours_1_2
+            name: [1.2] EV stop charging (cheapest hours)

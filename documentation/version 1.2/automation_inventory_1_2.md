@@ -51,3 +51,8 @@ For now none of the automations reference the HA1 aliases such as `sensor.ha1_so
   - `packages/version 1.2/calendar_cheapest_hours_automations_1_2.yaml`
 - Each automation mirrors the 1.1 logic but uses `sensor.ha1_*` aliases and flow sensors from `packages/energy_core.yaml`. They are created with `initial_state: false` so they remain disabled until you explicitly enable and test them alongside the legacy 1.1 versions.
 - As you enable these, disable the corresponding 1.1 automation to avoid duplicate actions. Keep an eye on the new IDs (they carry `_1_2`) and update your automation references if you expose them elsewhere.
+
+## Debugging the HA1 Energy Model
+- There is now a dedicated Lovelace dashboard at `dashboards/energy_debug_1_2.yaml` (registered as “Energy 1.2 Debug” in the UI) that reflects the health of the new HA1 data layer.
+- The dashboard juxtaposes the raw Huawei integration sensors (grid, inverter, battery) against their `ha1_*` aliases and the main HA1 flow sensors, making it easy to spot mismatches.
+- It also lists the `[1.2]` automations with their disabled-by-default state so you can toggle them on/off while verifying the new HA1 signals before you retire the legacy automations.
