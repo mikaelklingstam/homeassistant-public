@@ -29,7 +29,7 @@ With clearly defined boundaries, it functions like a *self-playing piano* that l
 
 ## ⚙️ Integrations / Sensors Overview (Priority 1)
 
-Includes Huawei Solar & Battery, Easee EV Charger, Nordpool Price Sensors, Utility Meter, Wattson, Verisure, Weather & Forecast correlation, Presence Tracking, Media Players, and Environmental Sensors.  
+Includes Huawei Solar & Battery, Easee EV Charger, Nordpool Price Sensors, Utility Meter, Greenely, Verisure, Weather & Forecast correlation, Presence Tracking, Media Players, and Environmental Sensors.  
 All entities, services, and data flow mappings are defined in  
 `documentation/HA_Integrations_and_Sensors.md`.
 
@@ -64,7 +64,7 @@ All interfaces must present the system as *one coherent unit*, not as separate s
 2. **Flow Visualization (Live Energy Map)**  
    - Central flow diagram shows real-time energy movement between sources and sinks: ☀️ Solar → 🔋 Battery → ⚡ House / 🚗 EV / 🌐 Grid.  
    - Arrows are animated and color-coded by direction and magnitude:  
-     Green = Export / Charge Blue = Import / Discharge Orange = Partial / Throttled Red = Overload / Error.  
+    Grey = Base / Green = Export / Charge Blue = Import / Discharge Orange = Partial / Throttled Red = Overload / Error.  
    - Numeric power values (kW) shown beside each arrow, updated every 2 s.
 
 3. **Modern + Clear Design**  
