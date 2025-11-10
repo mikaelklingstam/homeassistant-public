@@ -269,8 +269,8 @@ automation:
       # Forcible charge until target SoC (Huawei Solar service)
       - service: huawei_solar.forcible_charge_soc
         data:
-          # TODO: adjust entity_id to the correct one for your inverter/battery
-          entity_id: sensor.ha1_solar_power
+          device_id: 294118e51fb5a2728e92893f319c1a75  # Huawei battery device
+          power: 2500
           target_soc: "{{ target_soc | round(0) }}"
 
   ###########################################################################
@@ -320,7 +320,8 @@ automation:
                 value_template: "{{ soc >= target_soc }}"
             sequence:
               - service: huawei_solar.stop_forcible_charge
-                data: {}
+                data:
+                  device_id: 294118e51fb5a2728e92893f319c1a75
               - service: switch.turn_off
                 target:
                   entity_id: switch.battery_charge_from_grid
@@ -332,7 +333,8 @@ automation:
                   {{ (not cheap_now and not cheapest_hour) or peak_risk or not can_grid_charge }}
             sequence:
               - service: huawei_solar.stop_forcible_charge
-                data: {}
+                data:
+                  device_id: 294118e51fb5a2728e92893f319c1a75
               - service: switch.turn_off
                 target:
                   entity_id: switch.battery_charge_from_grid
@@ -377,8 +379,8 @@ automation:
       # Do not discharge below reserve, just ensure we head towards reserve
       - service: huawei_solar.forcible_discharge_soc
         data:
-          # TODO: adjust entity_id to match your inverter/battery entity
-          entity_id: sensor.ha1_solar_power
+          device_id: 294118e51fb5a2728e92893f319c1a75
+          power: 2500
           target_soc: "{{ reserve | round(0) }}"
 
   ###########################################################################
@@ -419,7 +421,8 @@ automation:
                   {{ soc <= reserve or (not should_discharge and not peak_risk and not expensive) }}
             sequence:
               - service: huawei_solar.stop_forcible_charge
-                data: {}
+                data:
+                  device_id: 294118e51fb5a2728e92893f319c1a75
               # Note: forcible_discharge and forcible_charge share stop service
       # default: no-op
 
