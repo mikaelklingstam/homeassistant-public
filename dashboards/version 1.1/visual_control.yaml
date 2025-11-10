@@ -1,0 +1,955 @@
+title: Visual Control
+views:
+  ###########################################################################
+  # VIEW 1 – LIVE ENERGY FLOW (VISUAL MAP)
+  ###########################################################################
+  - title: Energy Flow
+    path: energy-flow
+    icon: mdi:home-lightning-bolt
+    cards:
+      - type: markdown
+        content: |
+          # Energy Flow
+          Live power, price and core status.
+          Map: Solar → Battery → House / EV / Grid.
+
+      # --- VISUAL MAP CARD -------------------------------------------------
+      - type: picture-elements
+        title: Live energy map
+        image: /local/energy_flow_bg.png
+        elements:
+          # SOLAR (top center)
+          - type: state-icon
+            entity: sensor.inverter_input_power
+            icon: mdi:white-balance-sunny
+            style:
+              top: 10%
+              left: 50%
+          - type: state-label
+            entity: sensor.inverter_input_power
+            style:
+              top: 18%
+              left: 50%
+              font-size: 14px
+              font-weight: bold
+              text-align: center
+
+          # BATTERY (middle center)
+          - type: state-icon
+            entity: sensor.battery_state_of_capacity
+            icon: mdi:battery-high
+            style:
+              top: 40%
+              left: 50%
+          - type: state-label
+            entity: sensor.battery_state_of_capacity
+            prefix: "SoC: "
+            # suffix: "%"   # inte behövs – enheten kommer från sensorn
+            style:
+              top: 54%
+              left: 50%
+              font-size: 12px
+              text-align: center
+
+          # HOUSE (bottom left) – visar huslast exklusive EV
+          - type: state-icon
+            entity: sensor.house_net_power_excl_ev
+            icon: mdi:home-lightning-bolt
+            style:
+              top: 72%
+              left: 25%
+          - type: state-label
+            entity: sensor.house_net_power_excl_ev
+            style:
+              top: 80%
+              left: 25%
+              font-size: 12px
+              text-align: center
+
+          # EV (bottom center)
+          - type: state-icon
+            entity: sensor.id4pro_charging_power
+            icon: mdi:car-electric
+            style:
+              top: 72%
+              left: 50%
+          - type: state-label
+            entity: sensor.id4pro_charging_power
+            style:
+              top: 80%
+              left: 50%
+              font-size: 12px
+              text-align: center
+
+          # GRID (bottom right)
+          - type: state-icon
+            entity: sensor.import_export_power
+            icon: mdi:transmission-tower-export
+            style:
+              top: 72%
+              left: 75%
+          - type: state-label
+            entity: sensor.import_export_power
+            style:
+              top: 80%
+              left: 75%
+              font-size: 12px
+              text-align: center
+
+          # NORDPOOL PRICE (top left)
+          - type: state-icon
+            entity: sensor.nordpool_kwh_se3_sek_2_095_025
+            icon: mdi:currency-sek
+            style:
+              top: 10%
+              left: 10%
+          - type: state-label
+            entity: sensor.nordpool_kwh_se3_sek_2_095_025
+            style:
+              top: 18%
+              left: 10%
+              font-size: 12px
+              text-align: left
+
+          # CHEAP / EXPENSIVE WINDOWS (left side)
+          - type: state-icon
+            entity: binary_sensor.battery_in_cheap_price_window
+            icon: mdi:clock-outline
+            style:
+              top: 30%
+              left: 10%
+          - type: state-label
+            entity: binary_sensor.battery_in_cheap_price_window
+            style:
+              top: 36%
+              left: 10%
+              font-size: 11px
+              text-align: left
+
+          - type: state-icon
+            entity: binary_sensor.battery_in_expensive_price_window
+            icon: mdi:alert-circle-outline
+            style:
+              top: 46%
+              left: 10%
+          - type: state-label
+            entity: binary_sensor.battery_in_expensive_price_window
+            style:
+              top: 52%
+              left: 10%
+              font-size: 11px
+              text-align: left
+
+          # -------------------------------------------------------------
+          # BASE ARROWS – always visible (schema)
+          # -------------------------------------------------------------
+
+          # Solar → Battery (base)
+          - type: icon
+            icon: mdi:arrow-down-bold
+            style:
+              top: 26%
+              left: 50%
+              color: "#9e9e9e"         # grey base arrow
+              '--mdc-icon-size': 30px
+
+          # Battery → House (base)
+          - type: icon
+            icon: mdi:arrow-bottom-left-bold
+            style:
+              top: 56%
+              left: 38%
+              color: "#9e9e9e"
+              '--mdc-icon-size': 26px
+
+          # Battery → EV (base)
+          - type: icon
+            icon: mdi:arrow-down-bold
+            style:
+              top: 60%
+              left: 50%
+              color: "#9e9e9e"
+              '--mdc-icon-size': 26px
+
+          # Battery → Grid (base)
+          - type: icon
+            icon: mdi:arrow-bottom-right-bold
+            style:
+              top: 56%
+              left: 62%
+              color: "#9e9e9e"
+              '--mdc-icon-size': 26px
+
+          # -------------------------------------------------------------
+          # DYNAMIC ARROWS (colored overlays based on flow sensors)
+          # -------------------------------------------------------------
+
+          # Solar → Battery
+          - type: conditional
+            conditions:
+              - entity: binary_sensor.flow_solar_to_battery
+                state: "on"
+            elements:
+              - type: icon
+                icon: mdi:arrow-down-bold
+                style:
+                  top: 26%
+                  left: 50%
+                  color: "#2ecc71"        # green for solar charge
+                  '--mdc-icon-size': 32px
+
+          # Solar → House
+          - type: conditional
+            conditions:
+              - entity: binary_sensor.flow_solar_to_house
+                state: "on"
+            elements:
+              - type: icon
+                icon: mdi:arrow-bottom-left-bold
+                style:
+                  top: 32%
+                  left: 38%
+                  color: "#f1c40f"        # yellow for local solar use
+                  '--mdc-icon-size': 28px
+
+          # Grid → House
+          - type: conditional
+            conditions:
+              - entity: binary_sensor.flow_grid_to_house
+                state: "on"
+            elements:
+              - type: icon
+                icon: mdi:arrow-bottom-left-bold
+                style:
+                  top: 56%
+                  left: 38%
+                  color: "#3498db"        # blue for grid import
+                  '--mdc-icon-size': 28px
+
+          # Grid → Battery
+          - type: conditional
+            conditions:
+              - entity: binary_sensor.flow_grid_to_battery
+                state: "on"
+            elements:
+              - type: icon
+                icon: mdi:arrow-down-bold
+                style:
+                  top: 26%
+                  left: 60%
+                  color: "#5dade2"        # light blue for grid charge
+                  '--mdc-icon-size': 28px
+
+          # Battery → Grid
+          - type: conditional
+            conditions:
+              - entity: binary_sensor.flow_battery_to_grid
+                state: "on"
+            elements:
+              - type: icon
+                icon: mdi:arrow-up-bold
+                style:
+                  top: 56%
+                  left: 62%
+                  color: "#27ae60"        # green export
+                  '--mdc-icon-size': 28px
+
+          # Battery → House
+          - type: conditional
+            conditions:
+              - entity: binary_sensor.flow_battery_to_house
+                state: "on"
+            elements:
+              - type: icon
+                icon: mdi:arrow-bottom-left-bold
+                style:
+                  top: 56%
+                  left: 42%
+                  color: "#e67e22"        # orange for discharge to house
+                  '--mdc-icon-size': 28px
+
+      # --- SUPPORTING METRICS BELOW (din gamla layout, bevarad) ----------
+      - type: entities
+        title: Core live metrics
+        show_header_toggle: false
+        entities:
+          - entity: sensor.inverter_input_power
+            name: Solar production (W)
+          - entity: sensor.battery_state_of_capacity
+            name: Battery SoC (%)
+          - entity: sensor.import_export_power
+            name: Grid import/export (kW)
+          - entity: sensor.energy_net_consumption_2
+            name: Grid net power (kW)
+          - entity: sensor.house_net_power_excl_ev
+            name: House net power (kW)
+          - entity: sensor.nordpool_kwh_se3_sek_2_095_025
+            name: Nordpool price (SEK/kWh)
+          - entity: binary_sensor.electricity_cheapest_now
+            name: Cheapest hour active now
+          - entity: binary_sensor.battery_in_cheap_price_window
+            name: Cheap price window
+          - entity: sensor.id4pro_battery_level
+            name: EV battery level (%)
+          - entity: sensor.id4pro_charging_power
+            name: EV charging power (kW)
+
+      - type: entities
+        title: EV & grid – detailed sensors
+        show_header_toggle: false
+        entities:
+          - entity: sensor.ehxdyl83_power
+            name: Easee charger power (W)
+          - entity: sensor.qp57qz4q_import_power
+            name: Equalizer grid import (W)
+          - entity: sensor.qp57qz4q_export_power
+            name: Equalizer grid export (W)
+
+  ###########################################################################
+  # VIEW 2 – CONTROLS & SETTINGS
+  ###########################################################################
+  - title: Controls & Settings
+    path: controls-settings
+    icon: mdi:tune-variant
+    cards:
+      # ---------------------------------------------------------------------
+      # Battery control
+      # ---------------------------------------------------------------------
+      - type: entities
+        title: Battery optimization – main controls
+        show_header_toggle: false
+        entities:
+          - entity: input_boolean.battery_automation_enabled
+            name: Battery automation enabled
+          # - entity: input_boolean.ev_home            # enable later when live
+          #   name: EV at home
+          - entity: input_boolean.battery_allow_grid_charge
+            name: Allow grid charging
+          - entity: input_boolean.battery_peak_helper_enabled
+            name: Peak shaving helper
+          - entity: input_boolean.battery_ai_mode
+            name: AI mode (future use)
+
+      - type: entities
+        title: Battery thresholds
+        show_header_toggle: false
+        entities:
+          - entity: input_number.battery_low_price_threshold
+            name: Low price threshold (SEK/kWh)
+          - entity: input_number.battery_high_price_threshold
+            name: High price threshold (SEK/kWh)
+          - entity: input_number.battery_reserve_threshold
+            name: Minimum reserve SoC (%)
+          - entity: input_number.battery_max_grid_charge_soc
+            name: Max grid charge SoC (%)
+          - entity: input_number.battery_max_grid_charge_power_kw
+            name: Max grid charge power (kW)
+
+      # ---------------------------------------------------------------------
+      # Peak shaving & price
+      # ---------------------------------------------------------------------
+      - type: entities
+        title: Peak shaving
+        show_header_toggle: false
+        entities:
+          # - entity: input_number.peak_power_limit    # add when helper is live
+          #   name: Peak power limit (kW)
+          - entity: sensor.battery_effective_peak_limit
+            name: Effective peak limit
+          - entity: binary_sensor.battery_peak_risk_now
+            name: Peak risk now
+
+      - type: entities
+        title: Price & cheapest hours
+        show_header_toggle: false
+        entities:
+          - entity: sensor.nordpool_kwh_se3_sek_2_095_025
+            name: Current Nordpool price
+          - entity: sensor.nordpool_kwh_se3_eur_2_095_025
+            name: Nordpool price (EUR/kWh)
+          - entity: binary_sensor.battery_in_cheap_price_window
+            name: Cheap price window
+          - entity: binary_sensor.battery_in_expensive_price_window
+            name: Expensive price window
+          - entity: calendar.electricity
+            name: Electricity cheapest hours calendar
+          - entity: sensor.cheapest_hours_energy_1
+            name: Cheapest hours – slot 1
+          - entity: sensor.cheapest_hours_energy_2
+            name: Cheapest hours – slot 2
+          - entity: input_number.battery_cheapest_hours_target_soc
+            name: Target SoC in cheapest hours (%)
+
+      # ---------------------------------------------------------------------
+      # EV & export
+      # ---------------------------------------------------------------------
+      - type: entities
+        title: EV and export helpers
+        show_header_toggle: false
+        entities:
+          # - entity: input_boolean.ev_home           # enable when state is live
+          #   name: EV at home
+          - entity: sensor.id4pro_battery_level
+            name: EV battery level (%)
+          - entity: sensor.id4pro_charging_power
+            name: EV charging power (kW)
+          - entity: input_number.el_export_revenue
+            name: Export revenue margin (EUR/kWh)
+          - entity: sensor.electric_export_revenue_2
+            name: Export revenue price (EUR/kWh)
+
+      # ---------------------------------------------------------------------
+      # Utility / debug
+      # ---------------------------------------------------------------------
+      - type: entities
+        title: Utility & debug
+        show_header_toggle: false
+        entities:
+          - entity: sensor.energy_net_consumption_raw
+            name: Net consumption raw (kWh)
+          - entity: sensor.energy_net_consumption_2
+            name: Grid net power (kW)
+          - entity: sensor.house_net_power_excl_ev
+            name: House net power (kW)
+          - entity: sensor.weekly_el_consumption
+            name: Weekly consumption (kWh)
+          - entity: sensor.solar_angle
+            name: Solar angle (deg)
+          - entity: sensor.date_time
+            name: Date & time helper
+  ###########################################################################
+  # VIEW 3 – ENERGY FLOW v2 (SCI-FI GRID)
+  ###########################################################################
+  - title: Energy Flow v2
+    path: energy-flow-v2
+    icon: mdi:lightning-bolt-circle
+    cards:
+      - type: markdown
+        content: |
+          # Energy Flow v2
+          Sci-fi live map: Solar → Battery → House / EV / Grid.
+          Green = export/charge, Blue = import, Orange = discharge, Red = alert.
+
+      - type: custom:layout-card
+        layout_type: grid
+        layout:
+          grid-template-columns: repeat(4, minmax(0, 1fr))
+          grid-template-rows: auto auto auto
+          grid-template-areas: |
+            ". solar price ."
+            "house arrow_batt battery grid"
+            ". ev arrow_ev ."
+          grid-gap: 12px
+        cards:
+          # ------------------- SOLAR NODE (TOP) -------------------
+          - type: custom:button-card
+            entity: sensor.inverter_input_power
+            name: Solar
+            icon: mdi:white-balance-sunny
+            show_state: true
+            show_icon: true
+            show_name: true
+            view_layout:
+              grid-area: solar
+            styles:
+              card:
+                - border-radius: 18px
+                - padding: 12px
+                - background: "linear-gradient(135deg, rgba(255, 215, 0,0.15), rgba(255,255,255,0.03))"
+                - box-shadow: "0 0 18px rgba(255, 215, 0, 0.35)"
+                - border: "1px solid rgba(255, 255, 255, 0.08)"
+              icon:
+                - color: "#ffe082"
+                - width: 32px
+                - height: 32px
+              name:
+                - font-weight: 600
+                - font-size: 14px
+              state:
+                - font-size: 13px
+            state:
+              - operator: ">"
+                value: 100
+                styles:
+                  card:
+                    - box-shadow: "0 0 24px rgba(255, 241, 118, 0.65)"
+              - operator: "<="
+                value: 100
+                styles:
+                  icon:
+                    - opacity: 0.6
+                  card:
+                    - box-shadow: "0 0 8px rgba(255, 255, 255, 0.12)"
+
+          # ------------------- BATTERY NODE (CENTER) -------------------
+          - type: custom:button-card
+            entity: sensor.battery_state_of_capacity
+            name: Battery
+            icon: mdi:battery-high
+            show_state: true
+            show_label: true
+            show_name: true
+            show_icon: true
+            view_layout:
+              grid-area: battery
+            styles:
+              card:
+                - border-radius: 24px
+                - padding: 14px
+                - background: "radial-gradient(circle at top, rgba(46, 204, 113,0.25), rgba(0,0,0,0.8))"
+                - box-shadow: "0 0 24px rgba(46, 204, 113, 0.55)"
+                - border: "1px solid rgba(255, 255, 255, 0.12)"
+              icon:
+                - width: 34px
+                - height: 34px
+              name:
+                - font-weight: 700
+                - font-size: 15px
+              state:
+                - font-size: 13px
+                - font-weight: 500
+              label:
+                - font-size: 12px
+                - color: "rgba(255,255,255,0.75)"
+                - margin-top: 4px
+            label: >
+              [[[
+                const power = parseFloat(states['sensor.huawei_battery_import_export']?.state) || 0;
+                const mode = power < -0.05 ? 'Discharging' : (power > 0.05 ? 'Charging' : 'Idle');
+                return `${mode}: ${power.toFixed(2)} kW`;
+              ]]]
+            state:
+              - operator: ">="
+                value: 80
+                styles:
+                  icon:
+                    - color: "#2ecc71"
+                  card:
+                    - box-shadow: "0 0 28px rgba(46, 204, 113, 0.75)"
+              - operator: "<"
+                value: 80
+                styles:
+                  icon:
+                    - color: "#f1c40f"
+                  card:
+                    - box-shadow: "0 0 20px rgba(241, 196, 15, 0.55)"
+              - operator: "<="
+                value: 20
+                styles:
+                  icon:
+                    - color: "#e74c3c"
+                  card:
+                    - box-shadow: "0 0 30px rgba(231, 76, 60, 0.85)"
+
+          # ------------------- GRID NODE (RIGHT) -------------------
+          - type: custom:button-card
+            entity: sensor.import_export_power
+            name: Grid
+            icon: mdi:transmission-tower
+            show_state: true
+            show_name: true
+            show_icon: true
+            view_layout:
+              grid-area: grid
+            styles:
+              card:
+                - border-radius: 18px
+                - padding: 12px
+                - background: "linear-gradient(135deg, rgba(33,150,243,0.15), rgba(0,0,0,0.8))"
+                - box-shadow: "0 0 20px rgba(33, 150, 243, 0.45)"
+                - border: "1px solid rgba(255, 255, 255, 0.08)"
+              icon:
+                - width: 30px
+                - height: 30px
+              name:
+                - font-weight: 600
+              state:
+                - font-size: 13px
+            state:
+              - operator: ">"
+                value: 0.1
+                styles:
+                  icon:
+                    - color: "#2ecc71"      # export
+                  card:
+                    - box-shadow: "0 0 24px rgba(46, 204, 113, 0.65)"
+              - operator: "<"
+                value: -0.1
+                styles:
+                  icon:
+                    - color: "#3498db"      # import
+                  card:
+                    - box-shadow: "0 0 24px rgba(52, 152, 219, 0.65)"
+              - operator: "<="
+                value: 0.1
+                styles:
+                  icon:
+                    - color: "rgba(255,255,255,0.5)"
+                  card:
+                    - box-shadow: "0 0 10px rgba(255,255,255,0.15)"
+
+          # ------------------- HOUSE NODE (LEFT-MID) -------------------
+          - type: custom:button-card
+            entity: sensor.house_net_power_excl_ev
+            name: House
+            icon: mdi:home-lightning-bolt
+            show_state: true
+            view_layout:
+              grid-area: house
+            styles:
+              card:
+                - border-radius: 18px
+                - padding: 12px
+                - background: "linear-gradient(135deg, rgba(255,255,255,0.06), rgba(0,0,0,0.85))"
+                - box-shadow: "0 0 16px rgba(255,255,255,0.25)"
+                - border: "1px solid rgba(255, 255, 255, 0.08)"
+              icon:
+                - color: "#ecf0f1"
+              state:
+                - font-size: 13px
+            state:
+              - operator: ">"
+                value: 5
+                styles:
+                  card:
+                    - box-shadow: "0 0 26px rgba(231, 76, 60, 0.85)"
+                  icon:
+                    - color: "#e74c3c"
+              - operator: ">"
+                value: 1
+                styles:
+                  card:
+                    - box-shadow: "0 0 22px rgba(243, 156, 18, 0.75)"
+                  icon:
+                    - color: "#f39c12"
+              - operator: "<="
+                value: 1
+                styles:
+                  card:
+                    - box-shadow: "0 0 18px rgba(46, 204, 113, 0.55)"
+                  icon:
+                    - color: "#2ecc71"
+
+          # ------------------- EV NODE (BOTTOM-MID) -------------------
+          - type: custom:button-card
+            entity: sensor.id4pro_charging_power
+            name: EV Charger
+            icon: mdi:car-electric
+            show_state: true
+            view_layout:
+              grid-area: ev
+            styles:
+              card:
+                - border-radius: 18px
+                - padding: 12px
+                - background: "linear-gradient(135deg, rgba(46, 204, 113,0.15), rgba(0,0,0,0.8))"
+                - box-shadow: "0 0 20px rgba(46, 204, 113, 0.5)"
+                - border: "1px solid rgba(255, 255, 255, 0.08)"
+              icon:
+                - width: 30px
+                - height: 30px
+            state:
+              - operator: ">"
+                value: 0.1
+                styles:
+                  icon:
+                    - color: "#2ecc71"
+                  card:
+                    - box-shadow: "0 0 26px rgba(46, 204, 113, 0.75)"
+              - operator: "<="
+                value: 0.1
+                styles:
+                  icon:
+                    - color: "rgba(255,255,255,0.4)"
+                  card:
+                    - box-shadow: "0 0 10px rgba(255,255,255,0.15)"
+
+          # ------------------- PRICE / WINDOW NODE (TOP-RIGHT) -------------------
+          - type: custom:button-card
+            entity: sensor.nordpool_kwh_se3_sek_2_095_025
+            name: Price / Window
+            icon: mdi:currency-sek
+            show_state: true
+            show_name: true
+            show_icon: true
+            view_layout:
+              grid-area: price
+            custom_fields:
+              window: >
+                [[[
+                  const cheap = states['binary_sensor.battery_in_cheap_price_window']?.state === 'on';
+                  const exp = states['binary_sensor.battery_in_expensive_price_window']?.state === 'on';
+                  if (cheap) return 'CHEAP';
+                  if (exp) return 'EXP';
+                  return 'NORMAL';
+                ]]]
+            styles:
+              card:
+                - border-radius: 18px
+                - padding: 12px
+                - background: "linear-gradient(135deg, rgba(155, 89, 182,0.25), rgba(0,0,0,0.85))"
+                - box-shadow: "0 0 20px rgba(155, 89, 182, 0.7)"
+                - border: "1px solid rgba(255, 255, 255, 0.12)"
+              grid:
+                - grid-template-areas: '"i n window" "i s window"'
+                - grid-template-columns: min-content 1fr min-content
+              icon:
+                - width: 26px
+                - height: 26px
+              name:
+                - font-weight: 600
+                - font-size: 13px
+              state:
+                - font-size: 13px
+              custom_fields:
+                window:
+                  - font-size: 11px
+                  - font-weight: 600
+                  - padding: 4px 8px
+                  - border-radius: 999px
+                  - align-self: center
+                  - justify-self: end
+                  - text-transform: uppercase
+                  - letter-spacing: 0.06em
+                  - background-color: "rgba(255,255,255,0.05)"
+                  - color: "rgba(255,255,255,0.7)"
+            state:
+              - operator: "<="
+                value: 0.50
+                styles:
+                  icon:
+                    - color: "#2ecc71"
+                  custom_fields:
+                    window:
+                      - background-color: "rgba(46, 204, 113, 0.18)"
+                      - color: "#2ecc71"
+              - operator: ">"
+                value: 0.50
+                styles:
+                  icon:
+                    - color: "#f1c40f"
+                  custom_fields:
+                    window:
+                      - background-color: "rgba(241, 196, 15, 0.18)"
+                      - color: "#f1c40f"
+              - operator: ">"
+                value: 1.00
+                styles:
+                  icon:
+                    - color: "#e74c3c"
+                  custom_fields:
+                    window:
+                      - background-color: "rgba(231, 76, 60, 0.2)"
+                      - color: "#e74c3c"
+
+          # ------------------- ARROW: SOLAR → BATTERY -------------------
+          - type: custom:button-card
+            entity: binary_sensor.flow_solar_to_battery
+            name: "Solar → Battery"
+            icon: mdi:arrow-down-bold
+            show_name: false
+            show_state: false
+            view_layout:
+              grid-area: arrow_batt
+            styles:
+              card:
+                - background: "none"
+                - box-shadow: "none"
+                - border-radius: 0
+                - padding: 0
+                - height: 60px
+              icon:
+                - width: 40px
+                - height: 40px
+                - color: "rgba(255,255,255,0.25)"
+            state:
+              - value: "on"
+                styles:
+                  icon:
+                    - color: "#2ecc71"
+                    - animation: "pulse 1.6s infinite"
+              - value: "off"
+                styles:
+                  icon:
+                    - color: "rgba(255,255,255,0.55)"
+
+          # ------------------- ARROW: BATTERY → EV -------------------
+          - type: custom:button-card
+            entity: binary_sensor.flow_battery_to_house
+            name: "Battery → House"
+            icon: mdi:arrow-bottom-left-bold
+            show_name: false
+            show_state: false
+            view_layout:
+              grid-area: arrow_ev
+            styles:
+              card:
+                - background: "none"
+                - box-shadow: "none"
+                - border-radius: 0
+                - padding: 0
+                - height: 60px
+              icon:
+                - width: 40px
+                - height: 40px
+                - color: "rgba(255,255,255,0.25)"
+            state:
+              - value: "on"
+                styles:
+                  icon:
+                    - color: "#e67e22"
+                    - animation: "pulse 1.6s infinite"
+              - value: "off"
+                styles:
+                  icon:
+                    - color: "rgba(255,255,255,0.55)"
+      - type: custom:layout-card
+        layout_type: grid
+        layout:
+          grid-template-columns: repeat(3, minmax(0, 1fr))
+          grid-gap: 8px
+        cards:
+          - type: custom:button-card
+            entity: binary_sensor.flow_solar_to_battery
+            name: Solar → Battery
+            icon: mdi:arrow-down-bold
+            show_state: false
+            styles:
+              card:
+                - border-radius: 14px
+                - padding: 8px
+                - background: "rgba(0,0,0,0.6)"
+                - box-shadow: "0 0 12px rgba(46,204,113,0.4)"
+              name:
+                - font-size: 12px
+            state:
+              - value: "on"
+                styles:
+                  icon:
+                    - color: "#2ecc71"
+                  card:
+                    - background: "rgba(46,204,113,0.15)"
+              - value: "off"
+                styles:
+                  icon:
+                    - color: "rgba(255,255,255,0.4)"
+
+          - type: custom:button-card
+            entity: binary_sensor.flow_solar_to_house
+            name: Solar → House
+            icon: mdi:arrow-bottom-left-bold
+            show_state: false
+            styles:
+              card:
+                - border-radius: 14px
+                - padding: 8px
+                - background: "rgba(0,0,0,0.6)"
+              name:
+                - font-size: 12px
+            state:
+              - value: "on"
+                styles:
+                  icon:
+                    - color: "#f1c40f"
+                  card:
+                    - background: "rgba(241,196,15,0.15)"
+              - value: "off"
+                styles:
+                  icon:
+                    - color: "rgba(255,255,255,0.4)"
+
+          - type: custom:button-card
+            entity: binary_sensor.flow_grid_to_house
+            name: Grid → House
+            icon: mdi:arrow-bottom-left-bold
+            show_state: false
+            styles:
+              card:
+                - border-radius: 14px
+                - padding: 8px
+                - background: "rgba(0,0,0,0.6)"
+              name:
+                - font-size: 12px
+            state:
+              - value: "on"
+                styles:
+                  icon:
+                    - color: "#3498db"
+                  card:
+                    - background: "rgba(52,152,219,0.18)"
+              - value: "off"
+                styles:
+                  icon:
+                    - color: "rgba(255,255,255,0.4)"
+
+          - type: custom:button-card
+            entity: binary_sensor.flow_grid_to_battery
+            name: Grid → Battery
+            icon: mdi:arrow-down-bold
+            show_state: false
+            styles:
+              card:
+                - border-radius: 14px
+                - padding: 8px
+                - background: "rgba(0,0,0,0.6)"
+              name:
+                - font-size: 12px
+            state:
+              - value: "on"
+                styles:
+                  icon:
+                    - color: "#5dade2"
+                  card:
+                    - background: "rgba(93,173,226,0.18)"
+              - value: "off"
+                styles:
+                  icon:
+                    - color: "rgba(255,255,255,0.4)"
+
+          - type: custom:button-card
+            entity: binary_sensor.flow_battery_to_house
+            name: Battery → House
+            icon: mdi:arrow-bottom-left-bold
+            show_state: false
+            styles:
+              card:
+                - border-radius: 14px
+                - padding: 8px
+                - background: "rgba(0,0,0,0.6)"
+              name:
+                - font-size: 12px
+            state:
+              - value: "on"
+                styles:
+                  icon:
+                    - color: "#e67e22"
+                  card:
+                    - background: "rgba(230,126,34,0.18)"
+              - value: "off"
+                styles:
+                  icon:
+                    - color: "rgba(255,255,255,0.4)"
+
+          - type: custom:button-card
+            entity: binary_sensor.flow_battery_to_grid
+            name: Battery → Grid
+            icon: mdi:arrow-up-bold
+            show_state: false
+            styles:
+              card:
+                - border-radius: 14px
+                - padding: 8px
+                - background: "rgba(0,0,0,0.6)"
+              name:
+                - font-size: 12px
+            state:
+              - value: "on"
+                styles:
+                  icon:
+                    - color: "#2ecc71"
+                  card:
+                    - background: "rgba(46,204,113,0.18)"
+              - value: "off"
+                styles:
+                  icon:
+                    - color: "rgba(255,255,255,0.4)"

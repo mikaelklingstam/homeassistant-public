@@ -1,0 +1,58 @@
+###############################################################################
+# Package: currency_export_helpers.yaml
+# Purpose:
+#   Currency & Export Revenue Helpers
+#   - Matchar dokumentationen i HA_System_Inventory.md
+#   - Definierar:
+#       input_number.el_export_revenue
+#       sensor.electric_export_revenue
+#
+# Förutsätter:
+#   - sensor.exchange_rate (Fixer-integration) finns redan
+#   - sensor.nordpool_kwh_se3_eur_2_095_025 (Nordpool EUR) finns redan
+###############################################################################
+
+###############################################################################
+# 1. Input number – el_export_revenue
+#    Justerbar marginal för exportintäkt (EUR/kWh)
+###############################################################################
+input_number:
+  el_export_revenue:
+    name: "Export revenue margin"
+    icon: mdi:currency-eur
+    min: -0.50          # Tillåt negativ marginal om du vill vara konservativ
+    max:  0.50
+    step: 0.01
+    mode: box
+    unit_of_measurement: "EUR/kWh"
+
+###############################################################################
+# 2. Template sensor – electric_export_revenue
+#    Beskrivning enligt dokumentation:
+#    "Template sensor that offsets the Nordpool EUR price with
+#     input_number.el_export_revenue for export planning."
+#
+#    Praktik:
+#      export_price = nordpool_eur - el_export_revenue
+#
+#    Vill du hellre lägga på ett påslag kan du byta '-' mot '+'.
+###############################################################################
+template:
+  - sensor:
+      - name: "Electric Export Revenue"
+        unique_id: electric_export_revenue
+        unit_of_measurement: "EUR/kWh"
+        device_class: monetary
+        icon: mdi:transmission-tower-export
+        state: >
+          {% set base = states('sensor.nordpool_kwh_se3_eur_2_095_025') | float(0) %}
+          {% set margin = states('input_number.el_export_revenue') | float(0) %}
+          {{ (base - margin) | round(4) }}
+        attributes:
+          nordpool_eur_price: >
+            {{ states('sensor.nordpool_kwh_se3_eur_2_095_025') | float(0) }}
+          export_margin: >
+            {{ states('input_number.el_export_revenue') | float(0) }}
+          # Om du vill använda växelkursen i framtiden (t.ex. för SEK)
+          exchange_rate_sek: >
+            {{ states('sensor.exchange_rate') | float(0) }}

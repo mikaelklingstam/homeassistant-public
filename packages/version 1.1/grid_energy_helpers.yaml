@@ -1,0 +1,61 @@
+###############################################################################
+# Package: grid_energy_helpers.yaml
+# Purpose:
+#   Solar Geometry & Grid Flow Helpers + Utility Meter / Energy Dashboard
+###############################################################################
+
+template:
+  - sensor:
+      #########################################################################
+      # sensor.solar_angle
+      # - Sun elevation in degrees based on sun.sun
+      #########################################################################
+      - name: "Solar Angle"
+        unique_id: solar_angle
+        unit_of_measurement: "°"
+        state: >
+          {{ state_attr('sun.sun', 'elevation') | float(0) }}
+
+      #########################################################################
+      # sensor.import_export_power
+      # - Live net flow (+ export / - import), uses Easee equalizer data:
+      #   sensor.qp57qz4q_import_power / sensor.qp57qz4q_export_power (i W)
+      #########################################################################
+      - name: "Import Export Power"
+        unique_id: import_export_power
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set imp = states('sensor.qp57qz4q_import_power') | float(0) %}
+          {% set exp = states('sensor.qp57qz4q_export_power') | float(0) %}
+          {{ (exp - imp) | round(2) }}
+
+      #########################################################################
+      # sensor.energy_net_consumption_raw
+      # - Källa till utility_meter (nettovärde = import - export, kWh)
+      #   använder:
+      #     sensor.qp57qz4q_import_energy
+      #     sensor.qp57qz4q_export_energy
+      #########################################################################
+      - name: "Energy Net Consumption Raw"
+        unique_id: energy_net_consumption_raw
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: >
+          {% set imp = states('sensor.qp57qz4q_import_energy') | float(0) %}
+          {% set exp = states('sensor.qp57qz4q_export_energy') | float(0) %}
+          {% set net = imp - exp %}
+          {{ net | round(3) if net > 0 else 0 }}
+
+utility_meter:
+  # Månadsvis nettokonsumtion (import - export)
+  energy_net_consumption_monthly:
+    source: sensor.energy_net_consumption_raw
+    cycle: monthly
+
+  # Veckovis nettokonsumtion
+  weekly_el_consumption_weekly:
+    source: sensor.energy_net_consumption_raw
+    cycle: weekly
