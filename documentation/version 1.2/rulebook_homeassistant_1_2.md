@@ -44,9 +44,9 @@ Purpose: Defines unified visual and control philosophy for the entire system.
 6. Responsive Layout – Adaptive grid preserving flow topology.
 
 ### Implementation Hints
-Main layout: /config/dashboards/visual_control.yaml
-Use custom:button-card, layout-card, svg-graph-card.
-Data from sensors: huawei_solar_input_power, huawei_battery_charge_discharge_power, ehxdyl83_power (Easee), grid_import_export_power.
+Main layout: /config/dashboards/energy_flow_1_2.yaml
+Use custom:button-card over the picture-elements grid so the HA1 flow arrows keep their gradients and rotations.
+Data flows through the `ha1_*` aliases defined in `packages/energy_core.yaml`, such as `sensor.ha1_solar_power`, `sensor.ha1_house_power`, `sensor.ha1_grid_power`, `sensor.ha1_flow_battery_to_grid_ac`, and the Battery/EV helper sensors. This avoids tying the UI to raw integration IDs.
 
 ## ⚗️ Potential Conflicts – Under Observation (Priority 4)
 1. Shared optimization budget coordinating subsystems.
