@@ -44,7 +44,7 @@ All entities, services, and data flow mappings are defined in
 5. Nordpool price is definitive; forecast used only for long-term planning.  
 6. Centralized Easee charger control script.  
 7. Power used for instantaneous logic, energy for meters and history.  
-8. Hourly synchronization of price, weather, and power data.  
+8. 15 minute synchronization of price and weather, max 5 minutes for power data.  
 9. Defined, expandable mission boundaries (max peak, min SOC, export hours, comfort exceptions).
 
 ---
