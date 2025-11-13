@@ -5,7 +5,7 @@
 #   to drive automations for EV charging and battery charging.
 #
 # Depends on:
-#   - calendar.electricity (events created by nordpool_cheapest_hours.yaml)
+#   - calendar.electricity (events created by packages/nordpool_cheapest_hours.yaml)
 #   - sensor.nordpool_kwh_se3_sek_2_095_025
 #   - sensor.ha1_ev_id4_battery_level
 #   - input_boolean.ev_home
@@ -30,19 +30,7 @@ template:
           {{ cal_state == 'on' and 'Cheapest electricity hours' in msg }}
 
 ###############################################################################
-# 2. Input number – battery_cheapest_hours_target_soc
-#    Target SoC used when grid-charging battery during cheapest hours
-###############################################################################
-input_number:
-  battery_cheapest_hours_target_soc:
-    name: "Battery target SoC during cheapest hours"
-    min: 20
-    max: 100
-    step: 5
-    unit_of_measurement: "%"
-    icon: mdi:battery-charging-80
-
-###############################################################################
+# Helpers live in packages/nordpool_cheapest_hours.yaml
 # 3. Automation – EV charging during cheapest hours
 ###############################################################################
 automation:
@@ -115,4 +103,3 @@ automation:
         data:
           device_id: f0e8850e90d3ff8ce4e4c2870ec4de6d
           action_command: stop
-
