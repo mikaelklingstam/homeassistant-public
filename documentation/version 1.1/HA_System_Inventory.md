@@ -374,23 +374,8 @@ Every helper, sensor and automation declared inside `/packages` is enumerated he
 - `sensor.house_net_power_excl_ev` (`unique_id: house_net_power`) – Live house load that subtracts EV charging power so dashboards show non-EV consumption.
 
 ### `packages/nordpool_cheapest_hours.yaml`
-**Template sensor & helpers**
-- `sensor.cheapest_hours_energy_tomorrow` – Calculates the sequential cheap-hour window for tomorrow based on `sensor.nordpool_kwh_se3_sek_2_095_025`.
-- `input_datetime.device_start_time` / `input_datetime.device_end_time` – Store the start/stop times that downstream automations and conditions can reference.
-
-**Automations**
-- `automation.set_device_end_start_time` (id `1663398489322`) – Copies the timestamp sensor into the helper inputs each night at 23:15.
-- `automation.turn_on_device_for_cheapest_hours` (id `1663399614858`) – Turns on `input_boolean.cheap_electricity_simulated_switch` when the cheap window opens.
-- `automation.turn_off_device_after_cheapest_hours` (id `1663399614818`) – Turns the same helper off when the cheap window closes.
-- `automation.nordpool_reset_cheapest_hours_flag_daily` (id `nordpool_reset_cheapest_hours_flag_daily`) – Clears `input_boolean.cheapest_hours_set` at 00:10 so calendar jobs can re-book the next day.
-
-### `packages/nordpool_most_expensive_hours.yaml`
-**Template sensor & helpers**
-- `sensor.expensive_hours_energy_tomorrow` – Mirrors the cheapest-hour logic but finds the worst eight-hour block so we can pause loads.
-- `input_datetime.device_exp_start_time` / `input_datetime.device_exp_end_time` – Start/end helpers for the expensive window.
-
 **Automation**
-- `automation.set_exp_device_end_start_time` (id `1663398488822`) – Populates the expensive start/end helpers at 23:15 using the timestamp sensor, letting other automations block actions during those times.
+- `automation.nordpool_reset_cheapest_hours_flag_daily` (id `nordpool_reset_cheapest_hours_flag_daily`) – Clears the cheapest-hours helper boolean each day so bookings restart cleanly.
 
 ### `packages/weather_energy.yaml`
 **Template sensors**
