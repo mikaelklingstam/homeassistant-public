@@ -67,7 +67,9 @@ function Resolve-ConflictDecision {
     default {
       while ($true) {
         $choice = Read-Host "Local change '$Path' (status $Status). Choose: [P]rivate / [K]eep public / [A]bort"
-        switch ($choice.ToLowerInvariant()) {
+        if ([string]::IsNullOrWhiteSpace($choice)) { return "private" }
+        $choiceValue = $choice.Trim().ToLowerInvariant()
+        switch ($choiceValue) {
           {$_ -eq "" -or $_ -eq "p"} { return "private" }
           {$_ -eq "k"} { return "keep" }
           {$_ -eq "a"} { return "abort" }
@@ -91,7 +93,7 @@ function Git {
     }
     $script:GitExecutable = $gitCmd.Source
   }
-  $gitArgs = @('--no-pager') + $CommandArgs
+  $gitArgs = @('--no-pager') + @($CommandArgs)
   $output = & $script:GitExecutable @gitArgs
   $code = $LASTEXITCODE
   if ($code -ne 0) { throw "Git command failed: git $($gitArgs -join ' ') (exit $code)" }
@@ -99,13 +101,18 @@ function Git {
 }
 
 # ---------- Path candidates ----------
+$scriptDir = Split-Path -Parent $PSCommandPath
+$scriptRoot = Split-Path -Parent $scriptDir
+
 $homeCandidates = @(
   $env:HOMEASSISTANT_HOME, $HomeRoot,
+  $scriptRoot,
   "Z:\", "/mnt/homeassistant_config", "/config",
   "$HOME/homeassistant", "$HOME/ha"
 )
 $publicCandidates = @(
   $env:HOMEASSISTANT_PUBLIC, $PublicRoot,
+  (Join-Path $scriptRoot "homeassistant-public"),
   "C:\Git\homeassistant-public", "$HOME/homeassistant-public", "$HOME/git/homeassistant-public"
 )
 
