@@ -20,5 +20,3 @@ Nothing outside this list is exported. Secrets referenced with `!secret` continu
 
 Conflicts are handled interactively (or automatically with `-ConflictPolicy UsePrivate`).
 
-## Feedback / Issues
-Open an issue or PR here if you spot broken docs or missing information. Configuration-specific questions belong in the private repo, but documentation fixes are welcome.
