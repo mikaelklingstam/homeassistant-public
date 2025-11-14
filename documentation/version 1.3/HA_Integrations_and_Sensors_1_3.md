@@ -1,4 +1,4 @@
-Last updated: 2025-11-13 22:15 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-14 23:10 (CET) — Authorized by ChatGPT
 
 # 🔌 Integrations & Sensors – HomeAssistant 1.3
 
@@ -11,7 +11,7 @@ This file is the **technical reference**; the rulebook remains the high-level de
 
 ## 📦 1. Core Energy Integrations
 
-### 1.1 Huawei Solar & LUNA2000 (Huawei Solar integration)
+### 1.1 Huawei Solar & LUNA2000 (PV + Battery)
 
 **Purpose:** Core PV + battery integration. Provides real-time power, SOC and energy counters for solar production, battery charging/discharging and Huawei power meter readings. All 1.3 logic uses the normalized `HA1` sensors.
 
@@ -45,6 +45,7 @@ This file is the **technical reference**; the rulebook remains the high-level de
 **Caveats / conventions**
 
 - All `HA1` power sensors use **kW**.
+- All `HA1` energy sensors use **kWh** and `total_increasing` where applicable.
 - Battery power sign convention: **positive = charging, negative = discharging**.
 - Grid power sign convention: **positive = importing from grid, negative = exporting to grid**.
 - Pack-level sensors (`sensor.pack_1_*`, `sensor.pack_2_*`, `sensor.pack_3_*`) are available for diagnostics but not used in primary logic.

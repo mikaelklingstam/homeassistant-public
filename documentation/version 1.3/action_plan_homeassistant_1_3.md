@@ -1,4 +1,4 @@
-Last updated: 2025-11-13 22:15 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-14 23:32 (CET) — Authorized by ChatGPT
 
 # ⚙️ Action Plan – HomeAssistant 1.3
 
@@ -98,3 +98,18 @@ Define a structured build order for implementing, testing, and refining the full
 3. Sync rulebook to GitHub `README.md` via script.
 4. Maintain public repo with sanitized docs and examples.
 5. Periodically review for unused helpers, automations, and entities.
+
+---
+
+## ✅ Task Tracker
+
+- [x] Task 1 – Rulebook & README
+- [x] Task 2 – Git structure
+- [x] Task 3 – Documentation skeleton
+- [x] Task 4 – …
+- [x] Task 5 – Git sync scripts
+- [x] Task 6 – Reintroduce integrations
+- [x] Task 7 – Nordpool
+- [x] Task 8 – Grid meter / Import–Export
+- [x] Task 9 – Huawei Solar & LUNA2000
+- [ ] Task 10 – Next major integration (TBD)

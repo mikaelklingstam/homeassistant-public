@@ -1,4 +1,4 @@
-Last updated: 2025-11-14 16:17 (CET) — Authorized by Micke
+Last updated: 2025-11-14 23:10 (CET) — Authorized by ChatGPT
 
 # 🧭 HomeAssistant 1.3 – Rulebook
 
@@ -66,11 +66,20 @@ Each layer will be documented with:
   - Status: Active & verified for HomeAssistant 1.3
   - Method: GUI integration only
   - Notes: All previous YAML planners and cheapest-hours logic removed in Task 7.
+- **Huawei Solar & LUNA2000 (PV + Battery)**
+  - Status: Canonical PV + battery integration for 1.3
+  - Provides inverter power, battery SOC, charge/discharge power, and Huawei power meter values.
+  - All downstream logic consumes the normalized HA1 layer (kW, %, unified sign conventions) exposed by `packages/huawei_solar_1_3.yaml`.
 - **Grid Meter / Import–Export (Integration #2)**
   - Canonical grid source: Easee P1 meter (`QP57QZ4Q`)
   - Net power sensor: `sensor.grid_import_export_power`
   - Sign: **+ import, – export** (kW)
   - Huawei power meter kept as diagnostic source only.
+
+**Global sign conventions (applies system-wide):**
+- Grid power: `+` = importing from grid, `-` = exporting to grid (kW).
+- Huawei battery power: `+` = charging, `-` = discharging (kW).
+- All HA1 power sensors report **kW**; HA1 energy sensors report **kWh**.
 
 ---
 
