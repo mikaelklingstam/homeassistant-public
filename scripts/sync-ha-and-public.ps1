@@ -22,6 +22,34 @@ param(
   [string]$ConflictPolicy = "Prompt"
 )
 
+$ForbiddenFileNames = @(
+  "secrets.yaml",
+  "secret.yaml",
+  "scripts.yaml",
+  ".storage",
+  "auth",
+  "auth_provider"
+)
+
+$ForbiddenContentPatterns = @(
+  "verisure",
+  "token",
+  "password",
+  "passwd",
+  "secret",
+  "pin",
+  "bearer ",
+  "authorization:"
+)
+$script:ForbiddenContentRegexes = @()
+$script:ForbiddenPatternLookup = @{}
+foreach ($pattern in $ForbiddenContentPatterns) {
+  $escaped = [regex]::Escape($pattern)
+  $regex = "(?i)$escaped"
+  $script:ForbiddenContentRegexes += $regex
+  $script:ForbiddenPatternLookup[$regex] = $pattern
+}
+
 if ($HomeRoot -and -not (Test-Path $HomeRoot)) {
   throw "❌ Provided HomeRoot '$HomeRoot' does not exist."
 }
@@ -84,6 +112,114 @@ function Resolve-ConflictDecision {
           default { Write-Host "Please enter P, K, or A." }
         }
       }
+    }
+  }
+}
+
+function Confirm-SecretOverride {
+  param(
+    [string]$PhaseLabel,
+    [string]$RelativePath,
+    [string]$MatchDetail
+  )
+  $baseMessage = "[sync-ha-public] BLOCKED ($PhaseLabel): Potential secret in '$RelativePath' $MatchDetail."
+  Write-Error $baseMessage
+  while ($true) {
+    $response = Read-Host "Continue anyway? (y/N)"
+    if ([string]::IsNullOrWhiteSpace($response)) {
+      throw "$baseMessage Aborting sync."
+    }
+    $choice = $response.Trim().ToLowerInvariant()
+    switch ($choice) {
+      "y" { Write-Warning "[sync-ha-public] Continuing despite detection in '$RelativePath'."; return }
+      "yes" { Write-Warning "[sync-ha-public] Continuing despite detection in '$RelativePath'."; return }
+      "n" { throw "$baseMessage Aborting sync." }
+      "no" { throw "$baseMessage Aborting sync." }
+      default { Write-Host "Please answer y or n." }
+    }
+  }
+}
+
+function Get-SyncFileCandidates {
+  param(
+    [string]$RootPath,
+    [string[]]$Folders,
+    [string[]]$Files,
+    [string[]]$AdditionalRelativeFiles = @()
+  )
+  $results = New-Object System.Collections.Generic.List[object]
+  if (-not $RootPath) { return $results }
+  $seenPaths = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+  $addCandidate = {
+    param([string]$CandidatePath)
+    if (-not (Test-Path -LiteralPath $CandidatePath)) { return }
+    $resolved = (Resolve-Path -LiteralPath $CandidatePath).Path
+    if (-not $seenPaths.Add($resolved)) { return }
+    $results.Add([pscustomobject]@{
+      FullPath     = $resolved
+      RelativePath = Normalize-RelativePath -BasePath $RootPath -FullPath $resolved
+    })
+  }
+  foreach ($folder in $Folders) {
+    if (-not $folder) { continue }
+    $folderPath = Join-Path $RootPath $folder
+    if (-not (Test-Path -LiteralPath $folderPath)) { continue }
+    $filesInFolder = Get-ChildItem -LiteralPath $folderPath -File -Recurse -Force -ErrorAction SilentlyContinue
+    foreach ($entry in $filesInFolder) {
+      & $addCandidate $entry.FullName
+    }
+  }
+  foreach ($rel in ($Files + $AdditionalRelativeFiles | Where-Object { $_ })) {
+    $filePath = Join-Path $RootPath $rel
+    & $addCandidate $filePath
+  }
+  return $results
+}
+
+function Invoke-SecretScan {
+  param(
+    [string]$RootPath,
+    [string]$PhaseLabel,
+    [string[]]$Folders,
+    [string[]]$Files,
+    [string[]]$ForbiddenNames,
+    [string[]]$ForbiddenContentRegexes,
+    [string[]]$AdditionalRelativeFiles = @()
+  )
+  $candidates = Get-SyncFileCandidates -RootPath $RootPath -Folders $Folders -Files $Files -AdditionalRelativeFiles $AdditionalRelativeFiles
+  if ($candidates.Count -eq 0) {
+    Write-Host "ℹ️ No files to scan for $PhaseLabel."
+    return
+  }
+  Write-Host "🔐 Scanning $PhaseLabel content for forbidden names or patterns..."
+  foreach ($candidate in $candidates) {
+    $relativePath = $candidate.RelativePath
+    $segments = $relativePath -split "/"
+    $hasForbiddenName = $false
+    foreach ($segment in $segments) {
+      if ([string]::IsNullOrWhiteSpace($segment)) { continue }
+      if ($ForbiddenNames -contains $segment) {
+        Confirm-SecretOverride -PhaseLabel $PhaseLabel -RelativePath $relativePath -MatchDetail "containing forbidden name '$segment'"
+        $hasForbiddenName = $true
+        break
+      }
+    }
+    if ($hasForbiddenName) { continue }
+    try {
+      $matchInfo = $null
+      if ($ForbiddenContentRegexes.Count -gt 0) {
+        $matchInfo = Select-String -LiteralPath $candidate.FullPath -Pattern $ForbiddenContentRegexes -ErrorAction Stop | Select-Object -First 1
+      }
+    } catch {
+      $err = "[sync-ha-public] BLOCKED ($PhaseLabel): Unable to scan '$relativePath' for sensitive content. $($_.Exception.Message)"
+      Write-Error $err
+      throw $err
+    }
+    if ($matchInfo) {
+      $patternKey = $matchInfo.Pattern
+      $patternDisplay = if ($script:ForbiddenPatternLookup.ContainsKey($patternKey)) { $script:ForbiddenPatternLookup[$patternKey] } else { $patternKey }
+      Confirm-SecretOverride -PhaseLabel $PhaseLabel -RelativePath $relativePath -MatchDetail "matching pattern '$patternDisplay'"
+      continue
     }
   }
 }
@@ -202,6 +338,13 @@ if ($SyncPublic) {
   $syncDecision = $syncPrompt -in @('y','Y')
 }
 if (-not $syncDecision) { Write-Host "ℹ️ Skipping public sync."; return }
+
+Invoke-SecretScan -RootPath $homeRootResolved `
+  -PhaseLabel "private pre-flight" `
+  -Folders $foldersToSync `
+  -Files $filesToSync `
+  -ForbiddenNames $ForbiddenFileNames `
+  -ForbiddenContentRegexes $script:ForbiddenContentRegexes
 
 # ---------- PUBLIC REPO (safety first) ----------
 if (-not $publicRootResolved) {
@@ -331,6 +474,14 @@ This repository contains a public mirror of selected folders from my private Hom
 The private configuration (including secrets) remains in a separate private repository.
 "@ | Set-Content $readmePath -Encoding UTF8
   }
+
+  Invoke-SecretScan -RootPath $publicRootResolved `
+    -PhaseLabel "public post-sync" `
+    -Folders $foldersToSync `
+    -Files $filesToSync `
+    -ForbiddenNames $ForbiddenFileNames `
+    -ForbiddenContentRegexes $script:ForbiddenContentRegexes `
+    -AdditionalRelativeFiles @("README.md")
 
   # ---------- COMMIT PUBLIC ----------
   Write-Host "`n🧩 Staging public changes..."
