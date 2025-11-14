@@ -1,0 +1,1277 @@
+- id: 158af02e95814e9ea10a995435070cac
+  alias: Evening light
+  triggers:
+  - entity_id: sun.sun
+    value_template: '{{ state.attributes.elevation }}'
+    below: 0
+    trigger: numeric_state
+  - entity_id:
+    - binary_sensor.duskrelay
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 2
+      seconds: 0
+    from: 'off'
+    trigger: state
+  conditions:
+  - condition: template
+    value_template: "{% set last_run = state_attr('script.goodnighthouse', 'last_triggered')
+      %} {% if last_run is not none %}\n  {{ (as_timestamp(now()) - as_timestamp(last_run))
+      > 7200 }}\n{% else %}\n  true\n{% endif %}\n"
+    alias: If Goodnighthouse has not triggered the last 2 hours
+  actions:
+  - data: {}
+    action: script.eveninglight
+- id: 850f7a2f1d8843e7b77701872b1c0cab
+  alias: Evening at home
+  description: ''
+  triggers:
+  - entity_id: person.micke
+    event: enter
+    zone: zone.home
+    trigger: zone
+  - entity_id: person.jeannine
+    event: enter
+    zone: zone.home
+    trigger: zone
+  - entity_id: sun.sun
+    value_template: '{{ state.attributes.elevation }}'
+    below: '0'
+    trigger: numeric_state
+  - entity_id:
+    - binary_sensor.duskrelay
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 2
+      seconds: 0
+    from: 'off'
+    trigger: state
+  conditions:
+  - condition: and
+    conditions:
+    - condition: or
+      conditions:
+      - condition: state
+        entity_id: person.micke
+        state: home
+      - condition: state
+        entity_id: person.jeannine
+        state: home
+    - condition: or
+      conditions:
+      - condition: state
+        entity_id: binary_sensor.duskrelay
+        state: 'on'
+      - condition: numeric_state
+        entity_id: sun.sun
+        value_template: '{{ state.attributes.elevation }}'
+        below: '0'
+    - condition: time
+      after: '14:00'
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: script.goodnighthouse
+        attribute: last_triggered
+        for:
+          hours: 1
+          minutes: 0
+          seconds: 0
+        state: ''
+  - condition: template
+    value_template: "{% set last_run = state_attr('script.goodnighthouse', 'last_triggered')
+      %} {% if last_run is not none %}\n  {{ (as_timestamp(now()) - as_timestamp(last_run))
+      > 7200 }}\n{% else %}\n  true\n{% endif %}\n"
+    alias: If Goodnighthouse has not triggered the last 2 hours
+  actions:
+  - data: {}
+    action: script.evening
+- id: 90c604c80ccf45e7984740f986c28fee
+  alias: Night light random
+  description: ''
+  trigger:
+  - platform: time
+    at: '22:30:00'
+  condition:
+  - condition: and
+    conditions:
+    - condition: state
+      entity_id: input_boolean.away_mode
+      state: 'on'
+    - condition: state
+      entity_id: input_boolean.guest_in_the_house
+      state: 'off'
+  action:
+  - delay: '{{ "00:%02d:00" % (range(5, 40) | random) }}'
+  - service: script.nightlight
+    data: {}
+- alias: Day light
+  trigger:
+  - event: sunrise
+    platform: sun
+  condition: []
+  action:
+  - service: script.daylight
+  id: 77cb108679f94be49b614acd4a4845b1
+- id: 5f090f0e79d643ca9a28c9720719d6e7
+  alias: Carport light On
+  triggers:
+  - type: motion
+    device_id: d5ac752d2876e064c81c67b63600d449
+    entity_id: binary_sensor.hue_carport_motion_sensor_motion
+    domain: binary_sensor
+    trigger: device
+  conditions:
+  - condition: or
+    conditions:
+    - type: is_illuminance
+      condition: device
+      device_id: d5ac752d2876e064c81c67b63600d449
+      entity_id: sensor.hue_carport_motion_sensor_light_level
+      domain: sensor
+      below: 35
+    - condition: state
+      entity_id: binary_sensor.duskrelay
+      state: 'on'
+  actions:
+  - type: turn_on
+    device_id: 6553a45e590e4d714f5049aedbe4c2ec
+    entity_id: 34998952f2e110f415527b5d294448f3
+    domain: switch
+  - data:
+      duration: '300'
+    target:
+      entity_id: timer.carport
+    action: timer.start
+- id: 9e9772537d6447258fd6c79254f38261
+  alias: Carport light On Coming home
+  triggers:
+  - entity_id: person.micke
+    event: enter
+    zone: zone.home_extended_1
+    trigger: zone
+  conditions:
+  - condition: or
+    conditions:
+    - type: is_illuminance
+      condition: device
+      device_id: d5ac752d2876e064c81c67b63600d449
+      entity_id: sensor.hue_carport_motion_sensor_light_level
+      domain: sensor
+      below: 35
+    - condition: state
+      entity_id: binary_sensor.duskrelay
+      state: 'on'
+  actions:
+  - delay: 00:00:45
+  - condition: state
+    entity_id: person.micke
+    state: home
+  - data:
+      duration: '300'
+    target:
+      entity_id: timer.carport
+    action: timer.start
+  - type: turn_on
+    device_id: 6553a45e590e4d714f5049aedbe4c2ec
+    entity_id: 34998952f2e110f415527b5d294448f3
+    domain: switch
+- id: 059ed62d1d864412906a9718b02b4ccd
+  alias: Carport light Off
+  triggers:
+  - event_type: timer.finished
+    event_data:
+      entity_id: timer.carport
+    trigger: event
+  conditions: []
+  actions:
+  - type: turn_off
+    device_id: 6553a45e590e4d714f5049aedbe4c2ec
+    entity_id: 34998952f2e110f415527b5d294448f3
+    domain: switch
+- id: e11c928ec4764d5498052afb042b6bf5
+  alias: Verisure Armed Home
+  trigger:
+  - platform: device
+    device_id: 000a7b6fd0689fafd0c2ecf1804900ee
+    domain: alarm_control_panel
+    entity_id: alarm_control_panel.verisure_alarm
+    type: armed_home
+  condition:
+  - after: '23:00'
+    condition: time
+  action:
+  - service: automation.trigger
+    entity_id: automation.night_light
+- id: 1d278adced19439d8889d49795ce869d
+  alias: UnLock coming Home
+  trigger:
+  - platform: zone
+    entity_id: person.micke
+    zone: zone.home
+    event: enter
+  - platform: zone
+    entity_id: person.jeannine
+    zone: zone.home
+    event: enter
+  condition:
+  - condition: state
+    entity_id: lock.entre
+    state: locked
+    for:
+      hours: 0
+      minutes: 2
+      seconds: 0
+  action:
+  - service: script.verisure_unlock
+    data: {}
+- id: 90e5c54247394926bca0b654c99c5fcf
+  alias: Arm Leaving Home
+  trigger:
+  - entity_id: person.micke
+    event: leave
+    platform: zone
+    zone: zone.home
+  - entity_id: person.jeannine
+    event: leave
+    platform: zone
+    zone: zone.home
+  - platform: state
+    entity_id:
+    - input_boolean.away_mode
+    from: 'off'
+    to: 'on'
+  condition: []
+  action:
+  - delay:
+      hours: 0
+      minutes: 1
+      seconds: 0
+      milliseconds: 0
+  - condition: and
+    conditions:
+    - condition: or
+      conditions:
+      - condition: state
+        entity_id: person.micke
+        state: home_extended_1
+      - condition: state
+        entity_id: person.micke
+        state: home_extended_2
+      - condition: state
+        entity_id: person.micke
+        state: home_extended_3
+      - condition: state
+        entity_id: person.micke
+        state: not_home
+      - condition: state
+        entity_id: person.micke
+        state: Work_Micke
+    - condition: or
+      conditions:
+      - condition: state
+        entity_id: person.jeannine
+        state: home_extended_1
+      - condition: state
+        entity_id: person.jeannine
+        state: home_extended_2
+      - condition: state
+        entity_id: person.jeannine
+        state: home_extended_3
+      - condition: state
+        entity_id: person.jeannine
+        state: not_home
+    - condition: state
+      entity_id: input_boolean.guest_in_the_house
+      state: 'off'
+  - service: script.verisure_arm_away
+    data: {}
+- id: 8761fb713c654bd09fe5256c55e5e601
+  alias: Touch Display On
+  triggers:
+  - entity_id: person.micke
+    event: enter
+    zone: zone.home
+    trigger: zone
+  - entity_id: person.jeannine
+    event: enter
+    zone: zone.home
+    trigger: zone
+  - at: 06:00
+    trigger: time
+  conditions:
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: person.micke
+      state: home
+    - condition: state
+      entity_id: person.jeannine
+      state: home
+    - condition: state
+      entity_id: input_boolean.guest_in_the_house
+      state: 'on'
+  actions:
+  - action: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      device_id: 36fe6ade7c5d35b30d61a26a7945db25
+- id: c8ff37aa28e94182b222cacdb46cd538
+  alias: Touch Display Off
+  trigger:
+  - entity_id: person.micke
+    event: leave
+    platform: zone
+    zone: zone.home
+  - entity_id: person.jeannine
+    event: leave
+    platform: zone
+    zone: zone.home
+  - platform: state
+    entity_id:
+    - input_boolean.away_mode
+    to: 'on'
+    from: 'off'
+  condition:
+  - condition: and
+    conditions:
+    - condition: state
+      entity_id: person.micke
+      state: not_home
+    - condition: state
+      entity_id: person.jeannine
+      state: not_home
+    - condition: state
+      entity_id: input_boolean.guest_in_the_house
+      state: 'off'
+  action:
+  - type: turn_off
+    device_id: 36fe6ade7c5d35b30d61a26a7945db25
+    entity_id: 34498efd9dc6524e052290ec91eba8ba
+    domain: switch
+- id: 246de48ec69d4b20b9dc901dd8e32997
+  alias: Wake Up Micke
+  description: ''
+  trigger:
+  - platform: template
+    value_template: '{{now().strftime(''%a %h %d %H:%M %Z %Y'') == (((state_attr(''sensor.sm_s911b_next_alarm'',
+      ''Time in Milliseconds'') | int / 1000) ) | timestamp_custom(''%a %h %d %H:%M
+      %Z %Y''))}}'
+    alias: When Mickes phone alarm goes off
+  condition:
+  - condition: state
+    entity_id: person.micke
+    state: home
+  action:
+  - if:
+    - condition: state
+      entity_id: event.bedroom_dimmer_switch_1_button_4
+      attribute: event_type
+      state: long_release
+      for:
+        hours: 0
+        minutes: 0
+        seconds: 0
+    then:
+    - stop: Button 4 was Long release
+    else:
+    - device_id: 3d03226e8c0c2f9d37532b76e2598d42
+      domain: light
+      entity_id: 20b05b791f61010158d89ea20959820c
+      type: brightness_increase
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 10
+        milliseconds: 0
+  - if:
+    - condition: state
+      entity_id: event.bedroom_dimmer_switch_1_button_4
+      attribute: event_type
+      state: long_release
+      for:
+        hours: 0
+        minutes: 0
+        seconds: 0
+    then:
+    - stop: Button 4 was Long release
+    else:
+    - device_id: 3d03226e8c0c2f9d37532b76e2598d42
+      domain: light
+      entity_id: 20b05b791f61010158d89ea20959820c
+      type: flash
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 10
+        milliseconds: 0
+    - repeat:
+        count: 5
+        sequence:
+        - device_id: 3d03226e8c0c2f9d37532b76e2598d42
+          domain: light
+          entity_id: 20b05b791f61010158d89ea20959820c
+          type: flash
+- alias: Hallway Fan On
+  trigger:
+    platform: time
+    at: 04:00:00
+  condition: []
+  action:
+  - service: homeassistant.turn_on
+    entity_id: switch.flakt_hall
+  - service: timer.start
+    entity_id: timer.flakt_hall
+  id: 068190fe7258428d9cbda10c03cadb85
+- alias: Hallway Fan Off
+  trigger:
+    platform: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.flakt_hall
+  condition: []
+  action:
+  - service: homeassistant.turn_off
+    data:
+      entity_id: switch.flakt_hall
+  - service: timer.cancel
+    entity_id: timer.flakt_hall
+  id: 9c4fef126fca436182ec22bd49accf8d
+- id: '1623686190450'
+  alias: Alarm notification
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: alarm_control_panel.verisure_alarm
+    to: triggered
+  condition: []
+  action:
+  - service: notify.mobile_app_sm_g981b
+    data:
+      message: Verisure Alarm triggered
+  mode: single
+- id: '1636308470520'
+  alias: CatFlap 1 Battery warning
+  description: ''
+  trigger:
+  - type: battery_level
+    platform: device
+    device_id: b32369e9b36c42596cb59c3a192f5c20
+    entity_id: sensor.lucka_1_battery_level
+    domain: sensor
+    below: 10
+    for:
+      hours: 0
+      minutes: 10
+      seconds: 0
+      milliseconds: 0
+  condition: []
+  action:
+  - service: notify.mobile_app_galaxy_s10j_ariela
+    data:
+      title: CatFlap 1 Battery Warning
+      message: Battery level in CatFlap 1 is lower than 10%. Change the batteries
+  - service: notify.mobile_app_sm_g981b_ha
+    data: {}
+  mode: single
+- id: '1636997324073'
+  alias: CatFlap 2 Battery warning
+  description: ''
+  trigger:
+  - type: battery_level
+    platform: device
+    device_id: b645e73bf631118ea094d24fa011a222
+    entity_id: sensor.lucka_2_battery_level
+    domain: sensor
+    below: 10
+    for:
+      hours: 0
+      minutes: 10
+      seconds: 0
+      milliseconds: 0
+  condition: []
+  action:
+  - service: notify.mobile_app_galaxy_s10j_ariela
+    data:
+      title: CatFlap 2 Battery Warning
+      message: Battery level in CatFlap 2 is lower than 10%. Change the batteries
+  - service: notify.mobile_app_sm_g981b_ha
+    data: {}
+  mode: single
+- id: '1636997959250'
+  alias: Carport Motion
+  description: ''
+  triggers:
+  - type: motion
+    device_id: d5ac752d2876e064c81c67b63600d449
+    entity_id: binary_sensor.hue_carport_motion_sensor_motion
+    domain: binary_sensor
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 3
+      milliseconds: 0
+    trigger: device
+  conditions:
+  - condition: time
+    after: '23:00:00'
+    before: 06:00:00
+  actions:
+  - action: notify.mobile_app_sm_s911b
+    data:
+      message: Movement in carport
+  mode: single
+- id: '1638555908900'
+  alias: Morning Light
+  description: ''
+  trigger:
+  - platform: time
+    at: 06:00
+  - platform: time
+    at: input_datetime.next_alarm
+  condition:
+  - condition: sun
+    before: sunrise
+  action:
+  - service: homeassistant.turn_on
+    target:
+      entity_id:
+      - switch.uttag_dining_ne
+      - switch.uttag_kitchen_ne
+      - switch.kontor
+      - light.diningroom_window
+    data: {}
+  - service: light.turn_on
+    target:
+      entity_id: light.kitchen
+    data:
+      transition: 60
+      brightness: 100
+      color_temp: 357
+  - service: light.turn_on
+    data:
+      transition: 60
+      brightness: 100
+      color_temp: 451
+    target:
+      entity_id: light.living_room
+  mode: single
+- id: '1645868772894'
+  alias: Tag GoodNight is scanned
+  description: ''
+  trigger:
+  - platform: tag
+    tag_id: d09f6398-3983-4c15-9c6a-2f95cf552475
+  condition: []
+  action:
+  - service: tts.cloud_say
+    data:
+      entity_id: media_player.googlehome7208
+      message: God natt. I'll make sure the house is locked and ready. Sleep tight
+  - service: script.goodnighthouse
+    data: {}
+  mode: single
+- id: '1645869884912'
+  alias: Tag Hemkomst is scanned
+  description: ''
+  trigger:
+  - platform: tag
+    tag_id: 41e41e39-898d-417a-8ac1-98989ad2947b
+  condition: []
+  action:
+  - service: tts.cloud_say
+    data:
+      entity_id: media_player.hallway
+      message: 'Mikael is on his way home. Door unlocked '
+  - service: automation.trigger
+    data:
+      skip_condition: true
+    target:
+      entity_id: automation.unlock_coming_home
+  - service: automation.trigger
+    data:
+      skip_condition: false
+    target:
+      entity_id: automation.carport_light_on_coming_home
+  - service: automation.trigger
+    data:
+      skip_condition: false
+    target:
+      entity_id: automation.evening_light_home
+  - service: notify.notify
+    data:
+      message: Automation Hemkomst was triggered
+      title: Hemkomst Trigger
+  mode: single
+- id: '1647617974913'
+  alias: Catflap Locked Notification
+  description: ''
+  trigger:
+  - platform: device
+    device_id: b32369e9b36c42596cb59c3a192f5c20
+    domain: lock
+    entity_id: lock.lucka_1_locked_in
+    type: locked
+    for:
+      hours: 2
+      minutes: 0
+      seconds: 0
+  - platform: device
+    device_id: b645e73bf631118ea094d24fa011a222
+    domain: lock
+    entity_id: lock.lucka_2_locked_in
+    type: locked
+    for:
+      hours: 2
+      minutes: 0
+      seconds: 0
+  condition: []
+  action:
+  - service: notify.mobile_app_sm_g981b
+    data:
+      message: Cat flap locked in
+  mode: single
+- id: '1650279851004'
+  alias: 'Vacuum: Notify on Error'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: vacuum.roborock_s7
+    to: error
+  condition: []
+  action:
+  - device_id: 68be3fc0218a3e6207b73758e11db4ec
+    domain: mobile_app
+    type: notify
+    message: Vacuum encountered an error
+    title: 'Vacuum: Error'
+  mode: queued
+  max: 10
+- id: '1651333314431'
+  alias: Pool pump On
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.nordpool_kwh_se3_sek_3_095_025
+    below: '2'
+  condition: []
+  action:
+  - type: turn_on
+    device_id: 69e0f6cbab0e4877a095223049eca42e
+    entity_id: switch.pool_pump
+    domain: switch
+  mode: single
+- id: '1651333418744'
+  alias: Pool pump Off
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.nordpool_kwh_se3_sek_3_095_025
+    above: '2'
+  condition: []
+  action:
+  - type: turn_off
+    device_id: 69e0f6cbab0e4877a095223049eca42e
+    entity_id: switch.pool_pump
+    domain: switch
+  mode: single
+- id: '1662227155220'
+  alias: Micke Home
+  description: ''
+  trigger:
+  - platform: zone
+    entity_id: person.micke
+    zone: zone.home
+    event: enter
+  condition: []
+  action:
+  - service: input_boolean.turn_on
+    data: {}
+    target:
+      entity_id: input_boolean.micke_home
+  mode: single
+- id: '1662227212030'
+  alias: Jeannine Home
+  description: ''
+  trigger:
+  - platform: zone
+    entity_id: person.jeannine
+    zone: zone.home
+    event: enter
+  condition: []
+  action:
+  - service: input_boolean.turn_on
+    data: {}
+    target:
+      entity_id: input_boolean.jeannine_home
+  mode: single
+- id: '1680126075543'
+  alias: Charge start in 4 hrs
+  description: ''
+  trigger: []
+  condition: []
+  action:
+  - delay:
+      hours: 4
+      minutes: 0
+      seconds: 0
+      milliseconds: 0
+  - service: script.charge_battery_forced
+    data: {}
+  mode: single
+- id: '1681151927165'
+  alias: Message to cheap
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - input_boolean.cheap_electricity_simulated_switch
+    from: 'off'
+    to: 'on'
+  condition: []
+  action:
+  - service: notify.mobile_app_sm_g981b
+    data: {}
+  mode: single
+- id: '1681152011876'
+  alias: 'Message to expensive '
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - input_boolean.cheap_electricity_simulated_switch
+    from: 'on'
+    to: 'off'
+  condition: []
+  action:
+  - service: notify.mobile_app_sm_g981b
+    data: {}
+  mode: single
+- id: '1687885555873'
+  alias: AirCondition Start
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.inverter_input_power
+    above: 2500
+  condition:
+  - condition: state
+    entity_id: input_boolean.away_mode
+    state: 'off'
+  - condition: numeric_state
+    entity_id: sensor.overvaningen_temperature
+    above: 26
+  action:
+  - service: climate.set_temperature
+    data:
+      temperature: 19
+      hvac_mode: cool
+    target:
+      device_id: 9c3581b027d90f0773891dee22ad4e23
+  mode: single
+- id: '1687886425352'
+  alias: AirCondition Stop
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.inverter_input_power
+    below: 2500
+  condition:
+  - condition: numeric_state
+    entity_id: sensor.overvaningen_temperature
+    below: 25
+  action:
+  - service: climate.set_hvac_mode
+    data:
+      hvac_mode: 'off'
+    target:
+      device_id: 9c3581b027d90f0773891dee22ad4e23
+  mode: single
+- id: '1690451839055'
+  alias: Away mode Turn on
+  description: Turns on Boolean Away Mode when leaving home zone and all are not home
+  trigger:
+  - platform: zone
+    entity_id: person.jeannine
+    zone: zone.home
+    event: leave
+  - platform: zone
+    entity_id: person.micke
+    zone: zone.home
+    event: leave
+  condition:
+  - condition: not
+    conditions:
+    - condition: zone
+      entity_id: person.jeannine
+      zone: zone.home
+    - condition: zone
+      entity_id: person.micke
+      zone: zone.home
+  action:
+  - service: input_boolean.turn_on
+    data: {}
+    target:
+      entity_id: input_boolean.away_mode
+  mode: single
+- id: '1690453257444'
+  alias: Away mode Turn off
+  description: Turns off Boolean Away Mode when entering home zone
+  trigger:
+  - platform: zone
+    entity_id: person.micke
+    zone: zone.home
+    event: enter
+  - platform: zone
+    entity_id: person.jeannine
+    zone: zone.home
+    event: enter
+  condition: []
+  action:
+  - service: input_boolean.turn_off
+    data: {}
+    target:
+      entity_id: input_boolean.away_mode
+  mode: single
+- id: '1690453844766'
+  alias: Micke not Home
+  description: ''
+  trigger:
+  - platform: zone
+    entity_id: person.micke
+    zone: zone.home
+    event: leave
+  condition:
+  - condition: not
+    conditions:
+    - condition: zone
+      entity_id: person.micke
+      zone: zone.home
+  action:
+  - service: input_boolean.turn_off
+    data: {}
+    target:
+      entity_id: input_boolean.micke_home
+  mode: single
+- id: '1690453983788'
+  alias: Jeannine not Home
+  description: ''
+  trigger:
+  - platform: zone
+    entity_id: person.jeannine
+    zone: zone.home
+    event: leave
+  condition:
+  - condition: not
+    conditions:
+    - condition: zone
+      entity_id: person.jeannine
+      zone: zone.home
+  action:
+  - service: input_boolean.turn_off
+    data: {}
+    target:
+      entity_id: input_boolean.jeannine_home
+  mode: single
+- id: '1691394152115'
+  alias: Startup timer
+  description: ''
+  trigger:
+  - platform: homeassistant
+    event: start
+  condition: []
+  action:
+  - service: timer.start
+    data: {}
+    target:
+      entity_id: timer.after_startup
+  mode: single
+- id: '1695551051990'
+  alias: Battery charge when low price
+  description: Charges the battery frim grid when price is low
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.nordpool_kwh_se3_sek_2_095_025
+    attribute: current_price
+    below: 1.2
+  condition:
+  - condition: numeric_state
+    entity_id: sensor.battery_state_of_capacity
+    below: 85
+  action:
+  - service: huawei_solar.forcible_charge_soc
+    data:
+      target_soc: 100
+      power: '2500'
+      device_id: 294118e51fb5a2728e92893f319c1a75
+  - service: notify.mobile_app_sm_s911b
+    data:
+      message: Battery charge starts due to low price
+      title: Battery charge
+  mode: single
+- id: '1713868647337'
+  alias: Catflap 2 Lock
+  description: Locks flap 2 - sunset
+  triggers:
+  - event: sunset
+    offset: -0:30:00
+    trigger: sun
+  - at: '22:00:00'
+    trigger: time
+  - entity_id:
+    - input_boolean.flap_2
+    from: 'on'
+    to: 'off'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 5
+    trigger: state
+  conditions: []
+  actions:
+  - metadata: {}
+    data:
+      lock_state: locked_in
+      flap_id: '692585'
+    alias: Sure Petcare Lock In Lucka 2
+    action: surepetcare.set_lock_state
+  - data: {}
+    target:
+      entity_id: input_boolean.flap_2
+    action: input_boolean.turn_off
+  mode: single
+- id: '1713869021258'
+  alias: CatFlap 1 Lock
+  description: Locks Flap 1 - sunset
+  trigger:
+  - platform: sun
+    event: sunset
+    offset: '4:00:00'
+  - platform: state
+    entity_id:
+    - input_boolean.flap_1
+    from: 'on'
+    to: 'off'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 5
+  condition: []
+  action:
+  - service: surepetcare.set_lock_state
+    metadata: {}
+    data:
+      lock_state: locked_in
+      flap_id: '591817'
+    alias: Sure Petcare Lock In Lucka 1
+  - service: input_boolean.turn_off
+    data: {}
+    target:
+      entity_id: input_boolean.flap_1
+  mode: single
+- id: '1713886726077'
+  alias: Catflap 2 Unlock
+  description: Unlocks flap 2  - sunrise
+  trigger:
+  - platform: sun
+    event: sunrise
+    offset: +01:00:00
+  - platform: state
+    entity_id:
+    - input_boolean.flap_2
+    from: 'off'
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 5
+  condition: []
+  action:
+  - alias: Sure Petcare Lock In Lucka 2
+    service: surepetcare.set_lock_state
+    metadata: {}
+    data:
+      lock_state: unlocked
+      flap_id: '692585'
+  - service: input_boolean.turn_on
+    data: {}
+    target:
+      entity_id: input_boolean.flap_2
+  mode: single
+- id: '1713886950658'
+  alias: Catflap 1 Unlock
+  description: Locks flap 1 - sunset
+  trigger:
+  - platform: sun
+    event: sunrise
+    offset: +00:00:00
+  - platform: state
+    entity_id:
+    - input_boolean.flap_1
+    from: 'off'
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 5
+  condition: []
+  action:
+  - alias: Sure Petcare Lock In Lucka 1
+    service: surepetcare.set_lock_state
+    metadata: {}
+    data:
+      lock_state: unlocked
+      flap_id: '591817'
+  - service: input_boolean.turn_on
+    data: {}
+    target:
+      entity_id: input_boolean.flap_1
+  mode: single
+- id: '1713984478086'
+  alias: Helge set location
+  description: Sets Helge's location in Sure Petcare from Input Boolean
+  trigger:
+  - platform: state
+    entity_id:
+    - input_boolean.helge_location
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: state
+        entity_id: input_boolean.helge_location
+        state: 'on'
+      sequence:
+      - service: surepetcare.set_pet_location
+        metadata: {}
+        data:
+          pet_name: Helge
+          location: Inside
+    - conditions:
+      - condition: state
+        entity_id: input_boolean.helge_location
+        state: 'off'
+      sequence:
+      - service: surepetcare.set_pet_location
+        metadata: {}
+        data:
+          pet_name: Helge
+          location: Outside
+  mode: single
+- id: '1714384007798'
+  alias: Cat set boolean state
+  description: Changes boolean switch from binary state
+  trigger:
+  - platform: state
+    entity_id:
+    - binary_sensor.helge
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: state
+        entity_id: binary_sensor.helge
+        state: 'on'
+      sequence:
+      - service: input_boolean.turn_on
+        metadata: {}
+        data: {}
+        target:
+          entity_id: input_boolean.helge_location
+    - conditions:
+      - condition: state
+        entity_id: binary_sensor.helge
+        state: 'off'
+      sequence:
+      - service: input_boolean.turn_off
+        target:
+          entity_id:
+          - input_boolean.helge_location
+        data: {}
+  mode: single
+- id: '1733873353563'
+  alias: Charger Auth Reminder
+  description: Plays a reminder message on Hallway speaker every 15 minutes while
+    EHXDYL83 Status is waiting for authorization
+  triggers:
+  - device_id: f0e8850e90d3ff8ce4e4c2870ec4de6d
+    domain: easee
+    entity_id: sensor.ehxdyl83_status
+    type: awaiting_authorization
+    trigger: device
+  conditions: []
+  actions:
+  - action: input_boolean.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.charge_reminder
+  - delay:
+      hours: 0
+      minutes: 15
+      seconds: 0
+      milliseconds: 0
+  - alias: Repeat every 15 min while "EHXDYL83 Status is waiting for authorization"
+    repeat:
+      sequence:
+      - action: tts.speak
+        metadata: {}
+        data:
+          cache: true
+          message: Don't forget to confirm in Easee app for smart charging of the
+            car
+          media_player_entity_id: media_player.hallway
+        target:
+          entity_id: tts.piper
+      - delay:
+          hours: 0
+          minutes: 15
+          seconds: 0
+          milliseconds: 0
+      while:
+      - condition: device
+        device_id: f0e8850e90d3ff8ce4e4c2870ec4de6d
+        domain: easee
+        entity_id: sensor.ehxdyl83_status
+        type: awaiting_authorization
+      - condition: state
+        entity_id: input_boolean.charge_reminder
+        state: 'on'
+  mode: single
+- id: '1743706555854'
+  alias: Feeding the cat
+  description: Feeds the cat at 6 AM & PM
+  triggers:
+  - trigger: time
+    at: 06:00:00
+    enabled: false
+  - trigger: time
+    at: '18:00:00'
+    enabled: false
+  - trigger: state
+    entity_id:
+    - input_boolean.feed_the_cat
+    from: 'off'
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 2
+  conditions: []
+  actions:
+  - device_id: 45d0c94935b1e32f243fa4afd262fd5c
+    domain: button
+    entity_id: 6674aae53f2234a5d123398e66dc9b94
+    type: press
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 3
+      milliseconds: 0
+  - action: input_boolean.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.feed_the_cat
+  mode: single
+- id: '1744642867304'
+  alias: 'Navimow h500: Get state'
+  description: 'Notes:
+
+    * Google Assistant API rate limit: 500 requests per 24 hours (seems to reset at
+    7:00am UTC).
+
+    * Quota status: https://console.cloud.google.com/apis/api/embeddedassistant.googleapis.com/quotas?...'
+  triggers:
+  - trigger: time_pattern
+    minutes: /5
+  - trigger: homeassistant
+    event: start
+  conditions:
+  - condition: numeric_state
+    entity_id: sun.sun
+    attribute: elevation
+    above: -15
+  actions:
+  - action: google_assistant_sdk_custom.send_text_command
+    metadata: {}
+    data:
+      command:
+      - Navimow h500 battery level
+      - is Navimow h500 running
+    response_variable: result
+  - event: set_navimow_h500_state
+    event_data:
+      battery_level: '{{ result.responses[0].text | regex_replace(find=''.* ([0-9]+)
+        percent.*'', replace=''\\1'', ignorecase=True) }}'
+      status: '{{ result.responses[1].text | regex_replace(find=''.*Navimow h 500
+        (.*)\.'', replace=''\\1'', ignorecase=True) }}'
+  mode: restart
+- id: '1747591465822'
+  alias: Basement Ceiling follow Stairs
+  description: Basement Ceiling is toggling according to basement stairs light
+  triggers:
+  - type: changed_states
+    device_id: 85e5fce714f18a12f2c69da3af169ea0
+    entity_id: 8b0269b11db9e075bde8edd5a3296495
+    domain: light
+    trigger: device
+  conditions: []
+  actions:
+  - type: toggle
+    device_id: f291cb4cf086613f8c7143431a086d53
+    entity_id: ac0388dd0e1060a58bcbe041ef10a60e
+    domain: light
+  mode: single
+- id: '1750285621866'
+  alias: Workprofile changes
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - input_boolean.workprofile
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: state
+        entity_id: input_boolean.workprofile
+        state: 'on'
+      sequence:
+      - action: script.workprofile_on_notification
+        metadata: {}
+        data: {}
+    - conditions:
+      - condition: state
+        entity_id: input_boolean.workprofile
+        state: 'off'
+      sequence:
+      - action: script.workprofile_off_notification
+        metadata: {}
+        data: {}
+  mode: single
+- id: '1751729721027'
+  alias: CatFlap 2 Battery warning
+  description: ''
+  triggers:
+  - type: battery_level
+    device_id: b645e73bf631118ea094d24fa011a222
+    entity_id: aaa693d64dbd2da5e48262bae86dd72a
+    domain: sensor
+    trigger: device
+    below: 20
+    for:
+      hours: 1
+      minutes: 0
+      seconds: 0
+  conditions: []
+  actions:
+  - action: notify.notify
+    metadata: {}
+    data:
+      message: Low battery in Lucka 2
+      title: Lucka 2 Battery
+  mode: single
