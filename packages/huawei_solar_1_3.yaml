@@ -1,0 +1,112 @@
+# packages/huawei_solar_1_3.yaml
+#
+# Canonical 1.3 layer for Huawei Solar + LUNA2000
+# - Normalizes units to kW and %
+# - Adds stable "ha1_*" sensor names used by flows & automations
+
+template:
+  - sensor:
+      # 1. Solar power (AC side from inverter)
+      - name: "HA1 Huawei Solar Power"
+        unique_id: ha1_huawei_solar_power
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set p = states('sensor.inverter_active_power') | float(0) %}
+          {{ (p / 1000) | round(3) }}
+
+      # 2. Battery power (charge + / discharge -)
+      - name: "HA1 Huawei Battery Power"
+        unique_id: ha1_huawei_battery_power
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set p = states('sensor.battery_charge_discharge_power') | float(0) %}
+          {{ (p / 1000) | round(3) }}
+
+      # 3. Battery State of Charge (main)
+      - name: "HA1 Huawei Battery SOC"
+        unique_id: ha1_huawei_battery_soc
+        unit_of_measurement: "%"
+        device_class: battery
+        state_class: measurement
+        state: >
+          {{ states('sensor.battery_state_of_capacity') | float(0) | round(1) }}
+
+      # 4. Solar energy today
+      - name: "HA1 Huawei Solar Energy Today"
+        unique_id: ha1_huawei_solar_energy_today
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: >
+          {{ states('sensor.inverter_energy_yield_today') | float(0) | round(3) }}
+
+      # 5. Solar energy total
+      - name: "HA1 Huawei Solar Energy Total"
+        unique_id: ha1_huawei_solar_energy_total
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: >
+          {{ states('sensor.inverter_total_energy_yield') | float(0) | round(3) }}
+
+      # 6. Battery charged energy today
+      - name: "HA1 Huawei Battery Energy Charged Today"
+        unique_id: ha1_huawei_battery_energy_charged_today
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: >
+          {{ states('sensor.energy_charged_today') | float(0) | round(3) }}
+
+      # 7. Battery discharged energy today
+      - name: "HA1 Huawei Battery Energy Discharged Today"
+        unique_id: ha1_huawei_battery_energy_discharged_today
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: >
+          {{ states('sensor.energy_discharged_today') | float(0) | round(3) }}
+
+      # 8. Battery charged energy total
+      - name: "HA1 Huawei Battery Energy Charged Total"
+        unique_id: ha1_huawei_battery_energy_charged_total
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: >
+          {{ states('sensor.total_charged_energy') | float(0) | round(3) }}
+
+      # 9. Battery discharged energy total
+      - name: "HA1 Huawei Battery Energy Discharged Total"
+        unique_id: ha1_huawei_battery_energy_discharged_total
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: >
+          {{ states('sensor.total_discharged_energy') | float(0) | round(3) }}
+
+      # 10. Huawei grid power from power meter (for cross-checking)
+      - name: "HA1 Huawei Grid Power"
+        unique_id: ha1_huawei_grid_power
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set p = states('sensor.power_meter_active_power') | float(0) %}
+          {{ (p / 1000) | round(3) }}
+
+  - binary_sensor:
+      # 11. Battery charging / discharging helpers (sign convention)
+      - name: "HA1 Huawei Battery Charging"
+        unique_id: ha1_huawei_battery_charging
+        state: >
+          {{ states('sensor.ha1_huawei_battery_power') | float(0) > 0 }}
+
+      - name: "HA1 Huawei Battery Discharging"
+        unique_id: ha1_huawei_battery_discharging
+        state: >
+          {{ states('sensor.ha1_huawei_battery_power') | float(0) < 0 }}

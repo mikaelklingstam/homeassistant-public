@@ -727,8 +727,8 @@
   description: ''
   trigger:
   - platform: numeric_state
-    entity_id: sensor.inverter_input_power
-    above: 2500
+    entity_id: sensor.ha1_huawei_solar_power
+    above: 2.5
   condition:
   - condition: state
     entity_id: input_boolean.away_mode
@@ -749,8 +749,8 @@
   description: ''
   trigger:
   - platform: numeric_state
-    entity_id: sensor.inverter_input_power
-    below: 2500
+    entity_id: sensor.ha1_huawei_solar_power
+    below: 2.5
   condition:
   - condition: numeric_state
     entity_id: sensor.overvaningen_temperature

@@ -11,30 +11,88 @@ This file is the **technical reference**; the rulebook remains the high-level de
 
 ## 📦 1. Core Energy Integrations
 
-### 1.1 Huawei Solar & Battery
+### 1.1 Huawei Solar & LUNA2000 (Huawei Solar integration)
 
-- **Inverter:** SUN2000 (model details TBD)
-- **Battery:** LUNA2000 modules
-- **Key roles:**
-  - Measure solar production.
-  - Control/monitor battery charge and discharge.
-  - Support peak shaving and export limitations.
+**Purpose:** Core PV + battery integration. Provides real-time power, SOC and energy counters for solar production, battery charging/discharging and Huawei power meter readings. All 1.3 logic uses the normalized `HA1` sensors.
 
-**Key sensors/entities (to be filled in):**
-- `sensor.huawei_solar_input_power`
-- `sensor.huawei_battery_charge_discharge_power`
-- `sensor.huawei_battery_soc`
-- …
+**Key base entities (raw from integration)**
+
+- `sensor.inverter_active_power` – Inverter AC output power (W).
+- `sensor.inverter_energy_yield_today` – Solar energy produced today (kWh).
+- `sensor.inverter_total_energy_yield` – Total solar energy produced (kWh).
+- `sensor.battery_charge_discharge_power` – Battery charge/discharge power (W).
+- `sensor.storage_state_of_capacity` – Aggregated battery state of capacity (SOC, %).
+- `sensor.energy_charged_today` / `sensor.energy_discharged_today` – Battery energy charged / discharged today (kWh).
+- `sensor.total_charged_energy` / `sensor.total_discharged_energy` – Total battery charged / discharged energy (kWh).
+- `sensor.power_meter_active_power` – Huawei power meter active power at grid connection (W).
+- `sensor.storage_running_status` – Overall storage system status.
+- `sensor.battery_working_mode` – Reported battery mode/state.
+- `select.storage_working_mode_settings` – Selects storage working mode.
+- `switch.storage_charge_from_grid_function` – Enables/disables charging battery from grid.
+
+**Canonical 1.3 sensors (used by dashboards and automations)**
+
+- `sensor.ha1_huawei_solar_power` – Solar/inverter power (kW, AC side).
+- `sensor.ha1_huawei_battery_power` – Battery power (kW). Positive = charging, negative = discharging.
+- `binary_sensor.ha1_huawei_battery_charging` – `on` when battery is charging.
+- `binary_sensor.ha1_huawei_battery_discharging` – `on` when battery is discharging.
+- `sensor.ha1_huawei_battery_soc` – Main LUNA2000 battery SOC (%).
+- `sensor.ha1_huawei_solar_energy_today` / `sensor.ha1_huawei_solar_energy_total` – Solar energy (kWh).
+- `sensor.ha1_huawei_battery_energy_charged_today` / `sensor.ha1_huawei_battery_energy_discharged_today` – Battery energy in/out today (kWh).
+- `sensor.ha1_huawei_battery_energy_charged_total` / `sensor.ha1_huawei_battery_energy_discharged_total` – Battery energy in/out total (kWh).
+- `sensor.ha1_huawei_grid_power` – Huawei grid power from power meter (kW). Positive = import, negative = export (aligned with `sensor.grid_import_export_power`).
+
+**Caveats / conventions**
+
+- All `HA1` power sensors use **kW**.
+- Battery power sign convention: **positive = charging, negative = discharging**.
+- Grid power sign convention: **positive = importing from grid, negative = exporting to grid**.
+- Pack-level sensors (`sensor.pack_1_*`, `sensor.pack_2_*`, `sensor.pack_3_*`) are available for diagnostics but not used in primary logic.
 
 ---
 
-### 1.2 Grid Meter / Import–Export
+### ⚡ Grid Meter / Import–Export (Integration #2)
 
-- **Role:** Track real-time import/export power and total energy.
-- **Key sensors/entities (to be filled in):**
-  - `sensor.grid_import_export_power`
-  - `sensor.power_meter_active_power`
-  - Utility meters for monthly peaks and energy.
+**Integration:**
+- Easee – Device: `QP57QZ4Q` (P1 grid meter / DSO meter)
+- Huawei Solar – Device: `Power meter` (diagnostic / inverter-side meter)
+
+#### Canonical 1.3 Grid Sensors
+
+**Primary net power (for all optimization and flows)**
+
+- `sensor.grid_import_export_power`
+  - Source: template (QP57QZ4Q import/export)
+  - Unit: kW
+  - Device class: `power` (measurement)
+  - **Sign convention:**
+    - Positive → **Import from grid**
+    - Negative → **Export to grid**
+
+- `sensor.grid_active_power`
+  - Source: template (absolute value of `sensor.grid_import_export_power`)
+  - Unit: kW
+  - Device class: `power` (measurement)
+  - Meaning: Magnitude of grid exchange, independent of direction.
+
+**Primary energy totals (billing reference)**
+
+- `sensor.qp57qz4q_import_energy`
+  - Canonical: Total grid import (kWh)
+  - Device class: `energy`
+
+- `sensor.qp57qz4q_export_energy`
+  - Canonical: Total grid export (kWh)
+  - Device class: `energy`
+
+**Diagnostic / secondary (Huawei Solar meter)**
+
+- `sensor.power_meter_active_power` (W)
+- `sensor.power_meter_phase_a_active_power` / `_b_` / `_c_` (W)
+- `sensor.power_meter_consumption` (kWh import)
+- `sensor.power_meter_exported` (kWh export)
+
+These are used for detailed PV/battery flow views and cross-checking the P1 grid meter, but **all peak shaving, Nordpool/ha1 planners, EV and export logic** must reference the *canonical* grid sensors above.
 
 ---
 

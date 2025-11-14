@@ -66,6 +66,11 @@ Each layer will be documented with:
   - Status: Active & verified for HomeAssistant 1.3
   - Method: GUI integration only
   - Notes: All previous YAML planners and cheapest-hours logic removed in Task 7.
+- **Grid Meter / Import–Export (Integration #2)**
+  - Canonical grid source: Easee P1 meter (`QP57QZ4Q`)
+  - Net power sensor: `sensor.grid_import_export_power`
+  - Sign: **+ import, – export** (kW)
+  - Huawei power meter kept as diagnostic source only.
 
 ---
 

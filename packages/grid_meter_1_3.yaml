@@ -1,0 +1,44 @@
+# packages/grid_meter_1_3.yaml
+#
+# Grid Meter / Import–Export – HomeAssistant 1.3
+# - Canonical net grid power: + = import, - = export (kW)
+# - Absolute grid power helper (kW)
+# - Huawei diagnostic grid power (kW) for comparison
+
+template:
+  - sensor:
+      # Canonical net grid power: + = import, - = export (kW)
+      - name: "Grid Import Export Power"
+        unique_id: grid_import_export_power
+        icon: mdi:transmission-tower-export
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        state: >
+          {# TODO: If your raw meter sensor is different, change it here.
+             If the raw value is in W, divide by 1000.
+             If the raw value is already in kW, remove the division. #}
+          {% set p = states('sensor.import_export_power') | float(0) %}
+          {{ p | round(3) }}
+
+      # Absolute grid power in kW (for graphs / limits)
+      - name: "Grid Active Power"
+        unique_id: grid_active_power
+        icon: mdi:flash
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set net = states('sensor.grid_import_export_power') | float(0) %}
+          {{ (net | abs) | round(3) }}
+
+      # Optional: Huawei-based diagnostic net power in kW (for graphs / compare)
+      - name: "Grid Active Power Huawei"
+        unique_id: grid_active_power_huawei
+        icon: mdi:flash-outline
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set p = states('sensor.power_meter_active_power') | float(0) %}
+          {{ (p / 1000) | round(3) }}

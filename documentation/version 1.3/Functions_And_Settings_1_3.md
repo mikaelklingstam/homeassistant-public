@@ -1,4 +1,4 @@
-Last updated: 2025-11-13 22:15 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-14 23:00 (CET) — Authorized by ChatGPT
 
 # ⚙️ Functions & Settings – HomeAssistant 1.3
 
@@ -118,3 +118,33 @@ Provide enough data to understand why the system behaved a certain way.
 ---
 
 Further sections will be filled in as functions are implemented and tuned in 1.3.
+
+## 8. Climate / AC
+
+**Goal:**  
+Use surplus solar generation to drive cooling while preventing unnecessary grid imports.
+
+### AirCondition – Solar-driven start/stop (Huawei)
+
+- **Purpose:**  
+  Automatically start and stop the upstairs air conditioning based on available solar power from the Huawei inverter, so AC usage follows surplus production instead of drawing unnecessary power from the grid.
+
+- **Inputs / Entities:**
+  - `sensor.ha1_huawei_solar_power` – Canonical 1.3 solar power from Huawei (kW, AC side).
+  - `climate.air_conditioning` – Upstairs AC unit controlled through `climate.set_temperature` / `climate.set_hvac_mode`.
+  - `input_boolean.away_mode` – Guard to block cooling when the home is marked as away.
+  - `sensor.overvaningen_temperature` – Upstairs temperature source for comfort thresholds.
+
+- **Trigger & thresholds:**
+  - **Start automation:** Triggers when `sensor.ha1_huawei_solar_power` rises **above 2.5 kW** and the home is not in away mode while `sensor.overvaningen_temperature` is above 26 °C.
+  - **Stop automation:** Triggers when `sensor.ha1_huawei_solar_power` falls **below 2.5 kW** and the upstairs temperature has dropped under 25 °C.
+
+- **Behavior:**
+  - When solar power is high enough, the AC is allowed to run using surplus PV energy.
+  - When solar production drops below the threshold, the AC is turned off to avoid unnecessary grid import.
+  - The logic uses the normalized HA1 sensor (kW) so it stays consistent with other 1.3 energy flows and visualizations.
+
+- **Notes / Conventions:**
+  - `sensor.ha1_huawei_solar_power` is in **kW** and is derived from the Huawei inverter’s active power.
+  - This function depends on the Huawei Solar integration being online and the canonical 1.3 package `huawei_solar_1_3.yaml` being active.
+  - Any further optimization (e.g., combining Nordpool price windows or peak shaving constraints) should be documented in a separate subsection.
