@@ -650,34 +650,6 @@
     title: 'Vacuum: Error'
   mode: queued
   max: 10
-- id: '1651333314431'
-  alias: Pool pump On
-  description: ''
-  trigger:
-  - platform: numeric_state
-    entity_id: sensor.nordpool_kwh_se3_sek_3_095_025
-    below: '2'
-  condition: []
-  action:
-  - type: turn_on
-    device_id: 69e0f6cbab0e4877a095223049eca42e
-    entity_id: switch.pool_pump
-    domain: switch
-  mode: single
-- id: '1651333418744'
-  alias: Pool pump Off
-  description: ''
-  trigger:
-  - platform: numeric_state
-    entity_id: sensor.nordpool_kwh_se3_sek_3_095_025
-    above: '2'
-  condition: []
-  action:
-  - type: turn_off
-    device_id: 69e0f6cbab0e4877a095223049eca42e
-    entity_id: switch.pool_pump
-    domain: switch
-  mode: single
 - id: '1662227155220'
   alias: Micke Home
   description: ''
@@ -888,29 +860,6 @@
     data: {}
     target:
       entity_id: timer.after_startup
-  mode: single
-- id: '1695551051990'
-  alias: Battery charge when low price
-  description: Charges the battery frim grid when price is low
-  trigger:
-  - platform: numeric_state
-    entity_id: sensor.nordpool_kwh_se3_sek_2_095_025
-    attribute: current_price
-    below: 1.2
-  condition:
-  - condition: numeric_state
-    entity_id: sensor.battery_state_of_capacity
-    below: 85
-  action:
-  - service: huawei_solar.forcible_charge_soc
-    data:
-      target_soc: 100
-      power: '2500'
-      device_id: 294118e51fb5a2728e92893f319c1a75
-  - service: notify.mobile_app_sm_s911b
-    data:
-      message: Battery charge starts due to low price
-      title: Battery charge
   mode: single
 - id: '1713868647337'
   alias: Catflap 2 Lock

@@ -49,6 +49,7 @@ foreach ($pattern in $ForbiddenContentPatterns) {
   $script:ForbiddenContentRegexes += $regex
   $script:ForbiddenPatternLookup[$regex] = $pattern
 }
+$script:SecretBypassKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
 if ($HomeRoot -and -not (Test-Path $HomeRoot)) {
   throw "❌ Provided HomeRoot '$HomeRoot' does not exist."
@@ -120,9 +121,14 @@ function Confirm-SecretOverride {
   param(
     [string]$PhaseLabel,
     [string]$RelativePath,
-    [string]$MatchDetail
+    [string]$MatchDetail,
+    [string]$BypassKey
   )
   $baseMessage = "[sync-ha-public] BLOCKED ($PhaseLabel): Potential secret in '$RelativePath' $MatchDetail."
+  if ($BypassKey -and $script:SecretBypassKeys.Contains($BypassKey)) {
+    Write-Warning "[sync-ha-public] Auto-allowing previously approved pattern ($MatchDetail) for '$RelativePath'."
+    return
+  }
   Write-Error $baseMessage
   while ($true) {
     $response = Read-Host "Continue anyway? (y/N)"
@@ -131,8 +137,16 @@ function Confirm-SecretOverride {
     }
     $choice = $response.Trim().ToLowerInvariant()
     switch ($choice) {
-      "y" { Write-Warning "[sync-ha-public] Continuing despite detection in '$RelativePath'."; return }
-      "yes" { Write-Warning "[sync-ha-public] Continuing despite detection in '$RelativePath'."; return }
+      "y" {
+        if ($BypassKey) { $script:SecretBypassKeys.Add($BypassKey) | Out-Null }
+        Write-Warning "[sync-ha-public] Continuing despite detection in '$RelativePath'. Future occurrences of this match will be skipped."
+        return
+      }
+      "yes" {
+        if ($BypassKey) { $script:SecretBypassKeys.Add($BypassKey) | Out-Null }
+        Write-Warning "[sync-ha-public] Continuing despite detection in '$RelativePath'. Future occurrences of this match will be skipped."
+        return
+      }
       "n" { throw "$baseMessage Aborting sync." }
       "no" { throw "$baseMessage Aborting sync." }
       default { Write-Host "Please answer y or n." }
@@ -199,7 +213,8 @@ function Invoke-SecretScan {
     foreach ($segment in $segments) {
       if ([string]::IsNullOrWhiteSpace($segment)) { continue }
       if ($ForbiddenNames -contains $segment) {
-        Confirm-SecretOverride -PhaseLabel $PhaseLabel -RelativePath $relativePath -MatchDetail "containing forbidden name '$segment'"
+        $segmentKey = if ($segment) { "name:$($segment.ToLowerInvariant())" } else { $null }
+        Confirm-SecretOverride -PhaseLabel $PhaseLabel -RelativePath $relativePath -MatchDetail "containing forbidden name '$segment'" -BypassKey $segmentKey
         $hasForbiddenName = $true
         break
       }
@@ -218,7 +233,8 @@ function Invoke-SecretScan {
     if ($matchInfo) {
       $patternKey = $matchInfo.Pattern
       $patternDisplay = if ($script:ForbiddenPatternLookup.ContainsKey($patternKey)) { $script:ForbiddenPatternLookup[$patternKey] } else { $patternKey }
-      Confirm-SecretOverride -PhaseLabel $PhaseLabel -RelativePath $relativePath -MatchDetail "matching pattern '$patternDisplay'"
+      $patternBypassKey = if ($patternDisplay) { "pattern:$($patternDisplay.ToLowerInvariant())" } else { $null }
+      Confirm-SecretOverride -PhaseLabel $PhaseLabel -RelativePath $relativePath -MatchDetail "matching pattern '$patternDisplay'" -BypassKey $patternBypassKey
       continue
     }
   }

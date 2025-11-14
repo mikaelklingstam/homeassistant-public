@@ -51,11 +51,35 @@ This file is the **technical reference**; the rulebook remains the high-level de
 
 ### 1.4 Nordpool Electricity Prices
 
-- **Role:** Hourly electricity price and planning for cheap/expensive periods.
-- **Key sensors/entities (to be filled in):**
-  - Base Nordpool sensor for SE3.
-  - Planner/cheapest-hours sensors.
-  - High/low price threshold helpers.
+- **Role:** Hourly electricity price feed from the official Nordpool integration.
+- **Active entity (UI-configured):**
+  - `sensor.nordpool_kwh_se3_sek_3_10_025` — current SE3 price in SEK.
+- **Removed in 1.3 cleanup:** all YAML-based Nordpool sensors, planners, cheapest-hours helpers, and automations (`sensor.nordpool_kwh_se3_eur_2_095_025`, planner outputs, pool-pump/battery price automations, etc.). Any future price logic must reference the single UI-managed sensor above.
+- **Example usage snippets (plug into the UI or YAML automations if needed):**
+  - **Automation:** trigger when price drops below 1.20 SEK/kWh.
+
+    ```yaml
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.nordpool_kwh_se3_sek_3_10_025
+        attribute: current_price
+        below: 1.20
+    action:
+      - service: huawei_solar.forcible_charge_soc
+        data:
+          target_soc: 100
+    ```
+
+  - **Dashboard:** show the same sensor in an Entities card with price trend attribute.
+
+    ```yaml
+    type: entities
+    title: SE3 Price
+    entities:
+      - entity: sensor.nordpool_kwh_se3_sek_3_10_025
+        name: Current price
+        secondary_info: last-changed
+    ```
 
 ---
 

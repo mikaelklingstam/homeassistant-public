@@ -1,4 +1,4 @@
-Last updated: 2025-11-13 22:00 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-14 16:17 (CET) — Authorized by Micke
 
 # 🧭 HomeAssistant 1.3 – Rulebook
 
@@ -62,7 +62,10 @@ Each layer will be documented with:
 > Detailed entity lists will live in `HA_Integrations_and_Sensors_1_3.md`.  
 > This section will later summarize the *role* of each integration in the 1.3 system (Huawei, Easee, Verisure, Nordpool, etc.).
 
-*(To be filled in later tasks.)*
+- **Nordpool Electricity Prices — SE3, SEK, incl. VAT**
+  - Status: Active & verified for HomeAssistant 1.3
+  - Method: GUI integration only
+  - Notes: All previous YAML planners and cheapest-hours logic removed in Task 7.
 
 ---
 
