@@ -1,4 +1,4 @@
-Last updated: 2025-11-15 01:33 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-15 02:58 (CET) — Authorized by ChatGPT
 
 # 🔌 Integrations & Sensors – HomeAssistant 1.3
 
@@ -196,10 +196,103 @@ Entities for Task 11 will be listed here once the integration/feature scope is d
 
 ---
 
-### 1.5 Verisure
+## Verisure – Alarm, Security & Smart Plugs
 
-- **Role:** Alarm, door/window sensors, maybe smart plugs.
-- **Key sensors/entities (to be filled in).**
+**Purpose:**  
+Provide security state (alarm modes), perimeter and lock status, selected environmental data, and controllable loads (smart plugs) from the Verisure system.
+
+---
+
+### Alarm Control Panel
+
+| Entity ID                            | Description                               | Notes                                                                 |
+|--------------------------------------|-------------------------------------------|-----------------------------------------------------------------------|
+| `alarm_control_panel.verisure_alarm` | Main Verisure alarm control panel         | States: `disarmed`, `armed_home`, `armed_away`, `triggered`, etc.; used by core scripts and automations (arm/disarm, notifications). |
+
+---
+
+### System Status
+
+| Entity ID                                      | Description                                | Notes                                           |
+|------------------------------------------------|--------------------------------------------|-------------------------------------------------|
+| `binary_sensor.verisure_alarm_ethernet_status` | Verisure alarm ethernet/cloud connectivity | Used in `group.verisure_system_status` for health/status monitoring. |
+
+---
+
+### Perimeter Sensors (Doors/Windows)
+
+| Entity ID                         | Description                      | Notes                                          |
+|-----------------------------------|----------------------------------|------------------------------------------------|
+| `binary_sensor.entredorr_opening` | Front door (opening sensor)      | Member of `group.verisure_perimeter`.         |
+| `binary_sensor.kallardorr_opening` | Basement door (opening sensor)   | Member of `group.verisure_perimeter`.         |
+| `binary_sensor.altandorr_opening` | Patio door/window contact        | Member of `group.verisure_perimeter`.         |
+| `binary_sensor.balkongen_opening` | Balcony door/window contact      | Member of `group.verisure_perimeter`.         |
+
+---
+
+### Motion Detectors
+
+| Entity ID | Description | Notes |
+|-----------|-------------|-------|
+| _none_    | No Verisure motion detectors configured in 1.3 | `group.verisure_motion` remains intentionally empty. |
+
+---
+
+### Environmental Sensors
+
+| Entity ID                        | Description                               | Notes                                                                 |
+|----------------------------------|-------------------------------------------|-----------------------------------------------------------------------|
+| `sensor.koket_temperature`       | Kitchen temperature (Verisure sensor)     | Member of `group.verisure_environment`.                               |
+| `sensor.overvaningen_temperature` | Upstairs temperature                      | Used by `automation.aircondition_start` and `automation.aircondition_stop`. |
+| `sensor.kallartrapp_temperature` | Basement stair temperature                | Member of `group.verisure_environment`.                               |
+| `sensor.overvaningen_temperature_2` | Upstairs temperature (secondary channel) | Spare / future use; included in `group.verisure_environment`.         |
+| `sensor.kallartrapp_temperature_2` | Basement stair temperature (secondary)    | Spare / future use; included in `group.verisure_environment`.         |
+| `sensor.overvaningen_humidity`   | Upstairs humidity                         | Member of `group.verisure_environment`.                               |
+| `sensor.kallartrapp_humidity`    | Basement stair humidity                   | Member of `group.verisure_environment`.                               |
+| `sensor.overvaningen_humidity_2` | Upstairs humidity (secondary channel)     | Spare / future use; included in `group.verisure_environment`.         |
+| `sensor.kallartrapp_humidity_2`  | Basement stair humidity (secondary)       | Spare / future use; included in `group.verisure_environment`.         |
+
+---
+
+### Smart Plugs / Loads
+
+| Entity ID         | Description                         | Notes                                                              |
+|-------------------|-------------------------------------|--------------------------------------------------------------------|
+| `switch.sovrum`   | Bedroom plug                        | Part of general lighting/window groups (scenes) in `groups.yaml`.  |
+| `switch.hallen`   | Hallway plug                        | Used in lighting groups.                                           |
+| `switch.allroom_corner` | Allroom corner plug            | Used in lighting/window scene groupings.                           |
+| `switch.trappfonster`   | Stair window plug              | Used in lighting/window scene groupings.                           |
+| `switch.kontor`   | Office plug                         | Member of `group.verisure_smart_plugs`; used by `automation.morning_light`. |
+| `switch.skarm`    | Verisure display power (touch panel) | Member of `group.verisure_smart_plugs`; controlled by `automation.touch_display_on` / `automation.touch_display_off` and `script.nightlight`. |
+
+---
+
+### Locks
+
+| Entity ID    | Description                       | Notes                                                                                           |
+|--------------|-----------------------------------|-------------------------------------------------------------------------------------------------|
+| `lock.entre` | Front door Lockguard (Verisure)  | Member of `group.verisure_locks`; controlled by `script.verisure_unlock`, `script.verisure_lock`, and `automation.unlock_coming_home`. |
+
+---
+
+### Verisure Scripts / Helpers
+
+| ID / Entity ID               | Type         | Description                                       | Notes                                                           |
+|------------------------------|--------------|---------------------------------------------------|-----------------------------------------------------------------|
+| `automation.verisure_armed_home` | Automation | Reacts to alarm being armed_home                  | Triggers night routines (e.g. `automation.night_light`).        |
+| `automation.unlock_coming_home` | Automation | Unlocks front door on arriving home               | Calls `script.verisure_unlock` when zone/home conditions match. |
+| `automation.arm_leaving_home` | Automation   | Arms alarm when leaving home                      | Calls `script.verisure_arm_away` when both people are away.     |
+| `automation.touch_display_on` | Automation   | Powers on Verisure display when someone is home   | Also runs daily at 06:00.                                      |
+| `automation.touch_display_off` | Automation  | Powers off Verisure display when all are away     | Checks guest mode before turning off.                           |
+| `automation.alarm_notification` | Automation | Sends notification when alarm is triggered        | Listens to `alarm_control_panel.verisure_alarm` state changes.  |
+| `automation.morning_light`   | Automation   | Morning light/scene logic                         | Also toggles `switch.kontor` as part of the scene.             |
+| `automation.aircondition_start` | Automation | Starts air conditioning above temperature limit   | Uses `sensor.overvaningen_temperature` plus price/solar/away logic. |
+| `automation.aircondition_stop` | Automation  | Stops air conditioning once cooled sufficiently   | Uses `sensor.overvaningen_temperature`.                         |
+| `script.1637005175553`       | Script       | Arm alarm – home mode                             | Calls `alarm_control_panel.alarm_arm_home` on Verisure alarm.  |
+| `script.verisure_arm_away`   | Script       | Arm alarm – away mode                             | Calls `alarm_control_panel.alarm_arm_away`.                     |
+| `script.verisure_disarm`     | Script       | Disarm alarm                                      | Calls `alarm_control_panel.alarm_disarm`.                       |
+| `script.verisure_unlock`     | Script       | Unlock front door                                 | Sends `lock.unlock` to `lock.entre`.                            |
+| `script.verisure_lock`       | Script       | Lock front door                                   | Sends `lock.lock` to `lock.entre`.                              |
 
 ---
 

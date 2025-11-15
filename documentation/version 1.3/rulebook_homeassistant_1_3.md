@@ -1,4 +1,4 @@
-Last updated: 2025-11-15 01:32 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-15 02:58 (CET) — Authorized by ChatGPT
 
 # 🧭 HomeAssistant 1.3 – Rulebook
 
@@ -75,6 +75,9 @@ Each layer will be documented with:
   - Net power sensor: `sensor.grid_import_export_power`
   - Sign: **+ import, – export** (kW)
   - Huawei power meter kept as diagnostic source only.
+- **Verisure – Alarm, Security & Smart Plugs (Integration #5)**
+  - Provides the primary alarm panel state, front-door Lockguard control, perimeter door/window sensors, selected temperature/humidity feeds, and several Verisure smart plugs (touch display, bedroom, hallway, office, etc.).
+  - These entities support safety (alarm notifications, auto-lock/unlock), comfort automations (lighting scenes, display power), and environmental monitoring.
 
 **Global sign conventions (applies system-wide):**
 - Grid power: `+` = importing from grid, `-` = exporting to grid (kW).

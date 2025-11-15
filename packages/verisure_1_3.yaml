@@ -1,0 +1,73 @@
+#########################################################
+# HomeAssistant 1.3 – Verisure Core Groups & Structure  #
+#########################################################
+
+group:
+
+  # -----------------------------
+  # Verisure – Perimeter (Doors/Windows)
+  # -----------------------------
+  verisure_perimeter:
+    name: "Verisure – Perimeter (Doors & Windows)"
+    entities:
+      - binary_sensor.entredorr_opening        # Front door
+      - binary_sensor.kallardorr_opening       # Basement door
+      - binary_sensor.altandorr_opening        # Patio door
+      - binary_sensor.balkongen_opening        # Balcony door/window
+
+  # -----------------------------
+  # Verisure – Motion
+  # (Currently no Verisure motion detectors in 1.3)
+  # -----------------------------
+  verisure_motion:
+    name: "Verisure – Motion Detectors"
+    entities: []
+
+  # -----------------------------
+  # Verisure – Environment (Temperature & Humidity)
+  # -----------------------------
+  verisure_environment:
+    name: "Verisure – Environmental Sensors"
+    entities:
+      # Primary channels
+      - sensor.koket_temperature
+      - sensor.overvaningen_temperature
+      - sensor.kallartrapp_temperature
+      - sensor.overvaningen_humidity
+      - sensor.kallartrapp_humidity
+
+      # Secondary channels (spares / future use)
+      - sensor.overvaningen_temperature_2
+      - sensor.kallartrapp_temperature_2
+      - sensor.overvaningen_humidity_2
+      - sensor.kallartrapp_humidity_2
+
+  # -----------------------------
+  # Verisure – Smart Plugs / Loads
+  # -----------------------------
+  verisure_smart_plugs:
+    name: "Verisure – Smart Plugs"
+    entities:
+      - switch.sovrum
+      - switch.hallen
+      - switch.allroom_corner
+      - switch.trappfonster
+      - switch.kontor
+      - switch.skarm
+
+  # -----------------------------
+  # Verisure – Locks
+  # -----------------------------
+  verisure_locks:
+    name: "Verisure – Locks"
+    entities:
+      - lock.entre
+
+  # -----------------------------
+  # Verisure – System Status
+  # -----------------------------
+  verisure_system_status:
+    name: "Verisure – System Status"
+    entities:
+      - binary_sensor.verisure_alarm_ethernet_status
+      - alarm_control_panel.verisure_alarm
