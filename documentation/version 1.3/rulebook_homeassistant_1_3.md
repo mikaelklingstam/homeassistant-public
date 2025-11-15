@@ -1,4 +1,4 @@
-Last updated: 2025-11-15 02:58 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-15 17:29 (CET) — Authorized by ChatGPT
 
 # 🧭 HomeAssistant 1.3 – Rulebook
 
@@ -78,6 +78,9 @@ Each layer will be documented with:
 - **Verisure – Alarm, Security & Smart Plugs (Integration #5)**
   - Provides the primary alarm panel state, front-door Lockguard control, perimeter door/window sensors, selected temperature/humidity feeds, and several Verisure smart plugs (touch display, bedroom, hallway, office, etc.).
   - These entities support safety (alarm notifications, auto-lock/unlock), comfort automations (lighting scenes, display power), and environmental monitoring.
+- **Weather & Environment (Integration #6)**
+  - SMHI (`weather.smhi_home`) supplies the primary weather feed, Met.no (`weather.home` / `weather.home_hourly`) remains configured as a backup provider, and Forecast.Solar delivers PV production forecasts.
+  - Canonical HA1 weather sensors live in `packages/weather_environment_1_3.yaml`; Forecast.Solar entities are documented but not yet consumed by automations (reserved for future PV/battery planning).
 
 **Global sign conventions (applies system-wide):**
 - Grid power: `+` = importing from grid, `-` = exporting to grid (kW).

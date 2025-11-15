@@ -1,0 +1,92 @@
+#############################################################
+# HomeAssistant 1.3 - Weather & Environment (canonical layer)
+# Sources:
+#   - SMHI: weather.smhi_home (+ attributes)
+#   - Met.no: weather.home (backup only, not used directly yet)
+#   - Forecast.Solar: PV forecast sensors (used later)
+#############################################################
+
+template:
+  - sensor:
+      # Canonical outdoor temperature (for comfort & energy logic)
+      - name: "HA1 Outdoor Temperature"
+        unique_id: ha1_outdoor_temperature
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        state: >
+          {% set temp = state_attr('weather.smhi_home', 'temperature') %}
+          {% if temp is not none %}
+            {{ temp }}
+          {% else %}
+            unknown
+          {% endif %}
+
+      # Canonical outdoor humidity
+      - name: "HA1 Outdoor Humidity"
+        unique_id: ha1_outdoor_humidity
+        unit_of_measurement: "%"
+        device_class: humidity
+        state_class: measurement
+        state: >
+          {% set hum = state_attr('weather.smhi_home', 'humidity') %}
+          {% if hum is not none %}
+            {{ hum }}
+          {% else %}
+            unknown
+          {% endif %}
+
+      # Canonical outdoor "feels like" temperature
+      - name: "HA1 Outdoor Feels Like"
+        unique_id: ha1_outdoor_feels_like
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        state: >
+          {# Prefer apparent_temperature if SMHI provides it, fall back to temperature #}
+          {% set app = state_attr('weather.smhi_home', 'apparent_temperature') %}
+          {% set temp = state_attr('weather.smhi_home', 'temperature') %}
+          {% if app is not none %}
+            {{ app }}
+          {% elif temp is not none %}
+            {{ temp }}
+          {% else %}
+            unknown
+          {% endif %}
+
+      # Canonical wind speed
+      - name: "HA1 Wind Speed"
+        unique_id: ha1_wind_speed
+        unit_of_measurement: "m/s"
+        state_class: measurement
+        state: >
+          {% set ws = state_attr('weather.smhi_home', 'wind_speed') %}
+          {% if ws is not none %}
+            {{ ws }}
+          {% else %}
+            unknown
+          {% endif %}
+
+      # Canonical wind direction (bearing in degrees)
+      - name: "HA1 Wind Bearing"
+        unique_id: ha1_wind_bearing
+        unit_of_measurement: "°"
+        state_class: measurement
+        state: >
+          {% set wb = state_attr('weather.smhi_home', 'wind_bearing') %}
+          {% if wb is not none %}
+            {{ wb }}
+          {% else %}
+            unknown
+          {% endif %}
+
+      # Canonical weather condition (sunny, cloudy, etc.)
+      - name: "HA1 Weather Condition"
+        unique_id: ha1_weather_condition
+        state: >
+          {% set s = states('weather.smhi_home') %}
+          {% if s not in ['unknown', 'unavailable', 'none'] %}
+            {{ s }}
+          {% else %}
+            unknown
+          {% endif %}

@@ -1,4 +1,4 @@
-Last updated: 2025-11-15 02:58 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-15 17:29 (CET) — Authorized by ChatGPT
 
 # ⚙️ Action Plan – HomeAssistant 1.3
 
@@ -40,6 +40,7 @@ Define a structured build order for implementing, testing, and refining the full
 2. For each integration: document purpose, main entities, and dependencies.
 3. Remove legacy or unused integrations from configuration.
 4. **Task 11 – Integration #5 – Verisure (alarm, security & smart plugs)** — completed: Verisure entities grouped, customized, and documented in Task 11.
+5. **Task 12 – Integration #6 – Weather & Environment** — completed: SMHI primary weather feed, Met.no backup, and Forecast.Solar forecasts normalized into the HA1 weather package and documentation.
 
 ---
 
@@ -115,3 +116,4 @@ Define a structured build order for implementing, testing, and refining the full
 - [x] Task 9 – Huawei Solar & LUNA2000 (done)
 - [x] Task 10 – Easee EV + ID.4 (done)
 - ✅ Task 11 – Integration #5: Verisure (alarm, locks, perimeter sensors, smart plugs, environment) added, grouped, and documented.
+- ✅ Task 12 – Integration #6: Weather & Environment (SMHI primary provider, Met.no backup, Forecast.Solar documented for PV planning).

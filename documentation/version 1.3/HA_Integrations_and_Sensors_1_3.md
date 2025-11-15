@@ -1,4 +1,4 @@
-Last updated: 2025-11-15 16:47 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-15 17:32 (CET) — Authorized by ChatGPT
 
 # 🔌 Integrations & Sensors – HomeAssistant 1.3
 
@@ -296,17 +296,54 @@ Provide security state (alarm modes), perimeter and lock status, selected enviro
 
 ---
 
-## 🌡️ 2. Environment & Weather
+## 🌡️ 2. Weather & Environment
 
-### 2.1 Local Weather & Environment
+### Provider Overview
 
-- **Role:** Provide temperature, humidity, and general conditions for comfort logic, dashboards, and diagnostics.
-- **Status:** Legacy 1.1/1.2 weather helpers have been removed; 1.3 relies on the active UI integrations plus Verisure environmental sensors until Task 12 standardizes the complete package.
+- **Primary weather provider:** SMHI (`weather.smhi_home`)
+- **Secondary / backup provider:** Met.no (`weather.home`, `weather.home_hourly`)
+- **PV forecast provider:** Forecast.Solar (multiple `sensor.energy_*` / `sensor.power_*` entities)
+- **Indoor environment:** Verisure environment sensors (see Verisure section)
 
-### 2.2 Wind & Price Correlation
+### Canonical Weather & Environment Entities (HA 1.3)
 
-- **Role:** Historical helper set that correlated wind forecast with price trends.
-- **Status:** Archived after the 1.2 cleanup and not active in the HomeAssistant 1.3 baseline; reintroduce only if Task 12 requires it.
+These sensors form the standard weather interface for all 1.3 logic and dashboards.
+
+| Purpose                  | Entity ID                          | Source          | Notes                                                |
+|--------------------------|------------------------------------|-----------------|------------------------------------------------------|
+| Main weather entity      | `weather.smhi_home`               | SMHI            | Used by default weather card and condition display  |
+| Backup weather entity    | `weather.home`                    | Met.no          | Kept as backup/compare; not used in logic (yet)     |
+| Outdoor temperature      | `sensor.ha1_outdoor_temperature`  | Template (SMHI) | From `weather.smhi_home.temperature`                |
+| Outdoor humidity         | `sensor.ha1_outdoor_humidity`     | Template (SMHI) | From `weather.smhi_home.humidity`                   |
+| Outdoor feels-like temp  | `sensor.ha1_outdoor_feels_like`   | Template (SMHI) | Prefers `apparent_temperature`, falls back to temp  |
+| Wind speed               | `sensor.ha1_wind_speed`           | Template (SMHI) | From `weather.smhi_home.wind_speed`                 |
+| Wind direction (bearing) | `sensor.ha1_wind_bearing`         | Template (SMHI) | From `weather.smhi_home.wind_bearing`               |
+| Weather condition        | `sensor.ha1_weather_condition`    | Template (SMHI) | Mirrors state of `weather.smhi_home`                |
+
+### Forecast.Solar – PV Forecast Entities
+
+These entities are available for future solar/battery/EV planning.  
+They are **not yet used** in 1.3 automations or dashboards (Task 12).
+
+| Purpose                              | Entity ID                               | Notes                                           |
+|--------------------------------------|-----------------------------------------|-------------------------------------------------|
+| PV energy today (forecast)           | `sensor.energy_production_today`        | Estimated production for the current day        |
+| PV energy tomorrow (forecast)        | `sensor.energy_production_tomorrow`     | Estimated production for tomorrow               |
+| Time of today’s production peak      | `sensor.power_highest_peak_time_today`  | Timestamp of expected production peak today     |
+| Time of tomorrow’s production peak   | `sensor.power_highest_peak_time_tomorrow` | Timestamp of expected production peak tomorrow |
+| Forecast power now                   | `sensor.power_production_now`           | Instantaneous forecasted PV power               |
+| Forecast power next 24h              | `sensor.power_production_next_24hours`  | Total power forecast for the next 24h           |
+| Forecast energy current hour         | `sensor.energy_current_hour`            | Forecast energy for the ongoing hour            |
+| Forecast energy next hour            | `sensor.energy_next_hour`               | Forecast energy for the next hour               |
+| Remaining energy today               | `sensor.energy_production_today_remaining` | Remaining forecast production for today     |
+
+**Planned use:**  
+These sensors will feed future **battery charging**, **EV charging**, and **export planning** logic once the core energy and peak-shaving modules are in place (Tasks 14+ / 30+).
+
+### Wind–Price Correlation
+
+Legacy 1.1/1.2 logic (`weather_energy.yaml`) used external wind forecasts to correlate with Nordpool prices.  
+In 1.3 this logic is **not active** and will be **rebuilt later** as part of a dedicated energy market correlation module.
 
 ---
 
