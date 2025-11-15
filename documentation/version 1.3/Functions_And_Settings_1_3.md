@@ -1,4 +1,4 @@
-Last updated: 2025-11-15 01:33 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-15 16:47 (CET) — Authorized by ChatGPT
 
 # ⚙️ Functions & Settings – HomeAssistant 1.3
 
@@ -73,7 +73,7 @@ Use the battery to:
 
 ---
 
-## EV Charging (Easee + ID.4)
+## 4. EV Charging (Easee + ID.4)
 
 **Purpose:** Provide the minimum data set required to implement smart EV charging that is aware of Nordpool prices, grid peaks, main fuse limits, and the Huawei LUNA battery.
 
@@ -110,9 +110,9 @@ These entities must be available and stable before EV charging automations are e
 
 ---
 
-## Placeholder – Task 11 functions/settings
+## Task 11 functions/settings (Placeholder)
 
-Details for Task 11 will be documented here once the feature is defined and scoped.
+Details for Task 11 will be documented here once the feature is defined and scoped to the HomeAssistant 1.3 baseline.
 
 ---
 

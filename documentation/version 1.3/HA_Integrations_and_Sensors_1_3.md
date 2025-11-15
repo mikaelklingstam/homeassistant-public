@@ -1,4 +1,4 @@
-Last updated: 2025-11-15 02:58 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-15 16:47 (CET) — Authorized by ChatGPT
 
 # 🔌 Integrations & Sensors – HomeAssistant 1.3
 
@@ -298,13 +298,15 @@ Provide security state (alarm modes), perimeter and lock status, selected enviro
 
 ## 🌡️ 2. Environment & Weather
 
-### 2.1 Local Weather
+### 2.1 Local Weather & Environment
 
-- **Role:** Temperature, humidity, and general conditions for comfort logic.
+- **Role:** Provide temperature, humidity, and general conditions for comfort logic, dashboards, and diagnostics.
+- **Status:** Legacy 1.1/1.2 weather helpers have been removed; 1.3 relies on the active UI integrations plus Verisure environmental sensors until Task 12 standardizes the complete package.
 
-### 2.2 Wind & Price Correlation (if reused)
+### 2.2 Wind & Price Correlation
 
-- **Role:** Wind forecast and its correlation with price trends (based on 1.1/1.2 logic).
+- **Role:** Historical helper set that correlated wind forecast with price trends.
+- **Status:** Archived after the 1.2 cleanup and not active in the HomeAssistant 1.3 baseline; reintroduce only if Task 12 requires it.
 
 ---
 
