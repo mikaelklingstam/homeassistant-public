@@ -1,4 +1,4 @@
-Last updated: 2025-11-14 23:32 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-15 01:33 (CET) — Authorized by ChatGPT
 
 # ⚙️ Action Plan – HomeAssistant 1.3
 
@@ -39,6 +39,7 @@ Define a structured build order for implementing, testing, and refining the full
 1. Reintroduce critical integrations (Huawei, Easee, Nordpool, Verisure, etc.) one by one.
 2. For each integration: document purpose, main entities, and dependencies.
 3. Remove legacy or unused integrations from configuration.
+4. **Task 11 – TBD (next integration/feature)** — planned placeholder; scope will be defined before implementation.
 
 ---
 
@@ -109,7 +110,8 @@ Define a structured build order for implementing, testing, and refining the full
 - [x] Task 4 – …
 - [x] Task 5 – Git sync scripts
 - [x] Task 6 – Reintroduce integrations
-- [x] Task 7 – Nordpool
-- [x] Task 8 – Grid meter / Import–Export
-- [x] Task 9 – Huawei Solar & LUNA2000
-- [ ] Task 10 – Next major integration (TBD)
+- [x] Task 7 – Nordpool (done)
+- [x] Task 8 – Grid Meter / Import–Export (done)
+- [x] Task 9 – Huawei Solar & LUNA2000 (done)
+- [x] Task 10 – Easee EV + ID.4 (done)
+- [ ] Task 11 – Pending

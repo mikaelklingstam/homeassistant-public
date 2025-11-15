@@ -1,4 +1,4 @@
-Last updated: 2025-11-14 23:00 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-15 01:33 (CET) — Authorized by ChatGPT
 
 # ⚙️ Functions & Settings – HomeAssistant 1.3
 
@@ -18,6 +18,11 @@ Limit monthly peak power while respecting comfort and necessary charging.
 - Maximum allowed peak target (`input_number`).
 - Comfort overrides that may temporarily break the peak limit.
 
+**Primary sensors from Grid Meter package (Task 8):**
+- `sensor.grid_import_export_power` – signed kW value used for peak math (positive import / negative export).
+- `sensor.grid_active_power` – magnitude-only kW reference for dashboards and guards.
+- `sensor.qp57qz4q_import_energy` / `sensor.qp57qz4q_export_energy` – canonical daily/ monthly billing totals.
+
 **Controlled by (planned):**
 - Peak target slider(s).
 - Booleans for:
@@ -36,6 +41,9 @@ Use dynamic electricity prices to schedule consumption and charging.
 - Hourly Nordpool SE3 prices.
 - Classification of “cheap”, “normal”, and “expensive” hours.
 - Cheapest-hours planning windows.
+
+**Primary price feed (Task 7):**
+- `sensor.nordpool_kwh_se3_sek_3_10_025` – UI-managed Nordpool sensor whose `current_price` attribute drives all logic.
 
 **Controlled by (planned):**
 - Price threshold `input_number`s or presets.
@@ -58,21 +66,53 @@ Use the battery to:
   - Comfort/backup reserve.
 - Grid-charging rules vs. solar-only charging.
 
+**Core Huawei references (Task 9):**
+- `sensor.ha1_huawei_battery_soc` – SOC for all thresholds.
+- `sensor.ha1_huawei_battery_power` – signed kW for charge/discharge logic (positive = charging).
+- `sensor.ha1_huawei_solar_power` – PV power reference when coordinating with price or peak logic.
+
 ---
 
-## 4. EV Charging (Easee + ID.4)
+## EV Charging (Easee + ID.4)
 
-**Goal:**  
-Charge the EV at the right time and power level considering:
-- Departure time.
-- `sensor.id4pro_charging_time_left`
-- Price and peak constraints.
+**Purpose:** Provide the minimum data set required to implement smart EV charging that is aware of Nordpool prices, grid peaks, main fuse limits, and the Huawei LUNA battery.
 
-**Key concepts (planned):**
-- Latest allowed finish time (departure).
-- Required energy or charging time.
-- Price-aware start time calculation.
-- Peak-aware throttling of charging current.
+### Core planning inputs
+
+These entities must be available and stable before EV charging automations are enabled:
+
+- `sensor.ev_charger_power` (kW)  
+  Used to detect when the EV is charging and how much load it adds to the system.
+
+- `binary_sensor.ev_is_charging`  
+  Simplified “charging / not charging” flag for use in automations and dashboards.
+
+- `sensor.ev_charging_time_left`  
+  **Primary planning input.** Represents how much time is needed to complete charging according to the ID.4. Future logic will combine this with cheapest hours and peak limits to decide when to start.
+
+- `sensor.ev_battery_soc`  
+  Used to decide when charging is necessary and to avoid charging when the car is already “full enough”.
+
+- `sensor.ev_estimated_range`  
+  Optional but useful for comfort-based decisions (e.g., minimum range for next morning).
+
+### Integration with grid and battery logic
+
+- EV charging is modeled as a **positive load** via `sensor.ev_charger_power` (kW).
+- Grid import/export follows the convention:
+  - `sensor.grid_import_export_power` > 0 → importing from grid
+  - `sensor.grid_import_export_power` < 0 → exporting to grid
+- Huawei LUNA battery power uses a separate sign convention (discharge vs charge).
+- Future automations will:
+  - Limit EV charging current based on available capacity under the main fuse.
+  - Shift charging to cheap/low-peak hours when `sensor.ev_charging_time_left` allows it.
+  - Coordinate with LUNA battery charging/discharging to avoid unnecessary peaks.
+
+---
+
+## Placeholder – Task 11 functions/settings
+
+Details for Task 11 will be documented here once the feature is defined and scoped.
 
 ---
 

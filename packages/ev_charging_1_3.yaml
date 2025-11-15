@@ -1,0 +1,118 @@
+template:
+  - sensor:
+      # --- Canonical EV charger power (kW) ---
+      - name: "EV Charger Power"
+        unique_id: ha13_ev_charger_power
+        unit_of_measurement: "kW"
+        state_class: measurement
+        device_class: power
+        icon: mdi:ev-station
+        state: >
+          {% set p = states('sensor.ehxdyl83_power') | float(0) %}
+          {{ (p / 1000) | round(3) }}
+        availability: >
+          {{ states('sensor.ehxdyl83_power') not in ['unknown', 'unavailable', 'none'] }}
+
+      # Raw power passthrough (W) for debugging/graphs
+      - name: "EV Charger Power W"
+        unique_id: ha13_ev_charger_power_w
+        unit_of_measurement: "W"
+        state_class: measurement
+        device_class: power
+        icon: mdi:ev-station
+        state: "{{ states('sensor.ehxdyl83_power') | float(0) }}"
+        availability: >
+          {{ states('sensor.ehxdyl83_power') not in ['unknown', 'unavailable', 'none'] }}
+
+      # Session energy (kWh)
+      - name: "EV Session Energy"
+        unique_id: ha13_ev_session_energy
+        unit_of_measurement: "kWh"
+        state_class: total_increasing
+        device_class: energy
+        icon: mdi:counter
+        state: "{{ states('sensor.ehxdyl83_session_energy') | float(0) }}"
+        availability: >
+          {{ states('sensor.ehxdyl83_session_energy') not in ['unknown', 'unavailable', 'none'] }}
+
+      # Total lifetime energy (kWh)
+      - name: "EV Total Energy"
+        unique_id: ha13_ev_total_energy
+        unit_of_measurement: "kWh"
+        state_class: total_increasing
+        device_class: energy
+        icon: mdi:transmission-tower-export
+        state: "{{ states('sensor.ehxdyl83_lifetime_energy') | float(0) }}"
+        availability: >
+          {{ states('sensor.ehxdyl83_lifetime_energy') not in ['unknown', 'unavailable', 'none'] }}
+
+      # Charger current (A)
+      - name: "EV Charger Current"
+        unique_id: ha13_ev_charger_current
+        unit_of_measurement: "A"
+        state_class: measurement
+        device_class: current
+        icon: mdi:current-ac
+        state: "{{ states('sensor.ehxdyl83_current') | float(0) }}"
+        availability: >
+          {{ states('sensor.ehxdyl83_current') not in ['unknown', 'unavailable', 'none'] }}
+
+      # Charger current limit (A)
+      - name: "EV Charger Current Limit"
+        unique_id: ha13_ev_charger_current_limit
+        unit_of_measurement: "A"
+        state_class: measurement
+        device_class: current
+        icon: mdi:current-ac
+        state: "{{ states('sensor.ehxdyl83_max_charger_limit') | float(0) }}"
+        availability: >
+          {{ states('sensor.ehxdyl83_max_charger_limit') not in ['unknown', 'unavailable', 'none'] }}
+
+      # Raw easee status (text)
+      - name: "EV Charging State Raw"
+        unique_id: ha13_ev_charging_state_raw
+        icon: mdi:ev-station
+        state: "{{ states('sensor.ehxdyl83_status') }}"
+        availability: >
+          {{ states('sensor.ehxdyl83_status') not in ['unknown', 'unavailable', 'none'] }}
+
+      # Charging time left (planning input, passthrough)
+      - name: "EV Charging Time Left"
+        unique_id: ha13_ev_charging_time_left
+        icon: mdi:timer-sand
+        state: "{{ states('sensor.id4pro_charging_time_left') }}"
+        availability: >
+          {{ states('sensor.id4pro_charging_time_left') not in ['unknown', 'unavailable', 'none'] }}
+
+      # EV battery SOC (%)
+      - name: "EV Battery SOC"
+        unique_id: ha13_ev_battery_soc
+        unit_of_measurement: "%"
+        state_class: measurement
+        device_class: battery
+        icon: mdi:car-electric
+        state: "{{ states('sensor.id4pro_battery_level') | float(0) }}"
+        availability: >
+          {{ states('sensor.id4pro_battery_level') not in ['unknown', 'unavailable', 'none'] }}
+
+      # EV estimated range (km)
+      - name: "EV Estimated Range"
+        unique_id: ha13_ev_estimated_range
+        unit_of_measurement: "km"
+        state_class: measurement
+        icon: mdi:map-marker-distance
+        state: "{{ states('sensor.id4pro_electric_range') | float(0) }}"
+        availability: >
+          {{ states('sensor.id4pro_electric_range') not in ['unknown', 'unavailable', 'none'] }}
+
+  - binary_sensor:
+      # True when EV is actively charging (simple power-based detector)
+      - name: "EV Is Charging"
+        unique_id: ha13_ev_is_charging
+        device_class: battery_charging
+        icon: mdi:ev-station
+        state: >
+          {% set p = states('sensor.ehxdyl83_power') | float(0) %}
+          {{ p > 100 }}
+        availability: >
+          {{ states('sensor.ehxdyl83_power') not in ['unknown', 'unavailable', 'none'] }}

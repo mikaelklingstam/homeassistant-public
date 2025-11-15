@@ -1,4 +1,4 @@
-Last updated: 2025-11-14 23:10 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-15 01:32 (CET) — Authorized by ChatGPT
 
 # 🧭 HomeAssistant 1.3 – Rulebook
 

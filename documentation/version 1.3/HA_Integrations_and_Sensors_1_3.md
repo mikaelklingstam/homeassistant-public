@@ -1,4 +1,4 @@
-Last updated: 2025-11-14 23:10 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-15 01:33 (CET) — Authorized by ChatGPT
 
 # 🔌 Integrations & Sensors – HomeAssistant 1.3
 
@@ -97,14 +97,68 @@ These are used for detailed PV/battery flow views and cross-checking the P1 grid
 
 ---
 
-### 1.3 Easee EV Charger
+## Easee EV Charger & ID.4 (Task 10)
 
-- **Role:** EV charging control and load balancing.
-- **Key sensors/entities (to be filled in):**
-  - `sensor.ehxdyl83_power`
-  - `sensor.id4pro_battery_level` (if available)
-  - `sensor.id4pro_charging_time_left`
-  - Charger mode, current limit, and status entities.
+**Purpose:** Provide a clean EV charging layer for 1.3 that integrates Easee charger data and ID.4 vehicle data into a small set of canonical sensors for automation and visualization.
+
+### Raw integration entities (from UI integrations)
+
+**Easee charger (device id: ehxdyl83)**
+
+- `sensor.ehxdyl83_power` – Instantaneous charger power (W).
+- `sensor.ehxdyl83_session_energy` – Energy used in the current charging session (kWh).
+- `sensor.ehxdyl83_lifetime_energy` – Lifetime energy counter (kWh).
+- `sensor.ehxdyl83_status` – Text status of the charger (idle/charging/finished/error/etc.).
+- `sensor.ehxdyl83_current` – Actual charging current (A).
+- `sensor.ehxdyl83_max_charger_limit` – Current limit / max allowed charging current (A).
+- Other relevant:
+  - `sensor.ehxdyl83_voltage`
+  - `binary_sensor.ehxdyl83_online`
+  - `binary_sensor.ehxdyl83_cable_lock`
+  - `sensor.ehxdyl83_reason_for_no_current`
+  - `switch.ehxdyl83_charger_enabled`
+  - `switch.ehxdyl83_smart_charging`
+  - `light.ehxdyl83_led_strip`
+  - etc.
+
+**ID.4 (VW WeConnect)**
+
+- `sensor.id4pro_charging_time_left` – Remaining charging time reported by the car (key planning input).
+- `sensor.id4pro_battery_level` – Battery state of charge (%).
+- `sensor.id4pro_electric_range` – Estimated electric driving range (km).
+- Other useful:
+  - `sensor.id4pro_charging_power`
+  - `sensor.id4pro_charging_rate`
+  - `sensor.id4pro_charger_max_ac_setting`
+  - `binary_sensor.id4pro_charging_cable_connected`
+  - `binary_sensor.id4pro_charging_cable_locked`
+  - `switch.id4pro_charging`
+  - `device_tracker.id4pro_position`
+  - etc.
+
+### Canonical 1.3 EV layer (created in packages/ev_charging_1_3.yaml)
+
+These sensors are the **standard interface** for all EV-related logic in HomeAssistant 1.3:
+
+- `sensor.ev_charger_power` – EV charging power in kW (derived from `sensor.ehxdyl83_power`).
+- `sensor.ev_charger_power_w` – Raw charger power in W (direct passthrough).
+- `sensor.ev_session_energy` – Session energy in kWh (alias of `sensor.ehxdyl83_session_energy`).
+- `sensor.ev_total_energy` – Lifetime EV charging energy in kWh (alias of `sensor.ehxdyl83_lifetime_energy`).
+- `sensor.ev_charger_current` – Actual charging current in A (alias of `sensor.ehxdyl83_current`).
+- `sensor.ev_charger_current_limit` – Current limit in A (alias of `sensor.ehxdyl83_max_charger_limit`).
+- `sensor.ev_charging_state_raw` – Text status from Easee (mirror of `sensor.ehxdyl83_status`).
+- `binary_sensor.ev_is_charging` – Boolean “EV is charging” state based on charger power.
+- `sensor.ev_charging_time_left` – Planning input, passthrough of `sensor.id4pro_charging_time_left`.
+- `sensor.ev_battery_soc` – EV battery state of charge % (alias of `sensor.id4pro_battery_level`).
+- `sensor.ev_estimated_range` – EV estimated driving range in km (alias of `sensor.id4pro_electric_range`).
+
+**Important:** `sensor.ev_charging_time_left` is explicitly treated as a **planning input** for EV charging automations (cheapest hours, peak shaving, and grid/battery coordination).
+
+---
+
+### Placeholder – Task 11
+
+Entities for Task 11 will be listed here once the integration/feature scope is defined.
 
 ---
 
