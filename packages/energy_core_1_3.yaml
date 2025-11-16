@@ -1,123 +1,34 @@
 # packages/energy_core_1_3.yaml
 #
 # HomeAssistant 1.3 core energy flows (ha1_*)
-# - Normalized net powers (grid / solar / battery / EV / house)
-# - Derived directional flows
-# - Core binary flags for UI & automations
+# Clean power/flow layer rebuilt for Task 14
 
 template:
   - sensor:
-      # === 1. Net power layer (ha1_power_*) ===
-      # ... power sensors here ...
-
-      # === 2. Directional flow layer (ha1_flow_*_to_*) ===
-      # ... flow sensors here ...
-
-  - binary_sensor:
-      # === 3. Flag layer (ha1_flag_*) ===
-      # ... core binary flags here ...
-template:
-  - sensor:
       # --------------------------------------------------
-      # 1. Net power layer (W) – HomeAssistant 1.3
+      # Raw helper conversions (canonical W units)
       # --------------------------------------------------
 
-      - name: "HA1 Power Grid Net"
-        unique_id: ha1_power_grid_net
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        icon: "mdi:transmission-tower"
-        state: >
-          {# sensor.power_meter_active_power: Plus = exporting, Minus = importing #}
-          {% set pm = states('sensor.power_meter_active_power') | float(0) %}
-          {# Convention for HA1: + = import to house-side, - = export #}
-          {{ (-pm) | round(0) }}
-
-      - name: "HA1 Power Grid Total Net"
-        unique_id: ha1_power_grid_total_net
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        icon: "mdi:transmission-tower-export"
-        state: >
-          {% set g  = states('sensor.ha1_power_grid_net') | float(0) %}
-          {% set s  = states('sensor.ha1_power_solar_ac') | float(0) %}
-          {% set b  = states('sensor.ha1_power_battery_net') | float(0) %}
-          {% set ev = states('sensor.ha1_power_ev_charger') | float(0) %}
-
-          {# Default: use the house-side grid reading directly #}
-          {% set total_default = g %}
-
-          {#
-            Special case: only grid + house + EV (no solar, no battery).
-            Under that condition, the grid meter seems to include ~1/3 of EV.
-            We approximate:
-              base_house = g - ev/3
-              grid_total = base_house + ev
-          #}
-          {% if ev > 200 and s | abs < 50 and b | abs < 50 %}
-            {% set base_house = g - (ev / 3) %}
-            {% set total = base_house + ev %}
-          {% else %}
-            {% set total = total_default %}
-          {% endif %}
-
-          {{ total | round(0) }}
-
-      - name: "HA1 Power Solar AC"
-        unique_id: ha1_power_solar_ac
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        icon: "mdi:solar-power"
-        state: >
-          {% set s = states('sensor.inverter_input_power') | float(0) %}
-          {# Safety: never negative #}
-          {% if s < 0 %}
-            0
-          {% else %}
-            {{ s | round(0) }}
-          {% endif %}
-
-      - name: "HA1 Power Battery Net"
-        unique_id: ha1_power_battery_net
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        icon: "mdi:battery-arrow-up"
-        state: >
-          {# Raw Huawei battery power: Minus = discharge, Plus = charge #}
-          {% set raw = states('sensor.battery_charge_discharge_power') | float(0) %}
-          {% set b = raw %}
-
-          {#
-            Handling:
-            - Very small values (|raw| < 0.05) are treated as 0 W (idle / noise)
-            - If magnitude is between 0.05 and 50, we assume kW and convert to W
-            - If magnitude is >= 50, we assume it is already W
-          #}
-          {% if b | abs < 0.05 %}
-            {% set b = 0 %}
-          {% elif b | abs < 50 %}
-            {% set b = b * 1000 %}
-          {% endif %}
-
-          {# Convention: + = charging (into battery), - = discharging (from battery) #}
-          {{ b | round(0) }}
-
-      - name: "HA1 Power EV Charger"
-        unique_id: ha1_power_ev_charger
+      - name: "HA1 Raw EV Charger W"
+        unique_id: ha1_raw_ev_charger_w
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement
         icon: "mdi:ev-station"
         state: >
-          {% set raw = states('sensor.ehxdyl83_power') %}
-          {% set p = raw | float(0) %}
+          {# Easee main power: usually reported in kW #}
+          {% set raw = states('sensor.ehxdyl83_power') | float(0) %}
+          {% set p = raw %}
 
-          {# If the absolute value looks like kW (e.g. 0–30), convert to W #}
-          {% if p != 0 and (p | abs) < 50 %}
+          {#
+            Conversion logic:
+            - |p| < 0.05  → treat as 0 (noise)
+            - 0.05–50     → assume kW, convert to W
+            - >= 50       → already W
+          #}
+          {% if p | abs < 0.05 %}
+            {% set p = 0 %}
+          {% elif p | abs < 50 %}
             {% set p = p * 1000 %}
           {% endif %}
 
@@ -127,47 +38,147 @@ template:
             {{ p | round(0) }}
           {% endif %}
 
-      - name: "HA1 Power House Core"
-        unique_id: ha1_power_house_core
+      - name: "HA1 Raw Battery Power W"
+        unique_id: ha1_raw_battery_power_w
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement
-        icon: "mdi:home-lightning-bolt"
+        icon: "mdi:battery-arrow-up"
         state: >
-          {% set s  = states('sensor.ha1_power_solar_ac') | float(0) %}
-          {% set g  = states('sensor.ha1_power_grid_net') | float(0) %}
-          {% set b  = states('sensor.ha1_power_battery_net') | float(0) %}
-          {% set ev = states('sensor.ha1_power_ev_charger') | float(0) %}
-
-          {# Split battery net into charge/discharge #}
-          {% set batt_charge    = b if b > 0 else 0.0 %}
-          {% set batt_discharge = -b if b < 0 else 0.0 %}
-
-          {# Default model: standard power balance on the house-side #}
-          {% set house_default = s + g + batt_discharge - batt_charge %}
-
-          {#
-            Special case:
-            - No meaningful solar (night / dark)
-            - Battery is idle
-            - EV is charging
-
-            In this case, the house-side grid meter appears to include
-            roughly 1/3 of the EV power (one phase), so we subtract ev/3
-            to estimate the true base house load.
-          #}
-          {% if ev > 200 and s | abs < 50 and b | abs < 50 %}
-            {% set base_house = g - (ev / 3) %}
-            {% set house = base_house %}
-          {% else %}
-            {% set house = house_default %}
+          {# Huawei battery: Minus = discharge, Plus = charge, usually in kW #}
+          {% set raw = states('sensor.battery_charge_discharge_power') | float(0) %}
+          {% set b = raw %}
+          {% if b | abs < 0.05 %}
+            {% set b = 0 %}
+          {% elif b | abs < 50 %}
+            {% set b = b * 1000 %}
           {% endif %}
+          {{ b | round(0) }}
 
-          {% if house < 0 %}
+      - name: "HA1 Raw Grid Import W"
+        unique_id: ha1_raw_grid_import_w
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:transmission-tower-import"
+        state: >
+          {% set raw = states('sensor.qp57qz4q_import_power') | float(0) %}
+          {% set g = raw %}
+          {% if g | abs < 0.05 %}
+            {% set g = 0 %}
+          {% elif g | abs < 50 %}
+            {% set g = g * 1000 %}
+          {% endif %}
+          {% if g < 0 %}
             0
           {% else %}
-            {{ house | round(0) }}
+            {{ g | round(0) }}
           {% endif %}
+
+      - name: "HA1 Raw Grid Export W"
+        unique_id: ha1_raw_grid_export_w
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:transmission-tower-export"
+        state: >
+          {% set raw = states('sensor.qp57qz4q_export_power') | float(0) %}
+          {% set g = raw %}
+          {% if g | abs < 0.05 %}
+            {% set g = 0 %}
+          {% elif g | abs < 50 %}
+            {% set g = g * 1000 %}
+          {% endif %}
+          {% if g < 0 %}
+            0
+          {% else %}
+            {{ g | round(0) }}
+          {% endif %}
+
+      - name: "HA1 Raw Huawei Meter W"
+        unique_id: ha1_raw_huawei_meter_w
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:flash-triangle-outline"
+        state: >
+          {% set p = states('sensor.power_meter_active_power') | float(0) %}
+          {{ p | round(0) }}
+
+      - name: "HA1 Raw Inverter Power W"
+        unique_id: ha1_raw_inverter_power_w
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:solar-power-variant"
+        state: >
+          {% set raw = states('sensor.inverter_active_power') | float(0) %}
+          {% set p = raw %}
+          {% if p | abs < 0.05 %}
+            {% set p = 0 %}
+          {% elif p | abs < 50 %}
+            {% set p = p * 1000 %}
+          {% endif %}
+          {{ p | round(0) }}
+
+      - name: "HA1 Raw Solar PV Input W"
+        unique_id: ha1_raw_solar_pv_input_w
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:solar-power"
+        state: >
+          {% set p = states('sensor.inverter_input_power') | float(0) %}
+          {% if p | abs < 1 %}
+            0
+          {% else %}
+            {{ p | round(0) }}
+          {% endif %}
+
+      # --------------------------------------------------
+      # Core HA1 power layer (all in W)
+      # --------------------------------------------------
+
+      - name: "HA1 Power Grid Total Net"
+        unique_id: ha1_power_grid_total_net
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:transmission-tower"
+        state: >
+          {% set imp = states('sensor.ha1_raw_grid_import_w') | float(0) %}
+          {% set exp = states('sensor.ha1_raw_grid_export_w') | float(0) %}
+          {{ (imp - exp) | round(0) }}
+
+      - name: "HA1 Power Battery Net"
+        unique_id: ha1_power_battery_net
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:battery-arrow-up"
+        state: >
+          {% set b = states('sensor.ha1_raw_battery_power_w') | float(0) %}
+          {{ b | round(0) }}
+
+      - name: "HA1 Power EV Charger"
+        unique_id: ha1_power_ev_charger
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:ev-station"
+        state: >
+          {% set ev = states('sensor.ha1_raw_ev_charger_w') | float(0) %}
+          {{ ev | round(0) }}
+
+      - name: "HA1 Power Solar AC"
+        unique_id: ha1_power_solar_ac
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:solar-power"
+        state: >
+          {% set s = states('sensor.ha1_raw_solar_pv_input_w') | float(0) %}
+          {{ s | round(0) }}
 
       - name: "HA1 Power House Total"
         unique_id: ha1_power_house_total
@@ -176,55 +187,32 @@ template:
         state_class: measurement
         icon: "mdi:home"
         state: >
-          {% set core = states('sensor.ha1_power_house_core') | float(0) %}
-          {% set ev   = states('sensor.ha1_power_ev_charger') | float(0) %}
-          {{ (core + ev) | round(0) }}
-
-      # --------------------------------------------------
-      # Power balance sanity check
-      # --------------------------------------------------
-
-      - name: "HA1 Power Balance Error"
-        unique_id: ha1_power_balance_error
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        icon: "mdi:scale-balance"
-        state: >
           {% set g  = states('sensor.ha1_power_grid_total_net') | float(0) %}
           {% set s  = states('sensor.ha1_power_solar_ac') | float(0) %}
           {% set b  = states('sensor.ha1_power_battery_net') | float(0) %}
-          {% set h  = states('sensor.ha1_power_house_total') | float(0) %}
-
-          {# Split battery into charge (+) and discharge (-) #}
           {% set batt_charge    = b if b > 0 else 0.0 %}
           {% set batt_discharge = -b if b < 0 else 0.0 %}
+          {% set house = g + s + batt_discharge - batt_charge %}
+          {{ house | round(0) }}
 
-          {#
-            Ideal balance:
-              grid_total + solar + batt_discharge = house_total + batt_charge
-
-            We define error as:
-              error = grid_total + solar + batt_discharge - batt_charge - house_total
-
-            In a perfect world, error = 0.
-          #}
-          {% set error = g + s + batt_discharge - batt_charge - h %}
-
-          {{ error | round(0) }}
-
-      - name: "HA1 Power Balance Error Abs"
-        unique_id: ha1_power_balance_error_abs
+      - name: "HA1 Power House Core"
+        unique_id: ha1_power_house_core
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement
-        icon: "mdi:scale-balance"
+        icon: "mdi:home-lightning-bolt"
         state: >
-          {% set e = states('sensor.ha1_power_balance_error') | float(0) %}
-          {{ (e | abs) | round(0) }}
+          {% set h  = states('sensor.ha1_power_house_total') | float(0) %}
+          {% set ev = states('sensor.ha1_power_ev_charger') | float(0) %}
+          {% set core = h - ev %}
+          {% if core < 0 %}
+            0
+          {% else %}
+            {{ core | round(0) }}
+          {% endif %}
 
       # --------------------------------------------------
-      # 2. Directional flows (W, always >= 0)
+      # Simple flow layer (derived flows, W)
       # --------------------------------------------------
 
       - name: "HA1 Flow Grid Import"
@@ -260,281 +248,93 @@ template:
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement
-        icon: "mdi:ev-station"
+        icon: "mdi:ev-plug-type2"
         state: >
-          {% set p = states('sensor.ha1_power_ev_charger') | float(0) %}
-          {% if p < 0 %}
+          {% set ev = states('sensor.ha1_power_ev_charger') | float(0) %}
+          {% if ev < 0 %}
             0
           {% else %}
-            {{ p | round(0) }}
+            {{ ev | round(0) }}
           {% endif %}
 
-      - name: "HA1 Flow Solar To House"
-        unique_id: ha1_flow_solar_to_house
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        icon: "mdi:solar-power"
-        state: >
-          {% set s  = states('sensor.ha1_power_solar_ac') | float(0) %}
-          {% set g  = states('sensor.ha1_power_grid_net') | float(0) %}
-          {% set b  = states('sensor.ha1_power_battery_net') | float(0) %}
-          {% set h  = states('sensor.ha1_power_house_core') | float(0) %}
-
-          {% if h <= 0 or s <= 0 %}
-            0
-          {% else %}
-            {% if s > h %}
-              {{ h | round(0) }}
-            {% else %}
-              {{ s | round(0) }}
-            {% endif %}
-          {% endif %}
-
-      - name: "HA1 Flow Battery To House"
-        unique_id: ha1_flow_battery_to_house
+      - name: "HA1 Flow Battery Discharge"
+        unique_id: ha1_flow_battery_discharge
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement
         icon: "mdi:battery-arrow-down"
         state: >
-          {% set s  = states('sensor.ha1_power_solar_ac') | float(0) %}
-          {% set g  = states('sensor.ha1_power_grid_net') | float(0) %}
-          {% set b  = states('sensor.ha1_power_battery_net') | float(0) %}
-          {% set h  = states('sensor.ha1_power_house_core') | float(0) %}
+          {% set b = states('sensor.ha1_power_battery_net') | float(0) %}
+          {% if b < 0 %}
+            {{ (-b) | round(0) }}
+          {% else %}
+            0
+          {% endif %}
 
+      # --------------------------------------------------
+      # Sanity checks (model balance + meter mismatch)
+      # --------------------------------------------------
+
+      - name: "HA1 Power Balance Error"
+        unique_id: ha1_power_balance_error
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:scale-balance"
+        state: >
+          {% set g  = states('sensor.ha1_power_grid_total_net') | float(0) %}
+          {% set s  = states('sensor.ha1_power_solar_ac') | float(0) %}
+          {% set b  = states('sensor.ha1_power_battery_net') | float(0) %}
+          {% set h  = states('sensor.ha1_power_house_total') | float(0) %}
+          {% set batt_charge    = b if b > 0 else 0.0 %}
           {% set batt_discharge = -b if b < 0 else 0.0 %}
+          {% set error = g + s + batt_discharge - batt_charge - h %}
+          {{ error | round(0) }}
 
-          {# Solar first covers house #}
-          {% if s > h %}
-            {% set solar_to_house = h %}
-          {% else %}
-            {% set solar_to_house = s %}
-          {% endif %}
-
-          {% set remaining_load = h - solar_to_house %}
-          {% if remaining_load < 0 %}
-            0
-          {% else %}
-            {% if batt_discharge > remaining_load %}
-              {{ remaining_load | round(0) }}
-            {% else %}
-              {{ batt_discharge | round(0) }}
-            {% endif %}
-          {% endif %}
-
-      - name: "HA1 Flow Solar To Battery"
-        unique_id: ha1_flow_solar_to_battery
+      - name: "HA1 Power Balance Error Abs"
+        unique_id: ha1_power_balance_error_abs
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement
-        icon: "mdi:solar-power"
+        icon: "mdi:scale-balance"
         state: >
-          {% set s  = states('sensor.ha1_power_solar_ac') | float(0) %}
-          {% set g  = states('sensor.ha1_power_grid_net') | float(0) %}
-          {% set b  = states('sensor.ha1_power_battery_net') | float(0) %}
-          {% set h  = states('sensor.ha1_power_house_core') | float(0) %}
+          {% set e = states('sensor.ha1_power_balance_error') | float(0) %}
+          {{ (e | abs) | round(0) }}
 
-          {% set batt_charge = b if b > 0 else 0.0 %}
-
-          {# Solar first covers house #}
-          {% if s > h %}
-            {% set solar_to_house = h %}
-          {% else %}
-            {% set solar_to_house = s %}
-          {% endif %}
-
-          {% set solar_surplus = s - solar_to_house %}
-          {% if solar_surplus < 0 %}
-            0
-          {% else %}
-            {% if batt_charge > solar_surplus %}
-              {{ solar_surplus | round(0) }}
-            {% else %}
-              {{ batt_charge | round(0) }}
-            {% endif %}
-          {% endif %}
-
-      - name: "HA1 Flow Solar To Grid"
-        unique_id: ha1_flow_solar_to_grid
+      - name: "HA1 Grid Meter Mismatch"
+        unique_id: ha1_grid_meter_mismatch
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement
-        icon: "mdi:solar-panel"
+        icon: "mdi:scale-unbalanced"
         state: >
-          {% set s  = states('sensor.ha1_power_solar_ac') | float(0) %}
-          {% set g  = states('sensor.ha1_power_grid_net') | float(0) %}
-          {% set b  = states('sensor.ha1_power_battery_net') | float(0) %}
-          {% set h  = states('sensor.ha1_power_house_core') | float(0) %}
+          {% set g_meter = states('sensor.ha1_raw_huawei_meter_w') | float(0) %}
+          {% set g_model = states('sensor.ha1_power_grid_total_net') | float(0) %}
+          {% set diff = g_meter - g_model %}
+          {{ diff | round(0) }}
 
-          {% set batt_charge = b if b > 0 else 0.0 %}
-          {% set grid_export = -g if g < 0 else 0.0 %}
-
-          {# Solar first covers house #}
-          {% if s > h %}
-            {% set solar_to_house = h %}
-          {% else %}
-            {% set solar_to_house = s %}
-          {% endif %}
-
-          {% set solar_surplus = s - solar_to_house %}
-          {% if solar_surplus < 0 %}
-            0
-          {% else %}
-            {# Part of surplus may go to battery #}
-            {% if batt_charge > solar_surplus %}
-              {% set solar_to_batt = solar_surplus %}
-            {% else %}
-              {% set solar_to_batt = batt_charge %}
-            {% endif %}
-
-            {% set remaining_surplus = solar_surplus - solar_to_batt %}
-            {% if remaining_surplus < 0 %}
-              0
-            {% else %}
-              {# Upper bound by actual export #}
-              {% if grid_export > remaining_surplus %}
-                {{ remaining_surplus | round(0) }}
-              {% else %}
-                {{ grid_export | round(0) }}
-              {% endif %}
-            {% endif %}
-          {% endif %}
-
-      - name: "HA1 Flow Grid To Battery"
-        unique_id: ha1_flow_grid_to_battery
+      - name: "HA1 Grid Meter Mismatch Abs"
+        unique_id: ha1_grid_meter_mismatch_abs
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement
-        icon: "mdi:transmission-tower-import"
+        icon: "mdi:scale-unbalanced"
         state: >
-          {% set s  = states('sensor.ha1_power_solar_ac') | float(0) %}
-          {% set g  = states('sensor.ha1_power_grid_net') | float(0) %}
-          {% set b  = states('sensor.ha1_power_battery_net') | float(0) %}
-          {% set h  = states('sensor.ha1_power_house_core') | float(0) %}
-
-          {% set batt_charge = b if b > 0 else 0.0 %}
-          {% set grid_import = g if g > 0 else 0.0 %}
-
-          {# Solar first covers house #}
-          {% if s > h %}
-            {% set solar_to_house = h %}
-          {% else %}
-            {% set solar_to_house = s %}
-          {% endif %}
-
-          {% set solar_surplus = s - solar_to_house %}
-          {% if solar_surplus < 0 %}
-            {% set solar_surplus = 0.0 %}
-          {% endif %}
-
-          {# Part of battery_charge already accounted as solar_to_battery #}
-          {% if batt_charge > solar_surplus %}
-            {% set solar_to_batt = solar_surplus %}
-          {% else %}
-            {% set solar_to_batt = batt_charge %}
-          {% endif %}
-
-          {% set remaining_batt_charge = batt_charge - solar_to_batt %}
-          {% if remaining_batt_charge < 0 %}
-            0
-          {% else %}
-            {# Upper bound by actual grid import #}
-            {% if grid_import > remaining_batt_charge %}
-              {{ remaining_batt_charge | round(0) }}
-            {% else %}
-              {{ grid_import | round(0) }}
-            {% endif %}
-          {% endif %}
-
-      # --------------------------------------------------
-      # Integrity Check Sensors (no custom cards needed)
-      # --------------------------------------------------
-
-      - name: "HA1 Check Solar Exceeds House"
-        unique_id: ha1_check_solar_exceeds_house
-        device_class: power
-        icon: mdi:alert
-        state: >
-          {% set s = states('sensor.ha1_power_solar_ac')|float %}
-          {% set h = states('sensor.ha1_power_house_core')|float %}
-          {{ s > h }}
-
-      - name: "HA1 Check Grid Import And Export Both High"
-        unique_id: ha1_check_import_and_export_high
-        icon: mdi:alert
-        state: >
-          {% set i = states('sensor.ha1_flow_grid_import')|float %}
-          {% set e = states('sensor.ha1_flow_grid_export')|float %}
-          {{ (i > 50) and (e > 50) }}
-
-      - name: "HA1 Check Battery Charge And Discharge Conflict"
-        unique_id: ha1_check_battery_charge_discharge_conflict
-        icon: mdi:alert
-        state: >
-          {% set b = states('sensor.ha1_power_battery_net')|float %}
-          {{ (b > 50) and (b < -50) }}
-
+          {% set d = states('sensor.ha1_grid_meter_mismatch') | float(0) %}
+          {{ (d | abs) | round(0) }}
   - binary_sensor:
-      # --------------------------------------------------
-      # 3. Core flags for UI & logic
-      # --------------------------------------------------
-
-      - name: "HA1 Flag Exporting To Grid"
-        unique_id: ha1_flag_exporting_to_grid
-        device_class: power
-        state: >
-          {% set exp = states('sensor.ha1_flow_grid_export') | float(0) %}
-          {{ exp > 50 }}
-
-      - name: "HA1 Flag Importing From Grid"
-        unique_id: ha1_flag_importing_from_grid
-        device_class: power
-        state: >
-          {% set imp = states('sensor.ha1_flow_grid_import') | float(0) %}
-          {{ imp > 50 }}
-
-      - name: "HA1 Flag Using Battery For House"
-        unique_id: ha1_flag_using_battery_for_house
-        device_class: power
-        state: >
-          {% set p = states('sensor.ha1_flow_battery_to_house') | float(0) %}
-          {{ p > 50 }}
-
-      - name: "HA1 Flag Charging Battery From Grid"
-        unique_id: ha1_flag_charging_battery_from_grid
-        device_class: power
-        state: >
-          {% set p = states('sensor.ha1_flow_grid_to_battery') | float(0) %}
-          {{ p > 50 }}
-
-      - name: "HA1 Flag Charging Battery From Solar"
-        unique_id: ha1_flag_charging_battery_from_solar
-        device_class: power
-        state: >
-          {% set p = states('sensor.ha1_flow_solar_to_battery') | float(0) %}
-          {{ p > 50 }}
-
-      - name: "HA1 Flag EV Charging Now"
-        unique_id: ha1_flag_ev_charging_now
-        device_class: power
-        state: >
-          {% set p = states('sensor.ha1_power_ev_charger') | float(0) %}
-          {{ p > 500 }}
-
-      - name: "HA1 Flag EV Is Significant Load"
-        unique_id: ha1_flag_ev_is_significant_load
-        device_class: power
-        state: >
-          {# Threshold ~2 kW, will later become input_number.ha1_config_ev_significant_load_kw #}
-          {% set p = states('sensor.ha1_power_ev_charger') | float(0) %}
-          {{ p > 2000 }}
-
       - name: "HA1 Flag Power Balance Bad"
         unique_id: ha1_flag_power_balance_bad
         device_class: problem
         icon: "mdi:alert-circle"
         state: >
-          {# Flag if absolute error is larger than ~200 W #}
           {% set e = states('sensor.ha1_power_balance_error_abs') | float(0) %}
-          {{ e > 200 }}
+          {{ e > 500 }}
+
+      - name: "HA1 Flag Grid Meter Mismatch"
+        unique_id: ha1_flag_grid_meter_mismatch
+        device_class: problem
+        icon: "mdi:alert-decagram"
+        state: >
+          {% set d = states('sensor.ha1_grid_meter_mismatch_abs') | float(0) %}
+          {{ d > 4000 }}

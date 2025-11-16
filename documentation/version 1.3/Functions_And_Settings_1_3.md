@@ -1,4 +1,4 @@
-Last updated: 2025-11-15 17:50 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-16 21:45 (CET) — Authorized by ChatGPT
 
 # ⚙️ Functions & Settings – HomeAssistant 1.3
 
@@ -107,6 +107,50 @@ These entities must be available and stable before EV charging automations are e
   - Limit EV charging current based on available capacity under the main fuse.
   - Shift charging to cheap/low-peak hours when `sensor.ev_charging_time_left` allows it.
   - Coordinate with LUNA battery charging/discharging to avoid unnecessary peaks.
+
+## ⚙️ HA1 Control Layer (Task 14)
+
+The HA1 control layer wraps Huawei battery and Easee charger controls behind consistent helpers and scripts.
+
+### Master toggles
+
+- `input_boolean.ha1_control_ev_auto` – Enable/disable EV charging automations.  
+- `input_boolean.ha1_control_battery_auto` – Enable/disable battery optimization automations.
+
+### Control targets (input_numbers)
+
+| Helper | Description |
+|--------|-------------|
+| `input_number.ha1_ev_limit_current_a` | Target EV charging current in amps (A). Drives dynamic current limit for Easee. |
+| `input_number.ha1_batt_grid_charge_max_kw` | Maximum allowed battery grid charging power (kW). |
+| `input_number.ha1_batt_peak_shaving_soc` | Target SOC (%) used for peak-shaving strategies. |
+| `input_number.ha1_batt_grid_charge_cutoff_soc` | SOC (%) at which grid charging of the battery should stop. |
+
+### Control scripts – Huawei battery
+
+These scripts wrap the writable Huawei battery entities:
+
+- `script.ha1_batt_enable_grid_charge` – Turns on `switch.battery_charge_from_grid`.  
+- `script.ha1_batt_disable_grid_charge` – Turns off `switch.battery_charge_from_grid`.  
+- `script.ha1_batt_apply_peak_shaving_soc` – Writes `input_number.ha1_batt_peak_shaving_soc` into `number.battery_peak_shaving_soc`.  
+- `script.ha1_batt_apply_grid_charge_cutoff_soc` – Writes `input_number.ha1_batt_grid_charge_cutoff_soc` into `number.battery_grid_charge_cutoff_soc`.  
+- `script.ha1_batt_apply_grid_charge_limit` – Writes `input_number.ha1_batt_grid_charge_max_kw` into `number.battery_grid_charge_maximum_power`.  
+- `script.ha1_batt_set_peak_shaving_mode` – Sets `select.battery_working_mode` to peak shaving mode.
+
+These functions provide a simple, automation-friendly interface for future peak shaving and grid-charge strategies.
+
+### Control scripts – Easee EV charger
+
+These scripts wrap Easee action commands and dynamic limit services:
+
+- `script.ha1_ev_start_charging` – Sends `easee.action_command` with `start` for the configured device_id.  
+- `script.ha1_ev_stop_charging` – Sends `easee.action_command` with `stop`.  
+- `script.ha1_ev_pause_charging` – Sends `easee.action_command` with `pause`.  
+- `script.ha1_ev_resume_charging` – Sends `easee.action_command` with `resume`.  
+- `script.ha1_ev_override_schedule` – Sends `easee.action_command` with `override_schedule`.  
+- `script.ha1_ev_set_dynamic_current_from_helper` – Calls `easee.set_charger_dynamic_limit` with the current value from `input_number.ha1_ev_limit_current_a`.
+
+All EV operations are funneled through these HA1 scripts so that future optimization logic changes only in one place.
 
 ---
 

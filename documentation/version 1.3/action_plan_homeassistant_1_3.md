@@ -1,4 +1,4 @@
-Last updated: 2025-11-15 17:50 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-16 21:45 (CET) — Authorized by ChatGPT
 
 # ⚙️ Action Plan – HomeAssistant 1.3
 
@@ -53,6 +53,19 @@ Define a structured build order for implementing, testing, and refining the full
 3. Add peak-shaving metrics, rolling averages, and budget sensors.
 4. Validate all helpers are actively used by automations or dashboards.
 5. Use the `documentation/version 1.3/task14_template_sensor_framework_stub.md` checklist to drive Task 14 (template sensor framework & naming standard) so packages stay consistent.
+
+### ✔️ Task 14 – Template Sensor Framework & Naming Standard
+
+Task 14 introduces the HA1.3 template framework for power and flow measurements and connects it to a first control layer:
+
+- Defined a normalized set of raw watt-based sensors (`sensor.ha1_raw_*`) for grid, solar, battery, EV, and the Huawei meter.  
+- Built the canonical power layer (`sensor.ha1_power_*`) for grid net, solar AC, battery net, EV power, house total and house core consumption.  
+- Added a basic flow layer (`sensor.ha1_flow_*`) for grid import/export, EV charging and battery discharge.  
+- Implemented sanity checks for model balance and Huawei meter mismatch, plus binary flags for debugging.  
+- Created the HA1 Debug dashboard view with snapshots, sanity information, 1h/24h history graphs and a Control Tools section.  
+- Introduced the HA1 control layer for Huawei battery and Easee EV charger, including master automation toggles, tuning sliders and helper scripts.
+
+Task 15 builds on this by adding extended template sensors, rolling averages/smoothing, and pre-automation helper metrics.
 
 ---
 
@@ -119,4 +132,4 @@ Define a structured build order for implementing, testing, and refining the full
 - [x] Task 10 – Easee EV + ID.4 (done)
 - ✅ Task 11 – Integration #5: Verisure (alarm, locks, perimeter sensors, smart plugs, environment) added, grouped, and documented.
 - ✅ Task 12 – Integration #6: Weather & Environment (SMHI primary provider, Met.no backup, Forecast.Solar documented for PV planning).
-- [ ] Task 14 – Template Sensor Framework & Naming Standard (stub ready; implementation pending).
+- [x] Task 14 – Template Sensor Framework & Naming Standard (completed; see Task 14 summary above).

@@ -1,0 +1,189 @@
+# packages/energy_control_1_3.yaml
+#
+# HomeAssistant 1.3 - Energy control layer (ha1_control_*)
+# Wraps Huawei battery + Easee charger controls behind HA1 helpers and scripts.
+
+############################################################
+# Helpers – master enable switches and tuning dials
+############################################################
+
+input_boolean:
+  ha1_control_ev_auto:
+    name: HA1 EV Charging – automation enabled
+    icon: mdi:car-electric
+  ha1_control_battery_auto:
+    name: HA1 Battery Optimization – automation enabled
+    icon: mdi:battery-sync
+
+input_number:
+  ha1_ev_limit_current_a:
+    name: HA1 EV Max Current (A)
+    icon: mdi:current-ac
+    min: 0
+    max: 32
+    step: 1
+    mode: slider
+    unit_of_measurement: "A"
+
+  ha1_batt_grid_charge_max_kw:
+    name: HA1 Battery Grid Charge Max (kW)
+    icon: mdi:battery-charging
+    min: 0
+    max: 5
+    step: 0.1
+    mode: slider
+    unit_of_measurement: "kW"
+
+  ha1_batt_peak_shaving_soc:
+    name: HA1 Battery Peak-Shaving Target SOC (%)
+    icon: mdi:battery-heart
+    min: 20
+    max: 100
+    step: 1
+    mode: slider
+    unit_of_measurement: "%"
+
+  ha1_batt_grid_charge_cutoff_soc:
+    name: HA1 Battery Grid Charge Cutoff SOC (%)
+    icon: mdi:battery-clock
+    min: 20
+    max: 100
+    step: 1
+    mode: slider
+    unit_of_measurement: "%"
+
+############################################################
+# Scripts – Huawei battery control
+############################################################
+
+script:
+  ha1_batt_enable_grid_charge:
+    alias: "HA1 – Battery: enable grid charge"
+    mode: single
+    sequence:
+      - service: switch.turn_on
+        target:
+          entity_id: switch.battery_charge_from_grid
+
+  ha1_batt_disable_grid_charge:
+    alias: "HA1 – Battery: disable grid charge"
+    mode: single
+    sequence:
+      - service: switch.turn_off
+        target:
+          entity_id: switch.battery_charge_from_grid
+
+  ha1_batt_apply_peak_shaving_soc:
+    alias: "HA1 – Battery: apply peak-shaving SOC from helper"
+    mode: single
+    sequence:
+      - service: number.set_value
+        target:
+          entity_id: number.battery_peak_shaving_soc
+        data:
+          value: "{{ states('input_number.ha1_batt_peak_shaving_soc') | float(0) }}"
+
+  ha1_batt_apply_grid_charge_cutoff_soc:
+    alias: "HA1 – Battery: apply grid charge cutoff SOC from helper"
+    mode: single
+    sequence:
+      - service: number.set_value
+        target:
+          entity_id: number.battery_grid_charge_cutoff_soc
+        data:
+          value: "{{ states('input_number.ha1_batt_grid_charge_cutoff_soc') | float(0) }}"
+
+  ha1_batt_apply_grid_charge_limit:
+    alias: "HA1 – Battery: apply grid charge max power from helper"
+    mode: single
+    sequence:
+      - variables:
+          kw: "{{ states('input_number.ha1_batt_grid_charge_max_kw') | float(0) }}"
+      - service: number.set_value
+        target:
+          entity_id: number.battery_grid_charge_maximum_power
+        data:
+          # Huawei expects kW – helper is already kW, just round.
+          value: "{{ kw | round(1) }}"
+
+  ha1_batt_set_peak_shaving_mode:
+    alias: "HA1 – Battery: set working mode to Peak Shaving"
+    mode: single
+    sequence:
+      # NOTE: Adjust the option string below to match your actual Huawei integration.
+      - service: select.select_option
+        target:
+          entity_id: select.battery_working_mode
+        data:
+          option: "Peak shaving"
+
+############################################################
+# Scripts – Easee EV charger control
+############################################################
+
+  ha1_ev_start_charging:
+    alias: "HA1 – EV: start charging (Easee action_command)"
+    mode: single
+    sequence:
+      - service: easee.action_command
+        data:
+          device_id: "f0e8850e90d3ff8ce4e4c2870ec4de6d"
+          action_command: "start"
+
+  ha1_ev_stop_charging:
+    alias: "HA1 – EV: stop charging (Easee action_command)"
+    mode: single
+    sequence:
+      - service: easee.action_command
+        data:
+          device_id: "f0e8850e90d3ff8ce4e4c2870ec4de6d"
+          action_command: "stop"
+
+  ha1_ev_pause_charging:
+    alias: "HA1 – EV: pause charging"
+    mode: single
+    sequence:
+      - service: easee.action_command
+        data:
+          device_id: "f0e8850e90d3ff8ce4e4c2870ec4de6d"
+          action_command: "pause"
+
+  ha1_ev_resume_charging:
+    alias: "HA1 – EV: resume charging"
+    mode: single
+    sequence:
+      - service: easee.action_command
+        data:
+          device_id: "f0e8850e90d3ff8ce4e4c2870ec4de6d"
+          action_command: "resume"
+
+  ha1_ev_override_schedule:
+    alias: "HA1 – EV: override schedule"
+    mode: single
+    sequence:
+      - service: easee.action_command
+        data:
+          device_id: "f0e8850e90d3ff8ce4e4c2870ec4de6d"
+          action_command: "override_schedule"
+
+  ha1_ev_set_dynamic_current_from_helper:
+    alias: "HA1 – EV: set dynamic current from helper"
+    mode: single
+    sequence:
+      - variables:
+          amps: "{{ states('input_number.ha1_ev_limit_current_a') | float(0) | round(0) }}"
+      - choose:
+          - conditions:
+              - condition: numeric_state
+                entity_id: input_number.ha1_ev_limit_current_a
+                above: 0
+            sequence:
+              # NOTE:
+              # This uses easee.set_charger_dynamic_limit as listed in your command set.
+              # If your installation expects a different field name (e.g. charger_id vs device_id,
+              # or currentP1 vs current), adjust the keys below accordingly.
+              - service: easee.set_charger_dynamic_limit
+                data:
+                  device_id: "f0e8850e90d3ff8ce4e4c2870ec4de6d"
+                  current: "{{ amps | int }}"
+        default: []

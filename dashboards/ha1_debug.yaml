@@ -1,34 +1,29 @@
+title: HA1 Debug
+icon: mdi:test-tube
+
 views:
   - title: HA1 Debug
-    path: ha1_debug
-    icon: mdi:crosshairs-gps
+    path: ha1-debug
+    icon: mdi:test-tube
     panel: true
-
     cards:
       - type: vertical-stack
         cards:
 
-          # ---------------------------------------------------------
-          # 🧱 HEADER
-          # ---------------------------------------------------------
           - type: markdown
             content: |
               # 🧪 HA1.3 Debug Dashboard
-              **Live monitoring of Task 14 template sensors — powers, flows, flags & integrity checks**
+              Live monitoring of Task 14 template sensors — raw powers, HA1 power layer, flows and sanity checks.
 
-          # ---------------------------------------------------------
-          # 🔌 POWER LAYER
-          # ---------------------------------------------------------
+          # Key snapshot (HA1 power layer)
           - type: entities
-            title: 🔌 Power Layer (ha1_power_*)
+            title: 🔌 Key Snapshot (HA1 Power Layer)
             show_header_toggle: false
             entities:
-              - entity: sensor.ha1_power_grid_net
-                name: Grid Net (House-side)
               - entity: sensor.ha1_power_grid_total_net
-                name: Grid Net (Total incl. EV)
+                name: Grid Total (net, +import)
               - entity: sensor.ha1_power_solar_ac
-                name: Solar AC
+                name: Solar AC (PV)
               - entity: sensor.ha1_power_battery_net
                 name: Battery Net (+charge / -discharge)
               - entity: sensor.ha1_power_ev_charger
@@ -38,126 +33,173 @@ views:
               - entity: sensor.ha1_power_house_total
                 name: House Total (incl. EV)
 
-          - type: history-graph
-            title: Power Trends (last 1 hour)
-            hours_to_show: 1
-            refresh_interval: 30
+          # Raw sensors
+          - type: entities
+            title: 🔎 Key Snapshot Raw Sensors
+            show_header_toggle: false
             entities:
-              - sensor.ha1_power_grid_net
-              - sensor.ha1_power_grid_total_net
-              - sensor.ha1_power_solar_ac
-              - sensor.ha1_power_battery_net
-              - sensor.ha1_power_ev_charger
-              - sensor.ha1_power_house_core
-              - sensor.ha1_power_house_total
+              - entity: sensor.ha1_raw_grid_import_w
+                name: Grid Import (Easee)
+              - entity: sensor.ha1_raw_grid_export_w
+                name: Grid Export (Easee)
+              - entity: sensor.ha1_raw_ev_charger_w
+                name: Easee Charger (raw)
+              - entity: sensor.ha1_raw_battery_power_w
+                name: Battery Charge/Discharge (raw)
+              - entity: sensor.ha1_raw_solar_pv_input_w
+                name: Inverter Input Power (PV)
+              - entity: sensor.ha1_raw_huawei_meter_w
+                name: Huawei Power Meter (diagnostic)
 
-          # ---------------------------------------------------------
-          # 🔀 FLOW LAYER
-          # ---------------------------------------------------------
+          # Power layer (final values)
+          - type: entities
+            title: ⚡ Power Layer (ha1_power_*)
+            show_header_toggle: false
+            entities:
+              - entity: sensor.ha1_power_grid_total_net
+                name: Grid Net (Total)
+              - entity: sensor.ha1_power_solar_ac
+                name: Solar AC
+              - entity: sensor.ha1_power_battery_net
+                name: Battery Net
+              - entity: sensor.ha1_power_ev_charger
+                name: EV Charger Power
+              - entity: sensor.ha1_power_house_core
+                name: House Core
+              - entity: sensor.ha1_power_house_total
+                name: House Total
+
+          # Flow layer
           - type: entities
             title: 🔀 Flow Layer (ha1_flow_*)
+            show_header_toggle: false
             entities:
-              - sensor.ha1_flow_grid_import
-              - sensor.ha1_flow_grid_export
-              - sensor.ha1_flow_solar_to_house
-              - sensor.ha1_flow_battery_to_house
-              - sensor.ha1_flow_solar_to_battery
-              - sensor.ha1_flow_solar_to_grid
-              - sensor.ha1_flow_grid_to_battery
-              - sensor.ha1_flow_ev_charging_power
+              - entity: sensor.ha1_flow_grid_import
+                name: Grid Import
+              - entity: sensor.ha1_flow_grid_export
+                name: Grid Export
+              - entity: sensor.ha1_flow_ev_charging_power
+                name: EV Charging Power
+              - entity: sensor.ha1_flow_battery_discharge
+                name: Battery Discharge
 
-          - type: history-graph
-            title: Flow Trends (last 1 hour)
-            hours_to_show: 1
-            refresh_interval: 30
-            entities:
-              - sensor.ha1_flow_solar_to_house
-              - sensor.ha1_flow_battery_to_house
-              - sensor.ha1_flow_solar_to_battery
-              - sensor.ha1_flow_solar_to_grid
-              - sensor.ha1_flow_grid_import
-              - sensor.ha1_flow_grid_export
-
-          # ---------------------------------------------------------
-          # 🚦 BINARY FLAGS
-          # ---------------------------------------------------------
-          - type: glance
-            title: 🚦 Flags (ha1_flag_*) — live state
-            columns: 4
-            entities:
-              - entity: binary_sensor.ha1_flag_exporting_to_grid
-                name: Exporting
-              - entity: binary_sensor.ha1_flag_importing_from_grid
-                name: Importing
-              - entity: binary_sensor.ha1_flag_using_battery_for_house
-                name: Batt→House
-              - entity: binary_sensor.ha1_flag_charging_battery_from_grid
-                name: Grid→Batt
-              - entity: binary_sensor.ha1_flag_charging_battery_from_solar
-                name: Sol→Batt
-              - entity: binary_sensor.ha1_flag_ev_charging_now
-                name: EV Charging
-              - entity: binary_sensor.ha1_flag_ev_is_significant_load
-                name: EV Heavy
-  
-          # ---------------------------------------------------------
-          # 🧠 POWER BALANCE SANITY
-          # ---------------------------------------------------------
+          # Sanity check section
           - type: markdown
             content: |
-              ## 🧩 Power Balance Sanity
-              `HA1 Power Balance Error` should be close to 0 W.
-              Positive = more import/production than the modelled consumption.
-              Negative = more consumption than the modelled import/production.
+              ## 🧩 Sanity Checks
+              **Model balance** uses the HA1-normalised powers > grid_total, solar, battery, house_total.  
+              **Grid meter mismatch** compares the Huawei meter against the modelled grid power.
 
+          # Model balance
           - type: entities
-            title: Power Balance
+            title: Model Balance
             show_header_toggle: false
             entities:
               - entity: sensor.ha1_power_balance_error
-                name: Balance Error (signed, W)
+                name: Model Balance Error (W)
               - entity: sensor.ha1_power_balance_error_abs
-                name: Balance Error |absolute| (W)
+                name: Model Balance Error Absolute (W)
               - entity: binary_sensor.ha1_flag_power_balance_bad
-                name: Balance Problem?
+                name: Model Balance Problem?
 
-          # ---------------------------------------------------------
-          # 🚗 EV Debug
-          # ---------------------------------------------------------
+          # Grid meter mismatch
           - type: entities
-            title: 🚗 EV Charging Diagnostics
+            title: Grid Meter Mismatch
+            show_header_toggle: false
             entities:
-              - sensor.ha1_power_ev_charger
-              - sensor.ha1_flow_ev_charging_power
-              - binary_sensor.ha1_flag_ev_charging_now
-              - binary_sensor.ha1_flag_ev_is_significant_load
+              - entity: sensor.ha1_grid_meter_mismatch
+                name: Meter Minus Model (W)
+              - entity: sensor.ha1_grid_meter_mismatch_abs
+                name: Meter Minus Model Absolute (W)
+              - entity: binary_sensor.ha1_flag_grid_meter_mismatch
+                name: Grid Meter Mismatch?
 
+          # Core power trends (short window)
           - type: history-graph
-            title: EV Charging (24h)
+            title: 📈 Core Powers – last 1 hour
+            hours_to_show: 1
+            refresh_interval: 30
+            entities:
+              - entity: sensor.ha1_power_grid_total_net
+                name: Grid Net (+import / -export)
+              - entity: sensor.ha1_power_solar_ac
+                name: Solar AC
+              - entity: sensor.ha1_power_battery_net
+                name: Battery Net (+charge / -discharge)
+              - entity: sensor.ha1_power_ev_charger
+                name: EV Charger
+              - entity: sensor.ha1_power_house_total
+                name: House Total
+
+          # Flows & sanity trends (longer window)
+          - type: history-graph
+            title: 📊 Flows & Balance – last 24 hours
             hours_to_show: 24
             refresh_interval: 60
             entities:
-              - sensor.ha1_power_ev_charger
-              - sensor.ha1_flow_ev_charging_power
-              - binary_sensor.ha1_flag_ev_charging_now
+              - entity: sensor.ha1_flow_grid_import
+                name: Grid Import
+              - entity: sensor.ha1_flow_grid_export
+                name: Grid Export
+              - entity: sensor.ha1_flow_ev_charging_power
+                name: EV Charging Power
+              - entity: sensor.ha1_flow_battery_discharge
+                name: Battery Discharge
+              - entity: sensor.ha1_power_balance_error_abs
+                name: Model Balance Error |abs|
 
-          # ---------------------------------------------------------
-          # 🔋 BATTERY ANALYZER
-          # ---------------------------------------------------------
+          # Control tools – master switches & knobs
           - type: entities
-            title: 🔋 Battery Flow Analyzer
+            title: ⚙️ Control Tools – Master Toggles & Targets
+            show_header_toggle: false
             entities:
-              - sensor.ha1_power_battery_net
-              - sensor.ha1_flow_battery_to_house
-              - sensor.ha1_flow_solar_to_battery
-              - sensor.ha1_flow_grid_to_battery
+              - entity: input_boolean.ha1_control_ev_auto
+                name: EV Charging – automation enabled
+              - entity: input_boolean.ha1_control_battery_auto
+                name: Battery Optimization – automation enabled
+              - type: divider
+              - entity: input_number.ha1_ev_limit_current_a
+                name: EV Max Current (A)
+              - entity: input_number.ha1_batt_grid_charge_max_kw
+                name: Battery Grid Charge Max (kW)
+              - entity: input_number.ha1_batt_peak_shaving_soc
+                name: Battery Peak-Shaving Target SOC (%)
+              - entity: input_number.ha1_batt_grid_charge_cutoff_soc
+                name: Battery Grid Charge Cutoff SOC (%)
 
-          - type: history-graph
-            title: Battery Activity (24h)
-            hours_to_show: 24
-            refresh_interval: 60
+          # Control tools – EV scripts
+          - type: entities
+            title: 🚗 EV Control – Scripts
+            show_header_toggle: false
             entities:
-              - sensor.ha1_power_battery_net
-              - sensor.ha1_flow_battery_to_house
-              - sensor.ha1_flow_solar_to_battery
-              - sensor.ha1_flow_grid_to_battery
+              - entity: script.ha1_ev_start_charging
+                name: Start EV Charging
+              - entity: script.ha1_ev_stop_charging
+                name: Stop EV Charging
+              - entity: script.ha1_ev_pause_charging
+                name: Pause EV Charging
+              - entity: script.ha1_ev_resume_charging
+                name: Resume EV Charging
+              - entity: script.ha1_ev_override_schedule
+                name: Override Schedule
+              - entity: script.ha1_ev_set_dynamic_current_from_helper
+                name: Apply EV Dynamic Current from Helper
+
+          # Control tools – Battery scripts
+          - type: entities
+            title: 🔋 Battery Control – Scripts
+            show_header_toggle: false
+            entities:
+              - entity: script.ha1_batt_enable_grid_charge
+                name: Enable Grid Charge
+              - entity: script.ha1_batt_disable_grid_charge
+                name: Disable Grid Charge
+              - type: divider
+              - entity: script.ha1_batt_apply_peak_shaving_soc
+                name: Apply Peak-Shaving SOC from Helper
+              - entity: script.ha1_batt_apply_grid_charge_cutoff_soc
+                name: Apply Grid Charge Cutoff SOC from Helper
+              - entity: script.ha1_batt_apply_grid_charge_limit
+                name: Apply Grid Charge Max (kW) from Helper
+              - entity: script.ha1_batt_set_peak_shaving_mode
+                name: Set Working Mode = Peak Shaving

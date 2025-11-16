@@ -1,4 +1,4 @@
-Last updated: 2025-11-15 17:50 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-16 21:45 (CET) — Authorized by ChatGPT
 
 # 🔌 Integrations & Sensors – HomeAssistant 1.3
 
@@ -348,6 +348,56 @@ In 1.3 this logic is **not active** and will be **rebuilt later** as part of a d
 ---
 
 ## 🧪 3. Template Sensors & Utility Meters
+
+### 🧠 HA1 Template Sensor Framework (Task 14)
+
+**Purpose:**  
+Normalize all vendor-specific power sensors into clean, watt-based HA1 templates used by dashboards, flows, and automation logic.
+
+#### Raw W-normalized sensors (`sensor.ha1_raw_*`)
+
+| Sensor | Meaning | Source Sensor |
+|--------|---------|---------------|
+| `sensor.ha1_raw_grid_import_w` | Grid import (W) | `sensor.qp57qz4q_import_power` |
+| `sensor.ha1_raw_grid_export_w` | Grid export (W) | `sensor.qp57qz4q_export_power` |
+| `sensor.ha1_raw_ev_charger_w` | EV charger AC power (W) | `sensor.ehxdyl83_power` |
+| `sensor.ha1_raw_battery_power_w` | Battery net power (W, +charge / −discharge) | `sensor.battery_charge_discharge_power` |
+| `sensor.ha1_raw_solar_pv_input_w` | Solar PV input (W) | `sensor.inverter_input_power` |
+| `sensor.ha1_raw_inverter_power_w` | Inverter AC output (W) | `sensor.inverter_active_power` |
+| `sensor.ha1_raw_huawei_meter_w` | Huawei CT meter (W, diagnostic only) | `sensor.power_meter_active_power` |
+
+All `ha1_raw_*` templates handle kW→W conversion, noise filtering, and sign normalization to provide clean, comparable values in watts.
+
+#### Canonical power layer (`sensor.ha1_power_*`)
+
+| Sensor | Meaning |
+|--------|---------|
+| `sensor.ha1_power_grid_total_net` | Net grid power (W), +import / −export (from normalized Easee import/export). |
+| `sensor.ha1_power_solar_ac` | Solar AC contribution (W), based on inverter PV input. |
+| `sensor.ha1_power_battery_net` | Battery net power (W), +charging / −discharging (from Huawei LUNA battery). |
+| `sensor.ha1_power_ev_charger` | EV charging power (W), from Easee charger. |
+| `sensor.ha1_power_house_total` | Total house consumption including EV (W). |
+| `sensor.ha1_power_house_core` | House core consumption excluding EV (W). |
+
+#### Flow layer (`sensor.ha1_flow_*`)
+
+| Sensor | Meaning |
+|--------|---------|
+| `sensor.ha1_flow_grid_import` | Grid → house/EV import flow (W), derived from net grid power. |
+| `sensor.ha1_flow_grid_export` | House/battery → grid export flow (W), derived from net grid power. |
+| `sensor.ha1_flow_ev_charging_power` | EV charging flow (W). |
+| `sensor.ha1_flow_battery_discharge` | Battery → house discharge flow (W). |
+
+#### Sanity checks
+
+| Sensor / Binary Sensor | Meaning |
+|------------------------|---------|
+| `sensor.ha1_power_balance_error` / `_abs` | Model balance error between grid, solar, battery and house load (W). |
+| `sensor.ha1_grid_meter_mismatch` / `_abs` | Difference between Huawei CT meter and HA1 grid model (W, debug only). |
+| `binary_sensor.ha1_flag_power_balance_bad` | True if |model balance error| > 500 W. |
+| `binary_sensor.ha1_flag_grid_meter_mismatch` | True if |Huawei–model mismatch| > 4000 W. |
+
+This framework defines the "brain" power signals used by automations and visual flows in HA 1.3.
 
 This section will list:
 
