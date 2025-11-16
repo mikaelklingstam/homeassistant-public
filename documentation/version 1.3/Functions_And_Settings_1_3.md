@@ -1,4 +1,4 @@
-Last updated: 2025-11-15 16:47 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-15 17:50 (CET) — Authorized by ChatGPT
 
 # ⚙️ Functions & Settings – HomeAssistant 1.3
 
@@ -110,13 +110,35 @@ These entities must be available and stable before EV charging automations are e
 
 ---
 
-## Task 11 functions/settings (Placeholder)
+## 5. Verisure Alarm, Locks & Smart Plugs (Task 11)
 
-Details for Task 11 will be documented here once the feature is defined and scoped to the HomeAssistant 1.3 baseline.
+**Goal:**  
+Provide a consistent security layer that keeps the alarm state, perimeter sensors, front-door Lockguard, and Verisure-controlled loads aligned with occupancy automations and dashboards.
+
+**Core entities & groups:**
+- `alarm_control_panel.verisure_alarm` — canonical alarm mode that all arm/disarm flows use.
+- `lock.entre` — Lockguard entity exposed via `script.verisure_lock` / `script.verisure_unlock`.
+- `group.verisure_perimeter`, `group.verisure_environment`, `group.verisure_smart_plugs`, `group.verisure_locks`, and `group.verisure_system_status` — curated groups for dashboards, automations, and diagnostics.
+- Verisure environment sensors (kitchen, upstairs, basement) supply temperature/humidity feeds for comfort logic and the AC function below.
+
+**Key automations & scripts (from Task 11):**
+- `automation.arm_leaving_home`, `automation.verisure_armed_home`, and `automation.alarm_notification` ensure the alarm follows presence and notifies on changes.
+- `automation.unlock_coming_home` + `script.verisure_unlock` unlock the front door when trusted people arrive; `script.verisure_lock` / `script.verisure_arm_away` reset the system on departure.
+- `automation.touch_display_on` / `_off` manage `switch.skarm` (the Verisure touch display) with guest-mode checks so the screen only powers when someone is home.
+- Lighting helpers such as `automation.morning_light` reuse Verisure smart plugs (`switch.hallen`, `switch.kontor`, etc.) to keep manual scenes and alarm routines in sync.
+
+**Behavior & guards:**
+- Alarm state drives downstream routines (e.g., arming at night triggers lighting scenes, disarming resumes normal schedules).
+- `input_boolean.guest_mode` and `input_boolean.away_mode` gate any automation that could otherwise power down devices or unlock doors at the wrong time.
+- `group.verisure_system_status` surfaces connectivity (`binary_sensor.verisure_alarm_ethernet_status`) so dashboards can flag when the security layer is offline.
+
+**Next steps / TODO:**
+- Expose manual overrides (lock, arm/disarm, display power) on the 1.3 control dashboard with clear state feedback.
+- Add history/logbook cards that correlate alarm transitions with presence, so unexpected arming/disarming can be audited quickly.
 
 ---
 
-## 5. Comfort Overrides
+## 6. Comfort Overrides
 
 **Goal:**  
 Allow manual or automatic overrides that prioritize comfort over optimization, while keeping this fully visible in the UI.
@@ -133,7 +155,7 @@ Each override must:
 
 ---
 
-## 6. Export / Import Strategy
+## 7. Export / Import Strategy
 
 **Goal:**  
 Define rules for when export is allowed and when energy should be used locally or stored in the battery.
@@ -145,7 +167,7 @@ Define rules for when export is allowed and when energy should be used locally o
 
 ---
 
-## 7. Logging, Diagnostics & Safety
+## 8. Logging, Diagnostics & Safety
 
 **Goal:**  
 Provide enough data to understand why the system behaved a certain way.
@@ -159,7 +181,7 @@ Provide enough data to understand why the system behaved a certain way.
 
 Further sections will be filled in as functions are implemented and tuned in 1.3.
 
-## 8. Climate / AC
+## 9. Climate / AC
 
 **Goal:**  
 Use surplus solar generation to drive cooling while preventing unnecessary grid imports.
@@ -185,6 +207,28 @@ Use surplus solar generation to drive cooling while preventing unnecessary grid 
   - The logic uses the normalized HA1 sensor (kW) so it stays consistent with other 1.3 energy flows and visualizations.
 
 - **Notes / Conventions:**
-  - `sensor.ha1_huawei_solar_power` is in **kW** and is derived from the Huawei inverter’s active power.
-  - This function depends on the Huawei Solar integration being online and the canonical 1.3 package `huawei_solar_1_3.yaml` being active.
-  - Any further optimization (e.g., combining Nordpool price windows or peak shaving constraints) should be documented in a separate subsection.
+- `sensor.ha1_huawei_solar_power` is in **kW** and is derived from the Huawei inverter’s active power.
+- This function depends on the Huawei Solar integration being online and the canonical 1.3 package `huawei_solar_1_3.yaml` being active.
+- Any further optimization (e.g., combining Nordpool price windows or peak shaving constraints) should be documented in a separate subsection.
+
+---
+
+## 10. Weather & Environment (Task 12)
+
+**Goal:**  
+Expose a normalized weather interface (SMHI primary, Met.no backup) and Forecast.Solar PV predictions so dashboards, comfort logic, and future planners consume the same data set.
+
+**Primary sensors:**
+- `weather.smhi_home` — canonical weather entity for condition + icon; mirrored by `sensor.ha1_weather_condition`.
+- `weather.home` / `weather.home_hourly` — kept online for comparison and fallback only.
+- Template sensors sourced from SMHI (`sensor.ha1_outdoor_temperature`, `sensor.ha1_outdoor_humidity`, `sensor.ha1_outdoor_feels_like`, `sensor.ha1_wind_speed`, `sensor.ha1_wind_bearing`) feed dashboards, climate guards, and comfort diagnostics.
+- Verisure indoor sensors (`group.verisure_environment`) bridge the gap between outdoor references and actual indoor climate measurements.
+
+**Forecast.Solar references:**
+- `sensor.energy_production_today` / `_tomorrow`, `sensor.power_production_now`, `sensor.power_highest_peak_time_today` / `_tomorrow`, and hourly energy estimates provide the PV outlook that future (Task 14+) scheduling logic will need.
+- These sensors are captured in documentation and verified in HA but deliberately unused until peak shaving, battery, and EV planners can consume them consistently.
+
+**Usage & next steps:**
+- Dashboards should pull outdoor temperature/humidity/wind from the HA1 template sensors, not directly from the weather integration, to keep units/sign conventions uniform.
+- Climate/comfort automations (including the AC section above) will start referencing `sensor.ha1_outdoor_temperature` once the guardrails are defined.
+- When Task 13+ introduces forecasting logic, reuse these Forecast.Solar entities instead of recreating ad-hoc forecasts.

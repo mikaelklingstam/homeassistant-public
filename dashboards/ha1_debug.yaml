@@ -1,0 +1,163 @@
+views:
+  - title: HA1 Debug
+    path: ha1_debug
+    icon: mdi:crosshairs-gps
+    panel: true
+
+    cards:
+      - type: vertical-stack
+        cards:
+
+          # ---------------------------------------------------------
+          # 🧱 HEADER
+          # ---------------------------------------------------------
+          - type: markdown
+            content: |
+              # 🧪 HA1.3 Debug Dashboard
+              **Live monitoring of Task 14 template sensors — powers, flows, flags & integrity checks**
+
+          # ---------------------------------------------------------
+          # 🔌 POWER LAYER
+          # ---------------------------------------------------------
+          - type: entities
+            title: 🔌 Power Layer (ha1_power_*)
+            show_header_toggle: false
+            entities:
+              - entity: sensor.ha1_power_grid_net
+                name: Grid Net (House-side)
+              - entity: sensor.ha1_power_grid_total_net
+                name: Grid Net (Total incl. EV)
+              - entity: sensor.ha1_power_solar_ac
+                name: Solar AC
+              - entity: sensor.ha1_power_battery_net
+                name: Battery Net (+charge / -discharge)
+              - entity: sensor.ha1_power_ev_charger
+                name: EV Charger Power
+              - entity: sensor.ha1_power_house_core
+                name: House Core (no EV)
+              - entity: sensor.ha1_power_house_total
+                name: House Total (incl. EV)
+
+          - type: history-graph
+            title: Power Trends (last 1 hour)
+            hours_to_show: 1
+            refresh_interval: 30
+            entities:
+              - sensor.ha1_power_grid_net
+              - sensor.ha1_power_grid_total_net
+              - sensor.ha1_power_solar_ac
+              - sensor.ha1_power_battery_net
+              - sensor.ha1_power_ev_charger
+              - sensor.ha1_power_house_core
+              - sensor.ha1_power_house_total
+
+          # ---------------------------------------------------------
+          # 🔀 FLOW LAYER
+          # ---------------------------------------------------------
+          - type: entities
+            title: 🔀 Flow Layer (ha1_flow_*)
+            entities:
+              - sensor.ha1_flow_grid_import
+              - sensor.ha1_flow_grid_export
+              - sensor.ha1_flow_solar_to_house
+              - sensor.ha1_flow_battery_to_house
+              - sensor.ha1_flow_solar_to_battery
+              - sensor.ha1_flow_solar_to_grid
+              - sensor.ha1_flow_grid_to_battery
+              - sensor.ha1_flow_ev_charging_power
+
+          - type: history-graph
+            title: Flow Trends (last 1 hour)
+            hours_to_show: 1
+            refresh_interval: 30
+            entities:
+              - sensor.ha1_flow_solar_to_house
+              - sensor.ha1_flow_battery_to_house
+              - sensor.ha1_flow_solar_to_battery
+              - sensor.ha1_flow_solar_to_grid
+              - sensor.ha1_flow_grid_import
+              - sensor.ha1_flow_grid_export
+
+          # ---------------------------------------------------------
+          # 🚦 BINARY FLAGS
+          # ---------------------------------------------------------
+          - type: glance
+            title: 🚦 Flags (ha1_flag_*) — live state
+            columns: 4
+            entities:
+              - entity: binary_sensor.ha1_flag_exporting_to_grid
+                name: Exporting
+              - entity: binary_sensor.ha1_flag_importing_from_grid
+                name: Importing
+              - entity: binary_sensor.ha1_flag_using_battery_for_house
+                name: Batt→House
+              - entity: binary_sensor.ha1_flag_charging_battery_from_grid
+                name: Grid→Batt
+              - entity: binary_sensor.ha1_flag_charging_battery_from_solar
+                name: Sol→Batt
+              - entity: binary_sensor.ha1_flag_ev_charging_now
+                name: EV Charging
+              - entity: binary_sensor.ha1_flag_ev_is_significant_load
+                name: EV Heavy
+  
+          # ---------------------------------------------------------
+          # 🧠 POWER BALANCE SANITY
+          # ---------------------------------------------------------
+          - type: markdown
+            content: |
+              ## 🧩 Power Balance Sanity
+              `HA1 Power Balance Error` should be close to 0 W.
+              Positive = more import/production than the modelled consumption.
+              Negative = more consumption than the modelled import/production.
+
+          - type: entities
+            title: Power Balance
+            show_header_toggle: false
+            entities:
+              - entity: sensor.ha1_power_balance_error
+                name: Balance Error (signed, W)
+              - entity: sensor.ha1_power_balance_error_abs
+                name: Balance Error |absolute| (W)
+              - entity: binary_sensor.ha1_flag_power_balance_bad
+                name: Balance Problem?
+
+          # ---------------------------------------------------------
+          # 🚗 EV Debug
+          # ---------------------------------------------------------
+          - type: entities
+            title: 🚗 EV Charging Diagnostics
+            entities:
+              - sensor.ha1_power_ev_charger
+              - sensor.ha1_flow_ev_charging_power
+              - binary_sensor.ha1_flag_ev_charging_now
+              - binary_sensor.ha1_flag_ev_is_significant_load
+
+          - type: history-graph
+            title: EV Charging (24h)
+            hours_to_show: 24
+            refresh_interval: 60
+            entities:
+              - sensor.ha1_power_ev_charger
+              - sensor.ha1_flow_ev_charging_power
+              - binary_sensor.ha1_flag_ev_charging_now
+
+          # ---------------------------------------------------------
+          # 🔋 BATTERY ANALYZER
+          # ---------------------------------------------------------
+          - type: entities
+            title: 🔋 Battery Flow Analyzer
+            entities:
+              - sensor.ha1_power_battery_net
+              - sensor.ha1_flow_battery_to_house
+              - sensor.ha1_flow_solar_to_battery
+              - sensor.ha1_flow_grid_to_battery
+
+          - type: history-graph
+            title: Battery Activity (24h)
+            hours_to_show: 24
+            refresh_interval: 60
+            entities:
+              - sensor.ha1_power_battery_net
+              - sensor.ha1_flow_battery_to_house
+              - sensor.ha1_flow_solar_to_battery
+              - sensor.ha1_flow_grid_to_battery

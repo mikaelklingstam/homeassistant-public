@@ -1,4 +1,4 @@
-Last updated: 2025-11-15 17:29 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-15 17:50 (CET) — Authorized by ChatGPT
 
 # ⚙️ Action Plan – HomeAssistant 1.3
 
@@ -52,6 +52,7 @@ Define a structured build order for implementing, testing, and refining the full
 2. Add Nordpool price planning sensors and any forecast-based helpers.
 3. Add peak-shaving metrics, rolling averages, and budget sensors.
 4. Validate all helpers are actively used by automations or dashboards.
+5. Use the `documentation/version 1.3/task14_template_sensor_framework_stub.md` checklist to drive Task 14 (template sensor framework & naming standard) so packages stay consistent.
 
 ---
 
@@ -100,6 +101,7 @@ Define a structured build order for implementing, testing, and refining the full
 3. Sync rulebook to GitHub `README.md` via script.
 4. Maintain public repo with sanitized docs and examples.
 5. Periodically review for unused helpers, automations, and entities.
+6. **Pre-Task 13 doc sync (2025-11-15 17:50 CET):** Rulebook, action plan, integrations/sensors, and functions/settings reviewed and timestamped so the baseline is ready for the next task.
 
 ---
 
@@ -117,3 +119,4 @@ Define a structured build order for implementing, testing, and refining the full
 - [x] Task 10 – Easee EV + ID.4 (done)
 - ✅ Task 11 – Integration #5: Verisure (alarm, locks, perimeter sensors, smart plugs, environment) added, grouped, and documented.
 - ✅ Task 12 – Integration #6: Weather & Environment (SMHI primary provider, Met.no backup, Forecast.Solar documented for PV planning).
+- [ ] Task 14 – Template Sensor Framework & Naming Standard (stub ready; implementation pending).

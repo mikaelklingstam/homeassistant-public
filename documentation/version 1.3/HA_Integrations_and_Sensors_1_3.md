@@ -1,4 +1,4 @@
-Last updated: 2025-11-15 17:32 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-15 17:50 (CET) — Authorized by ChatGPT
 
 # 🔌 Integrations & Sensors – HomeAssistant 1.3
 
