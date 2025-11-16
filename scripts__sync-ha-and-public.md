@@ -17,7 +17,7 @@ The script lives at `scripts/sync-ha-and-public.ps1`. No additional modules are 
 | `-ConflictPolicy` | Prompt/UsePrivate/KeepPublic/Abort | Prompt | Determines how to handle public-repo edits inside synced folders/files when syncing. `Prompt` asks per file, `UsePrivate` always overwrites with private copy, `KeepPublic` preserves existing public edits, `Abort` stops the sync if any conflicts exist. |
 
 ## Exported content
-When `-SyncPublic` is used, these paths are mirrored:
+When `-SyncPublic` is used, these private paths are exported (subject to secret scanning):
 - `documentation/`
 - `dashboards/`
 - `packages/`
@@ -25,6 +25,15 @@ When `-SyncPublic` is used, these paths are mirrored:
 - `automations.yaml`
 - `scripts.yaml`
 - `README.md` (generated automatically if the public repo does not have one)
+
+The public repo cannot expose subfolders, so every exported file is flattened into the repository root using double underscores between folder segments. Example:
+
+```
+documentation/version 1.3/Functions_And_Settings_1_3.md
+   → documentation__version_1.3__Functions_And_Settings_1_3.md
+```
+
+A manifest file named `.sync-public-index.json` is written at the root of the public repo so the script knows which flattened files it manages between runs.
 
 ## Usage Examples
 ### Basic private sync only

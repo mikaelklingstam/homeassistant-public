@@ -78,9 +78,11 @@ function In-SyncScope {
   param(
     [string]$RelativePath,
     [string[]]$Folders,
-    [string[]]$Files
+    [string[]]$Files,
+    [string[]]$ExplicitPaths
   )
   $path = $RelativePath -replace "\\","/"
+  if ($ExplicitPaths -and $ExplicitPaths -contains $path) { return $true }
   foreach ($folder in $Folders) {
     $folderNorm = $folder -replace "\\","/"
     if ($path -eq $folderNorm -or $path.StartsWith("$folderNorm/")) { return $true }
@@ -188,6 +190,43 @@ function Get-SyncFileCandidates {
     & $addCandidate $filePath
   }
   return $results
+}
+
+function Get-FlattenedExportName {
+  param([string]$RelativePath)
+  if ([string]::IsNullOrWhiteSpace($RelativePath)) { return $RelativePath }
+  $normalized = $RelativePath -replace "\\","/"
+  return $normalized -replace "/", "__"
+}
+
+function Load-PublicManifest {
+  param([string]$ManifestPath)
+  if (-not $ManifestPath -or -not (Test-Path -LiteralPath $ManifestPath)) { return @() }
+  try {
+    $raw = Get-Content -LiteralPath $ManifestPath -Raw -ErrorAction Stop
+    if ([string]::IsNullOrWhiteSpace($raw)) { return @() }
+    $data = $raw | ConvertFrom-Json -Depth 10
+    if ($null -eq $data) { return @() }
+    if ($data -is [System.Collections.IEnumerable] -and -not ($data -is [System.Collections.IDictionary])) {
+      return $data
+    }
+    if ($data.PSObject.Properties.Name -contains "items") {
+      return $data.items
+    }
+    return $data
+  } catch {
+    Write-Warning "[sync-ha-public] Unable to parse manifest '$ManifestPath': $_"
+    return @()
+  }
+}
+
+function Save-PublicManifest {
+  param(
+    [string]$ManifestPath,
+    [object[]]$Items
+  )
+  $json = $Items | ConvertTo-Json -Depth 5
+  Set-Content -LiteralPath $ManifestPath -Value $json -Encoding UTF8
 }
 
 function Invoke-SecretScan {
@@ -362,6 +401,19 @@ Invoke-SecretScan -RootPath $homeRootResolved `
   -ForbiddenNames $ForbiddenFileNames `
   -ForbiddenContentRegexes $script:ForbiddenContentRegexes
 
+$syncCandidates = Get-SyncFileCandidates -RootPath $homeRootResolved `
+  -Folders $foldersToSync `
+  -Files $filesToSync
+$flattenedMap = @{}
+foreach ($candidate in $syncCandidates) {
+  $flatName = Get-FlattenedExportName -RelativePath $candidate.RelativePath
+  if ([string]::IsNullOrWhiteSpace($flatName)) { continue }
+  if ($flattenedMap.ContainsKey($flatName)) {
+    throw "❌ Flattened export collision detected for '$flatName' (source paths '${($flattenedMap[$flatName].RelativePath)}' and '$($candidate.RelativePath)'). Adjust naming or structure."
+  }
+  $flattenedMap[$flatName] = $candidate
+}
+
 # ---------- PUBLIC REPO (safety first) ----------
 if (-not $publicRootResolved) {
   $publicRootResolved = Resolve-FirstExisting $publicCandidates
@@ -382,6 +434,20 @@ try {
     throw "⚠️ Pull failed or diverged. Resolve manually before running again."
   }
 
+  $manifestPath = Join-Path $publicRootResolved ".sync-public-index.json"
+  $previousManifest = Load-PublicManifest -ManifestPath $manifestPath
+  $previousManaged = @()
+  if ($previousManifest) {
+    foreach ($entry in $previousManifest) {
+      if ($entry.flattened) {
+        $previousManaged += ($entry.flattened -replace "\\","/")
+      }
+    }
+  }
+  $managedScopePaths = @($previousManaged + $flattenedMap.Keys) |
+    Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+    Sort-Object -Unique
+
   $preStatus = Git status --porcelain
   $preserveFiles = @()
   $preserveDeletions = @()
@@ -397,7 +463,7 @@ try {
       if ($renameMatch.Success) {
         $rawPath = $renameMatch.Groups[1].Value.Trim()
       }
-      $scopeMatch = In-SyncScope -RelativePath $rawPath -Folders $foldersToSync -Files $filesToSync
+      $scopeMatch = In-SyncScope -RelativePath $rawPath -Folders $foldersToSync -Files $filesToSync -ExplicitPaths $managedScopePaths
       if (-not $scopeMatch) {
         $unrelatedChanges += $rawPath
         continue
@@ -420,57 +486,69 @@ try {
     }
   }
 
-  # ---------- SYNC FOLDERS ----------
-  Write-Host "`n🔁 Syncing folders from $homeRootResolved → $publicRootResolved"
-  $preserveRoot = $null
-  if ($preserveFiles.Count -gt 0) {
-    $preserveRoot = Join-Path $publicRootResolved ".sync-preserve"
-    if (Test-Path $preserveRoot) { Remove-Item $preserveRoot -Recurse -Force }
-    foreach ($rel in $preserveFiles) {
-      $sourceKeep = Join-Path $publicRootResolved $rel
-      if (-not (Test-Path $sourceKeep)) { continue }
-      $destKeep = Join-Path $preserveRoot $rel
-      $destDir = Split-Path $destKeep -Parent
-      if ($destDir) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
-      Copy-Item -LiteralPath $sourceKeep -Destination $destKeep -Force
+  # ---------- FLATTENED SYNC ----------
+  Write-Host "`n🔁 Syncing flattened files from $homeRootResolved → $publicRootResolved"
+  foreach ($legacyFolder in $foldersToSync) {
+    $legacyPath = Join-Path $publicRootResolved $legacyFolder
+    if (Test-Path $legacyPath) {
+      Write-Host "🧹 Removing legacy folder '$legacyFolder' from public repo"
+      Remove-Item -LiteralPath $legacyPath -Recurse -Force -ErrorAction Stop
     }
   }
 
-  foreach ($folder in $foldersToSync) {
-    $src = Join-Path $homeRootResolved $folder
-    $dst = Join-Path $publicRootResolved $folder
-    if (-not (Test-Path $src)) { Write-Warning "Skipping '$folder' (missing: $src)"; continue }
-    Write-Host "🧹 Clean: $dst"
-    if (Test-Path $dst) { Remove-Item $dst -Recurse -Force -ErrorAction Stop }
-    Write-Host "📁 Copy $src → $dst"
-    Copy-Item -LiteralPath $src -Destination $dst -Recurse -Force -Container -ErrorAction Stop
+  $preserveFilesSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+  foreach ($rel in ($preserveFiles | Select-Object -Unique)) {
+    if ($rel) { $null = $preserveFilesSet.Add($rel -replace "\\","/") }
+  }
+  $preserveDeleteSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+  foreach ($rel in ($preserveDeletions | Select-Object -Unique)) {
+    if ($rel) { $null = $preserveDeleteSet.Add($rel -replace "\\","/") }
   }
 
-  if ($preserveRoot) {
-    foreach ($rel in $preserveFiles) {
-      $savedPath = Join-Path $preserveRoot $rel
-      if (-not (Test-Path $savedPath)) { continue }
-      $targetPath = Join-Path $publicRootResolved $rel
-      $targetDir = Split-Path $targetPath -Parent
-      if ($targetDir) { New-Item -ItemType Directory -Path $targetDir -Force | Out-Null }
-      Copy-Item -LiteralPath $savedPath -Destination $targetPath -Force
+  foreach ($stale in $previousManaged) {
+    if ($flattenedMap.ContainsKey($stale)) { continue }
+    if ($preserveFilesSet.Contains($stale)) { continue }
+    if ($preserveDeleteSet.Contains($stale)) { continue }
+    $stalePath = Join-Path $publicRootResolved $stale
+    if (Test-Path $stalePath) {
+      Write-Host "🗑️ Removing stale export '$stale'"
+      Remove-Item -LiteralPath $stalePath -Force -ErrorAction Stop
     }
-    Remove-Item $preserveRoot -Recurse -Force
   }
 
-  foreach ($rel in $preserveDeletions | Select-Object -Unique) {
-    $targetDel = Join-Path $publicRootResolved $rel
-    if (Test-Path $targetDel) {
-      Remove-Item $targetDel -Recurse -Force
+  foreach ($kvp in ($flattenedMap.GetEnumerator() | Sort-Object Key)) {
+    $targetName = $kvp.Key
+    $sourceMeta = $kvp.Value
+    $targetPath = Join-Path $publicRootResolved $targetName
+    if ($preserveDeleteSet.Contains($targetName)) {
+      if (Test-Path $targetPath) {
+        Write-Host "🗑️ Respecting deletion for '$targetName'"
+        Remove-Item -LiteralPath $targetPath -Force -ErrorAction Stop
+      }
+      continue
+    }
+    if ($preserveFilesSet.Contains($targetName)) {
+      Write-Host "🔒 Preserving public edits for '$targetName'"
+      continue
+    }
+    $targetDir = Split-Path $targetPath -Parent
+    if ($targetDir -and -not (Test-Path -LiteralPath $targetDir)) {
+      New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+    }
+    Write-Host "📄 Export $($sourceMeta.RelativePath) → $targetName"
+    Copy-Item -LiteralPath $sourceMeta.FullPath -Destination $targetPath -Force -ErrorAction Stop
+  }
+
+  $manifestTimestamp = (Get-Date).ToString("o")
+  $manifestItems = @()
+  foreach ($kvp in ($flattenedMap.GetEnumerator() | Sort-Object Key)) {
+    $manifestItems += [pscustomobject]@{
+      flattened = $kvp.Key
+      original  = $kvp.Value.RelativePath
+      synced_at = $manifestTimestamp
     }
   }
-  foreach ($file in $filesToSync) {
-    $srcFile = Join-Path $homeRootResolved $file
-    $dstFile = Join-Path $publicRootResolved $file
-    if (-not (Test-Path $srcFile)) { Write-Warning "Skipping file '$file' (missing: $srcFile)"; continue }
-    Write-Host "📄 Copy file $srcFile → $dstFile"
-    Copy-Item -LiteralPath $srcFile -Destination $dstFile -Force -ErrorAction Stop
-  }
+  Save-PublicManifest -ManifestPath $manifestPath -Items $manifestItems
 
   # Ensure README exists
   $readmePath = Join-Path $publicRootResolved "README.md"
@@ -478,14 +556,8 @@ try {
 @"
 # HomeAssistant Public Export
 
-This repository contains a public mirror of selected folders from my private Home Assistant configuration:
-
-- \`documentation\`
-- \`dashboards\`
-- \`packages\`
-- \`scripts\`
-- \`automations.yaml\`
-- \`scripts.yaml\`
+This repository contains a flattened mirror of selected folders from my private Home Assistant configuration.
+All exported files are stored at the repository root using names such as `documentation__version_1.3__Functions_And_Settings_1_3.md`.
 
 The private configuration (including secrets) remains in a separate private repository.
 "@ | Set-Content $readmePath -Encoding UTF8
@@ -493,11 +565,11 @@ The private configuration (including secrets) remains in a separate private repo
 
   Invoke-SecretScan -RootPath $publicRootResolved `
     -PhaseLabel "public post-sync" `
-    -Folders $foldersToSync `
-    -Files $filesToSync `
+    -Folders @() `
+    -Files @() `
     -ForbiddenNames $ForbiddenFileNames `
     -ForbiddenContentRegexes $script:ForbiddenContentRegexes `
-    -AdditionalRelativeFiles @("README.md")
+    -AdditionalRelativeFiles (@($flattenedMap.Keys) + @("README.md"))
 
   # ---------- COMMIT PUBLIC ----------
   Write-Host "`n🧩 Staging public changes..."
