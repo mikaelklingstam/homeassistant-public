@@ -152,6 +152,17 @@ These scripts wrap Easee action commands and dynamic limit services:
 
 All EV operations are funneled through these HA1 scripts so that future optimization logic changes only in one place.
 
+### Task 15 – Extended Power Metrics & Rolling Averages
+
+- Combined load sensors now expose canonical W signals in kW for dashboards and planning logic:  
+  - `sensor.ha1_power_consumption_total_kw` → total house consumption including EV load.  
+  - `sensor.ha1_power_consumption_core_kw` → core load excluding the EV charger.  
+  - `sensor.ha1_power_net_load_kw` and `sensor.ha1_power_net_load_abs_kw` → signed and absolute net grid load in kW.  
+  - Legacy `sensor.home_load` is now a thin wrapper around `sensor.ha1_power_house_total`, so old dashboards automatically use the HA1 math.
+- Rolling averages smooth noisy grid measurements using the `statistics` platform:  
+  - Net grid power (`sensor.ha1_power_grid_total_net`) has both 1‑min and 5‑min averages for control logic.  
+  - Import/export flow sensors (`sensor.ha1_flow_grid_import`, `sensor.ha1_flow_grid_export`) each gain 1‑min and 5‑min means for dashboards and guard conditions.
+
 ---
 
 ## 5. Verisure Alarm, Locks & Smart Plugs (Task 11)

@@ -397,6 +397,24 @@ All `ha1_raw_*` templates handle kW→W conversion, noise filtering, and sign no
 | `binary_sensor.ha1_flag_power_balance_bad` | True if |model balance error| > 500 W. |
 | `binary_sensor.ha1_flag_grid_meter_mismatch` | True if |Huawei–model mismatch| > 4000 W. |
 
+#### Extended power metrics (Task 15)
+
+| Sensor | Meaning |
+|--------|---------|
+| `sensor.ha1_power_consumption_total_kw` | Total house consumption incl. EV load in kW (wrapper over `sensor.ha1_power_house_total`). |
+| `sensor.ha1_power_consumption_core_kw` | Core house consumption without the EV charger, exposed in kW. |
+| `sensor.ha1_power_net_load_kw` / `_abs_kw` | Signed and absolute net grid load (kW) for dashboards/guards. |
+| `sensor.home_load` | Back-compat alias that now mirrors the HA1 house-load math (W). |
+
+#### Rolling averages / smoothing sensors
+
+| Sensor | Source | Window | Purpose |
+|--------|--------|--------|---------|
+| `sensor.ha1_power_grid_net_avg_1m` | `sensor.ha1_power_grid_total_net` | 1 min | Stabilize fast automations reacting to net grid power swings. |
+| `sensor.ha1_power_grid_net_avg_5m` | `sensor.ha1_power_grid_total_net` | 5 min | Planning/peak tracking that needs slower trends. |
+| `sensor.ha1_flow_grid_import_avg_1m` / `_5m` | `sensor.ha1_flow_grid_import` | 1 / 5 min | Smooth import-only flows for dashboards and fuse guards. |
+| `sensor.ha1_flow_grid_export_avg_1m` / `_5m` | `sensor.ha1_flow_grid_export` | 1 / 5 min | Smooth export-only flows for export caps + diagnostics. |
+
 This framework defines the "brain" power signals used by automations and visual flows in HA 1.3.
 
 This section will list:

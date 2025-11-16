@@ -1,0 +1,128 @@
+# packages/energy_metrics_1_3.yaml
+#
+# Task 15 – Extended HA1 power metrics & rolling averages
+# - Converts canonical W-based sensors into kW summaries
+# - Adds smoothing via statistics-based rolling averages
+# - Hosts compatibility aliases (e.g. legacy Home Load)
+
+template:
+  - sensor:
+      - name: "HA1 Power Consumption Total kW"
+        unique_id: ha1_power_consumption_total_kw
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:home-lightning-bolt"
+        availability: >-
+          {{ not states('sensor.ha1_power_house_total') in ['unknown', 'unavailable', ''] }}
+        state: >
+          {% set w = states('sensor.ha1_power_house_total') | float(0) %}
+          {{ (w / 1000) | round(3) }}
+
+      - name: "HA1 Power Consumption Core kW"
+        unique_id: ha1_power_consumption_core_kw
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:home-lightning-bolt"
+        availability: >-
+          {{ not states('sensor.ha1_power_house_core') in ['unknown', 'unavailable', ''] }}
+        state: >
+          {% set w = states('sensor.ha1_power_house_core') | float(0) %}
+          {{ (w / 1000) | round(3) }}
+
+      - name: "HA1 Power Net Load kW"
+        unique_id: ha1_power_net_load_kw
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:transmission-tower"
+        availability: >-
+          {{ not states('sensor.ha1_power_grid_total_net') in ['unknown', 'unavailable', ''] }}
+        state: >
+          {% set w = states('sensor.ha1_power_grid_total_net') | float(0) %}
+          {{ (w / 1000) | round(3) }}
+
+      - name: "HA1 Power Net Load Abs kW"
+        unique_id: ha1_power_net_load_abs_kw
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:transmission-tower"
+        availability: >-
+          {{ not states('sensor.ha1_power_grid_total_net') in ['unknown', 'unavailable', ''] }}
+        state: >
+          {% set w = states('sensor.ha1_power_grid_total_net') | float(0) %}
+          {{ ((w / 1000) | abs) | round(3) }}
+
+      - name: "Home Load"
+        unique_id: home_load_w
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:home-lightning-bolt"
+        availability: >-
+          {{ not states('sensor.ha1_power_house_total') in ['unknown', 'unavailable', ''] }}
+        state: >
+          {% set h = states('sensor.ha1_power_house_total') | float(0) %}
+          {% if h < 0 %}
+            0
+          {% else %}
+            {{ h | round(0) }}
+          {% endif %}
+
+sensor:
+  # Rolling averages / smoothing for grid power signals
+  - platform: statistics
+    name: "HA1 Power Grid Net Avg 1m"
+    entity_id: sensor.ha1_power_grid_total_net
+    state_characteristic: mean
+    sampling_size: 120
+    max_age:
+      minutes: 1
+    precision: 1
+
+  - platform: statistics
+    name: "HA1 Power Grid Net Avg 5m"
+    entity_id: sensor.ha1_power_grid_total_net
+    state_characteristic: mean
+    sampling_size: 600
+    max_age:
+      minutes: 5
+    precision: 1
+
+  - platform: statistics
+    name: "HA1 Flow Grid Import Avg 1m"
+    entity_id: sensor.ha1_flow_grid_import
+    state_characteristic: mean
+    sampling_size: 120
+    max_age:
+      minutes: 1
+    precision: 1
+
+  - platform: statistics
+    name: "HA1 Flow Grid Import Avg 5m"
+    entity_id: sensor.ha1_flow_grid_import
+    state_characteristic: mean
+    sampling_size: 600
+    max_age:
+      minutes: 5
+    precision: 1
+
+  - platform: statistics
+    name: "HA1 Flow Grid Export Avg 1m"
+    entity_id: sensor.ha1_flow_grid_export
+    state_characteristic: mean
+    sampling_size: 120
+    max_age:
+      minutes: 1
+    precision: 1
+
+  - platform: statistics
+    name: "HA1 Flow Grid Export Avg 5m"
+    entity_id: sensor.ha1_flow_grid_export
+    state_characteristic: mean
+    sampling_size: 600
+    max_age:
+      minutes: 5
+    precision: 1
