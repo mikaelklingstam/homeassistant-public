@@ -1,0 +1,137 @@
+# --- HomeAssistant 1.3 – Helpers (Inputs) ---
+# All HA1 helper entities (sliders, toggles, modes) for energy logic.
+
+# --- HA 1.3 Helpers – Global / Master Control ---
+
+input_boolean:
+  ha1_automation_master_enabled:
+    name: "HA1 – Master enable for energy automations"
+    icon: mdi:toggle-switch
+
+  # --- HA 1.3 Helpers – Peak Shaving ---
+  ha1_peak_shaving_enabled:
+    name: "HA1 – Peak shaving enabled"
+    icon: mdi:chart-bell-curve
+
+  # --- HA 1.3 Helpers – Battery ---
+  ha1_battery_allow_grid_charge:
+    name: "HA1 – Battery: allow grid charging"
+    icon: mdi:battery-charging
+
+  ha1_battery_peak_support_enabled:
+    name: "HA1 – Battery: peak support enabled"
+    icon: mdi:battery-heart-variant
+
+  # --- HA 1.3 Helpers – EV Charging ---
+  ha1_ev_obey_peak_limit:
+    name: "HA1 – EV: obey peak limit"
+    icon: mdi:ev-station
+
+  ha1_force_ev_charge_now:
+    name: "HA1 – EV: force charge now"
+    icon: mdi:flash
+
+  # --- HA 1.3 Helpers – Comfort & Overrides ---
+  ha1_comfort_override_enabled:
+    name: "HA1 – Comfort override enabled"
+    icon: mdi:account-heart
+
+  ha1_allow_high_price_heating:
+    name: "HA1 – Allow high-price heating"
+    icon: mdi:fire
+
+  ha1_force_battery_charge_from_grid_now:
+    name: "HA1 – Battery: force grid charge now"
+    icon: mdi:flash-auto
+
+  # --- HA 1.3 Helpers – Debug & Diagnostics ---
+  ha1_debug_energy_logic:
+    name: "HA1 – Debug: energy logic"
+    icon: mdi:bug
+
+  ha1_debug_notifications_enabled:
+    name: "HA1 – Debug: notifications enabled"
+    icon: mdi:message-alert
+
+  ha1_debug_freeze_optimizers:
+    name: "HA1 – Debug: freeze optimizers"
+    icon: mdi:snowflake
+
+input_number:
+  # --- HA 1.3 Helpers – Peak Shaving ---
+  ha1_peak_limit_kw:
+    name: "HA1 – Peak limit (kW)"
+    min: 3
+    max: 25
+    step: 0.5
+    unit_of_measurement: "kW"
+    mode: slider
+    icon: mdi:flash-alert
+
+  ha1_peak_warning_kw:
+    name: "HA1 – Peak warning (kW)"
+    min: 0
+    max: 25
+    step: 0.5
+    unit_of_measurement: "kW"
+    mode: slider
+    icon: mdi:flash-outline
+
+  # --- HA 1.3 Helpers – Battery ---
+  ha1_battery_min_soc_normal:
+    name: "HA1 – Battery min SOC (normal)"
+    min: 5
+    max: 90
+    step: 1
+    unit_of_measurement: "%"
+    mode: slider
+    icon: mdi:battery-70
+
+  ha1_battery_min_soc_peak:
+    name: "HA1 – Battery min SOC (peak)"
+    min: 5
+    max: 90
+    step: 1
+    unit_of_measurement: "%"
+    mode: slider
+    icon: mdi:battery-80
+
+  ha1_battery_max_soc_target:
+    name: "HA1 – Battery max SOC target"
+    min: 50
+    max: 100
+    step: 1
+    unit_of_measurement: "%"
+    mode: slider
+    icon: mdi:battery-90
+
+  ha1_battery_grid_charge_max_kw:
+    name: "HA1 – Battery: max grid charge (kW)"
+    min: 0
+    max: 2.5
+    step: 0.1
+    unit_of_measurement: "kW"
+    mode: slider
+    icon: mdi:transmission-tower-export
+
+  # --- HA 1.3 Helpers – EV Charging ---
+  ha1_ev_max_charging_power_kw:
+    name: "HA1 – EV max charging power (kW)"
+    min: 0
+    max: 16
+    step: 0.5
+    unit_of_measurement: "kW"
+    mode: slider
+    icon: mdi:ev-plug-type2
+
+input_select:
+  # --- HA 1.3 Helpers – EV Charging ---
+  ha1_ev_charging_mode:
+    name: "HA1 – EV charging mode"
+    options:
+      - "off"
+      - "cheap_only"
+      - "balanced"
+      - "aggressive"
+      - "manual"
+    icon: mdi:ev-station
