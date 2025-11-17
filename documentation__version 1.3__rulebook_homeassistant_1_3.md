@@ -1,4 +1,4 @@
-Last updated: 2025-11-16 22:00 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-17 01:30 (CET) — Authorized by ChatGPT
 
 # 🧭 HomeAssistant 1.3 – Rulebook
 
@@ -86,6 +86,74 @@ Each layer will be documented with:
 - Grid power: `+` = importing from grid, `-` = exporting to grid (kW).
 - Huawei battery power: `+` = charging, `-` = discharging (kW).
 - All HA1 power sensors report **kW**; HA1 energy sensors report **kWh**.
+
+### Easee EV Charger & Equaliser Control (1.3)
+
+The Easee ecosystem in HomeAssistant 1.3 is split into two distinct control layers:
+
+1. **Equaliser / Circuit level**
+   - The Easee Equaliser supervises the main fuse (or a dedicated sub-fuse group).
+   - It manages the **circuit dynamic limit** – the maximum current that all connected chargers on that circuit are allowed to draw in total.
+   - This corresponds to the Easee API / HA service `easee.set_circuit_dynamic_limit` (and its per-phase variants).
+   - The Equaliser ensures the configured limit and fuse size are respected, regardless of what individual chargers try to draw.
+
+2. **Charger level (ID.4 charger)**
+   - The Easee charger itself controls the actual charging current for the EV.
+   - It obeys a **charger dynamic limit** – a per-charger maximum current.
+   - This corresponds to the service `easee.set_charger_dynamic_limit`.
+   - The charger can never exceed:
+     1) the circuit limit from the Equaliser, and
+     2) its own charger dynamic limit.
+
+#### Hierarchy
+
+The practical hierarchy in 1.3 is:
+
+> **Grid / Main fuse → Equaliser circuit limit → Charger dynamic limit → Actual EV charging current**
+
+- The Equaliser/circuit limit is the **safety ceiling** for the entire fuse group.
+- The charger limit is the **strategy ceiling** for that specific charger within the circuit.
+
+#### Design rules for 1.3
+
+1. **Circuit dynamic limit = safety and fuse protection**
+   - `easee.set_circuit_dynamic_limit` is treated as a **protection and safety control**, not a high-frequency optimization knob.
+   - It may be adjusted by automations only when necessary to:
+     - Respect main-fuse comfort margins.
+     - Prevent overload when total house load is high.
+     - Provide a “last line of defence” if other optimizations fail.
+   - The circuit limit should change relatively rarely and conservatively.
+
+2. **Charger dynamic limit = optimization knob**
+   - `easee.set_charger_dynamic_limit` is the **primary control variable** for EV charging strategy.
+   - It is allowed to change more frequently (within reasonable limits) based on:
+     - Nordpool price levels and cheapest hours.
+     - Solar production vs house load.
+     - Huawei battery SOC and charge/discharge strategy.
+     - Peak-shaving constraints defined in the 1.3 rulebook.
+   - Examples:
+     - Cheapest hours → higher charger limit (e.g. 16–20 A).
+     - Expensive hours → reduced limit (e.g. 6–8 A) or complete stop.
+     - High solar excess and good battery SOC → increase limit to absorb surplus.
+     - High grid import or low battery SOC → reduce or pause EV charging.
+
+3. **Schedules and overrides**
+   - The Easee schedule (configured in the app) is treated as a **baseline behaviour**.
+   - HomeAssistant 1.3 may override the schedule when necessary:
+     - Using the charger enable/disable entity (e.g. `switch.ehxdyl83_charger_enabled`) to start/stop charging.
+     - Using the override button (e.g. `button.ehxdyl83_override_schedule`) when an immediate start is required outside the normal schedule.
+   - The rulebook logic layer must respect that:
+     - **Equaliser circuit limit** always has the final say on how much current is available.
+     - **EV optimization logic** (price, solar, battery, peaks) operates via the charger dynamic limit and start/stop decisions.
+
+4. **Integration with the HA1.3 energy model**
+   - Template sensors in the HA 1.3 namespace (`sensor.ha1_*`) are responsible for:
+     - Representing PV → Grid, Battery → House, Grid → House/EV, and peak tracking.
+     - Tracking relevant cost and comfort constraints (Nordpool windows, peak limits, minimum SOC).
+   - EV charging strategies must:
+     - Always stay within the Equaliser’s circuit limit and main-fuse assumptions.
+     - Use charger dynamic limit and start/stop as the primary tools to implement the optimization logic defined in this rulebook.
+   - This ensures that the Easee Equaliser continues doing its built-in load balancing job, while the 1.3 energy logic adds an extra optimization layer on top without fighting the hardware.
 
 ---
 

@@ -71,6 +71,98 @@ template:
             {{ h | round(0) }}
           {% endif %}
 
+      # --------------------------------------------------
+      # EV share and peak planning meta sensors
+      # --------------------------------------------------
+
+      - name: "HA1 EV Share of House Load"
+        unique_id: ha1_ev_share_of_house_load_pct
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: "mdi:car-electric"
+        availability: >-
+          {{ not states('sensor.ha1_power_house_total') in ['unknown', 'unavailable', ''] }}
+        state: >
+          {% set house_w = states('sensor.ha1_power_house_total') | float(0) %}
+          {% set ev_w    = states('sensor.ha1_power_ev_charger') | float(0) %}
+          {% if house_w | abs < 1 %}
+            0
+          {% else %}
+            {{ (100 * ev_w / house_w) | round(1) }}
+          {% endif %}
+
+      - name: "HA1 Effective Peak Power Reference kW"
+        unique_id: ha1_effective_peak_power_reference_kw
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:flash-alert"
+        availability: >-
+          true
+        state: >
+          {#
+            Future intent:
+            - Base on input_number.ha1_peak_limit_kw
+            - Apply 0.5 factor during 22:00–06:00 per rulebook
+            For now we just expose the helper value directly
+            (or 0 if it does not exist yet).
+          #}
+          {% set peak_str = states('input_number.ha1_peak_limit_kw') %}
+          {% if peak_str in ['unknown', 'unavailable', ''] %}
+            0
+          {% else %}
+            {{ peak_str | float(0) | round(3) }}
+          {% endif %}
+
+      - name: "HA1 Peak Margin kW"
+        unique_id: ha1_peak_margin_kw
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:chart-line"
+        availability: >-
+          {{ not states('sensor.ha1_power_consumption_total_kw') in ['unknown', 'unavailable', ''] }}
+        state: >
+          {% set load_kw = states('sensor.ha1_power_consumption_total_kw') | float(0) %}
+          {% set limit_kw = states('sensor.ha1_effective_peak_power_reference_kw') | float(0) %}
+          {{ (load_kw - limit_kw) | round(3) }}
+
+      - name: "HA1 Battery Grid Charge Limit kW"
+        unique_id: ha1_batt_grid_charge_limit_kw
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:transmission-tower-export"
+        availability: >-
+          {{ not states('number.battery_grid_charge_maximum_power') in ['unknown','unavailable',''] }}
+        state: >
+          {% set w = states('number.battery_grid_charge_maximum_power') | float(0) %}
+          {% set kw = (w / 1000) | float(0) %}
+          {# Clamp to physical grid-charge limit 2.5 kW #}
+          {% if kw < 0 %}
+            0
+          {% elif kw > 2.5 %}
+            2.5
+          {% else %}
+            {{ kw | round(2) }}
+          {% endif %}
+
+      - name: "HA1 Battery Total Charge Limit kW"
+        unique_id: ha1_batt_total_charge_limit_kw
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:battery-charging-high"
+        availability: >-
+          {{ not states('number.battery_maximum_charging_power') in ['unknown','unavailable',''] }}
+        state: >
+          {% set w = states('number.battery_maximum_charging_power') | float(0) %}
+          {% if w <= 0 %}
+            0
+          {% else %}
+            {{ (w / 1000) | round(2) }}
+          {% endif %}
+
 sensor:
   # Rolling averages / smoothing for grid power signals
   - platform: statistics
@@ -125,4 +217,23 @@ sensor:
     sampling_size: 600
     max_age:
       minutes: 5
+    precision: 1
+
+  # Rolling averages for house and EV loads (still in W)
+  - platform: statistics
+    name: "HA1 Power House Total Avg 1m"
+    entity_id: sensor.ha1_power_house_total
+    state_characteristic: mean
+    sampling_size: 120
+    max_age:
+      minutes: 1
+    precision: 1
+
+  - platform: statistics
+    name: "HA1 Power EV Charger Avg 1m"
+    entity_id: sensor.ha1_power_ev_charger
+    state_characteristic: mean
+    sampling_size: 120
+    max_age:
+      minutes: 1
     precision: 1

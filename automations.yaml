@@ -680,20 +680,6 @@
     target:
       entity_id: input_boolean.jeannine_home
   mode: single
-- id: '1680126075543'
-  alias: Charge start in 4 hrs
-  description: ''
-  trigger: []
-  condition: []
-  action:
-  - delay:
-      hours: 4
-      minutes: 0
-      seconds: 0
-      milliseconds: 0
-  - service: script.charge_battery_forced
-    data: {}
-  mode: single
 - id: '1681151927165'
   alias: Message to cheap
   description: ''
@@ -1053,19 +1039,62 @@
     trigger: device
   conditions: []
   actions:
+  - alias: Attempt Easee auto-authorization when car is home
+    repeat:
+      count: 4
+      sequence:
+      - choose:
+        - conditions:
+          - condition: state
+            entity_id: device_tracker.id4pro_position
+            state: home
+          - condition: state
+            entity_id: binary_sensor.id4pro_charging_cable_connected
+            state: 'on'
+          sequence:
+          - action: easee.action_command
+            metadata: {}
+            data:
+              device_id: f0e8850e90d3ff8ce4e4c2870ec4de6d
+              action_command: start
+          - stop: EV authorization completed automatically
+      - choose:
+        - conditions:
+          - condition: template
+            value_template: '{{ repeat.index < repeat.count }}'
+          sequence:
+          - delay:
+              hours: 0
+              minutes: 5
+              seconds: 0
+              milliseconds: 0
+  - condition: device
+    device_id: f0e8850e90d3ff8ce4e4c2870ec4de6d
+    domain: easee
+    entity_id: sensor.ehxdyl83_status
+    type: awaiting_authorization
   - action: input_boolean.turn_on
     metadata: {}
     data: {}
     target:
       entity_id: input_boolean.charge_reminder
-  - delay:
-      hours: 0
-      minutes: 15
-      seconds: 0
-      milliseconds: 0
+  - alias: Initial reminder message
+    action: tts.speak
+    metadata: {}
+    data:
+      cache: true
+      message: Don't forget to confirm in Easee app for smart charging of the car
+      media_player_entity_id: media_player.hallway
+    target:
+      entity_id: tts.piper
   - alias: Repeat every 15 min while "EHXDYL83 Status is waiting for authorization"
     repeat:
       sequence:
+      - delay:
+          hours: 0
+          minutes: 15
+          seconds: 0
+          milliseconds: 0
       - action: tts.speak
         metadata: {}
         data:
@@ -1075,11 +1104,6 @@
           media_player_entity_id: media_player.hallway
         target:
           entity_id: tts.piper
-      - delay:
-          hours: 0
-          minutes: 15
-          seconds: 0
-          milliseconds: 0
       while:
       - condition: device
         device_id: f0e8850e90d3ff8ce4e4c2870ec4de6d

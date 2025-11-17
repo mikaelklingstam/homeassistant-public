@@ -1,4 +1,4 @@
-Last updated: 2025-11-16 22:00 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-17 01:06 (CET) — Authorized by ChatGPT
 
 # ⚙️ Functions & Settings – HomeAssistant 1.3
 
@@ -162,6 +162,81 @@ All EV operations are funneled through these HA1 scripts so that future optimiza
 - Rolling averages smooth noisy grid measurements using the `statistics` platform:  
   - Net grid power (`sensor.ha1_power_grid_total_net`) has both 1‑min and 5‑min averages for control logic.  
   - Import/export flow sensors (`sensor.ha1_flow_grid_import`, `sensor.ha1_flow_grid_export`) each gain 1‑min and 5‑min means for dashboards and guard conditions.
+
+## HA1 Extended Template Metrics (Task 15)
+
+These sensors form the “second layer” of HomeAssistant 1.3’s energy-logic model.  
+They provide planning-friendly abstractions, grid/battery limits, smoothed values, and stability signals used by peak control, export handling, EV logic, and dashboards.
+
+All `ha1_power_*` sensors use **W** unless the name explicitly ends with `_kw`.
+
+---
+
+### 🔷 Meta Sensors (Derived kW, %)  
+
+| Entity ID | Description | Unit | Based On |
+|----------|-------------|------|----------|
+| **sensor.ha1_ev_share_of_house_load_pct** | EV charging as a percentage of total household load. Useful for detecting when EV dominates consumption. | % | `ha1_power_ev_charger`, `ha1_power_house_total` |
+| **sensor.ha1_effective_peak_power_reference_kw** | Effective peak limit currently enforced by the system. Placeholder until Task 16 introduces helper-driven rule (incl. 22–06 0.5 factor). | kW | `input_number.ha1_peak_limit_kw` (future) |
+| **sensor.ha1_peak_margin_kw** | Difference between current total consumption (kW) and the effective peak limit. Negative = under limit, positive = over limit. | kW | `ha1_power_consumption_total_kw`, `ha1_effective_peak_power_reference_kw` |
+
+---
+
+### 🔷 Battery Charging Capability Metrics (Huawei Limits)
+
+These expose the real physical constraints of your Huawei inverter/LUNA system.
+
+| Entity ID | Description | Unit | Based Based On |
+|----------|-------------|------|----------------|
+| **sensor.ha1_batt_grid_charge_limit_kw** | Maximum battery **grid-charging power** the inverter will accept. Clamped to **2.5 kW** as per hardware limit. | kW | `number.battery_grid_charge_maximum_power` (W) |
+| **sensor.ha1_batt_total_charge_limit_kw** | Maximum **overall** battery charge rate (grid + solar). Reflects the inverter’s full charging capability. | kW | `number.battery_maximum_charging_power` (W) |
+
+Notes:  
+- Grid-only charging is capped at ~2500 W.  
+- Solar + grid together may exceed 2.5 kW depending on PV generation.  
+- These metrics are essential for future EV/battery planning.
+
+---
+
+### 🔷 Smoothed Metrics (Rolling Averages, 1-minute)
+
+These metrics use the `statistics` platform to stabilize decisions, avoid flapping, and create smooth dashboards.
+
+| Entity ID | Description | Unit | Based On |
+|----------|-------------|-------|----------|
+| **sensor.ha1_power_house_total_avg_1m** | 1-minute rolling average of total household power (incl. EV). | W | `ha1_power_house_total` |
+| **sensor.ha1_power_ev_charger_avg_1m** | 1-minute rolling average of EV charging power. | W | `ha1_power_ev_charger` |
+| *(Existing from Codex earlier)* | | |
+| `sensor.ha1_power_grid_net_avg_1m` | Net grid power average (import/export mixed). | W | `ha1_power_grid_total_net` |
+| `sensor.ha1_flow_grid_import_avg_1m` | Import-only rolling average. | W | `ha1_flow_grid_import` |
+| `sensor.ha1_flow_grid_export_avg_1m` | Export-only rolling average. | W | `ha1_flow_grid_export` |
+
+---
+
+### 🔷 Derived Binary Conditions (used by control behavior)
+
+These are defined later in Task 15/16 but depend directly on the numeric metrics.
+
+| Entity ID | Meaning | Conditions (concept) |
+|----------|----------|----------------------|
+| **binary_sensor.ha1_export_stable** | True when export power has been stable for a while. | `ha1_flow_grid_export_avg_1m > threshold` |
+| **binary_sensor.ha1_near_peak_limit** | True when house load is close to the peak limit. | `0 ≤ ha1_peak_margin_kw ≤ threshold` and `ha1_power_house_total_avg_1m > min_load` |
+| **binary_sensor.ha1_ev_is_major_load** | True when EV dominates house load. | `ev_share_pct > X%` and `ev_avg_power > Y W` |
+
+Thresholds will be helper-driven in Task 16.
+
+---
+
+### 🔷 Summary
+
+This extended sensor layer provides:
+
+- **Human-friendly planning metrics (kW, %)**  
+- **Accurate modeling of Huawei charge limits (grid-only and total)**  
+- **Stable rolling averages** for real-time decisions  
+- **State abstractions** for peak shaving, smart charging, export stability, and EV load prioritization.
+
+Together they form the essential inputs for the HA 1.3 optimization logic that will be built in Tasks 16–20.
 
 ---
 
