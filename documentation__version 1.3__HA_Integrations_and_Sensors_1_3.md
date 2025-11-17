@@ -1,4 +1,4 @@
-Last updated: 2025-11-17 14:18 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-17 14:41 (CET) — Authorized by ChatGPT
 
 # 🔌 Integrations & Sensors – HomeAssistant 1.3
 
@@ -178,9 +178,46 @@ These sensors are the **standard interface** for all EV-related logic in HomeAss
 
 ---
 
-### Placeholder – Task 11
+## 📊 HA1 Template Sensor Layer (Task 15)
 
-Entities for Task 11 will be listed here once the integration/feature scope is defined.
+**Purpose:** Provide the canonical measurement surface for all energy logic. Raw vendor outputs are normalized once (Task 14) and Task 15 adds kW rollups, peak helpers, and rolling averages so dashboards/autos share identical math.
+
+**Location:**  
+- Core flows live in `packages/energy_core_1_3.yaml` (raw **W** sensors).  
+- Extended metrics + statistics live in `packages/energy_metrics_1_3.yaml`.  
+- Grid utility meters reside in `packages/ev_charging_1_3.yaml`.
+
+### 2.1 Core HA1 Power/Flow Sensors (`energy_core_1_3.yaml`)
+
+| Entity | Description | Notes |
+|--------|-------------|-------|
+| `sensor.ha1_power_house_total` | Total household load incl. EV (W). | Backbone for `*_total_kw` metrics; legacy dashboards bind via `sensor.home_load`. |
+| `sensor.ha1_power_house_core` | House load excluding EV charger (W). | Used for “core consumption” dashboards. |
+| `sensor.ha1_power_ev_charger` | EV charging power (W). | Derived from Easee data; signless consumption. |
+| `sensor.ha1_power_grid_total_net` | Net grid power (W). Positive import / negative export. | Every automation that references the grid must read this sensor. |
+| `sensor.ha1_flow_grid_import` / `sensor.ha1_flow_grid_export` | Import/export-only views (W). | Simplifies billing/exceed checks and supports smoothed averages. |
+| `sensor.ha1_flow_battery_discharge`, `sensor.ha1_flow_solar_to_house`, etc. | Canonical PV/battery/house interface sensors. | Provide clarity for dashboards and balance checks. |
+
+### 2.2 Extended Metrics & Peak Helpers (`energy_metrics_1_3.yaml`)
+
+| Entity | Purpose | Based on |
+|--------|---------|----------|
+| `sensor.ha1_power_consumption_total_kw` / `_core_kw` | Human-scale kW totals for dashboards/alerts. | `sensor.ha1_power_house_total/core`. |
+| `sensor.ha1_power_net_load_kw` / `_abs_kw` | Signed/absolute net grid load in kW. | `sensor.ha1_power_grid_total_net`. |
+| `sensor.ha1_effective_peak_power_reference_kw` | Active peak limit reference (currently helper passthrough). | `input_number.ha1_peak_limit_kw`. |
+| `sensor.ha1_peak_margin_kw` | Distance between current load and peak limit. | `sensor.ha1_power_consumption_total_kw`. |
+| `sensor.ha1_ev_share_of_house_load_pct` | Shows when EV dominates consumption. | `sensor.ha1_power_house_total`, `sensor.ha1_power_ev_charger`. |
+| `sensor.ha1_batt_grid_charge_limit_kw` / `_total_charge_limit_kw` | Mirrors Huawei charge limits in kW, clamped. | `number.battery_grid_charge_maximum_power`, `number.battery_maximum_charging_power`. |
+| Rolling averages (`sensor.ha1_power_grid_net_avg_1m/5m`, `sensor.ha1_power_house_total_avg_1m`, `sensor.ha1_flow_grid_import_avg_1m/5m`, etc.) | Smooth noisy datasets for automation guards and dashboards. | `statistics` platform inside the same package. |
+
+### 2.3 Utility Meters (Grid)
+
+| Entity | Interval | Notes |
+|--------|----------|-------|
+| `sensor.ha1_grid_import_energy_daily` / `_weekly` | Daily / weekly import totals. | Source: `sensor.qp57qz4q_import_energy`. |
+| `sensor.ha1_grid_export_energy_daily` / `_weekly` | Daily / weekly export totals. | Source: `sensor.qp57qz4q_export_energy`. |
+
+These counters supersede ad-hoc dashboards and will back Task 16 peak-cost monitoring.
 
 ---
 

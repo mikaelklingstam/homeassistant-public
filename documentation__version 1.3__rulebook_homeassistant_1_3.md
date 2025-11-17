@@ -1,4 +1,4 @@
-Last updated: 2025-11-17 01:30 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-17 14:41 (CET) — Authorized by ChatGPT
 
 # 🧭 HomeAssistant 1.3 – Rulebook
 
@@ -159,9 +159,21 @@ The practical hierarchy in 1.3 is:
 
 ## 🧪 Sensors & Helpers (Overview)
 
-> Template sensors, utility meters, forecast sensors, and AI/planning helpers.
+The HA1 template/helper stack is now live after Task 15 and is split into two layers:
 
-*(To be filled in later tasks.)*
+1. `packages/energy_core_1_3.yaml` – Canonical **W**-based flow sensors (`sensor.ha1_power_*`, `sensor.ha1_flow_*`) that represent solar → house/grid, battery → house/grid, EV load, and the grid meter (`sensor.ha1_power_grid_total_net`). These must be the only sources used for optimization logic, dashboards, and plotting when discussing instantaneous power.
+2. `packages/energy_metrics_1_3.yaml` – Planning metrics on top of the core flows: `sensor.ha1_power_consumption_total_kw`, `sensor.ha1_power_net_load_kw`, peak helpers (`sensor.ha1_effective_peak_power_reference_kw`, `sensor.ha1_peak_margin_kw`), EV share KPIs, Huawei charge-limit mirrors, and the statistics-based rolling averages (`sensor.ha1_power_house_total_avg_1m`, `sensor.ha1_flow_grid_export_avg_5m`, etc.).
+
+**Rules of engagement**
+
+- Peak logic, EV/battery schedulers, and dashboards must read **kW** abstractions (`*_kw`) for human-facing displays, but always use the **raw W channels** for precise math if sub-1 kW accuracy is required.  
+- When judging stability or anti-flapping thresholds, prefer the rolling-average entities instead of the instantaneous raw sensors. Any guard that needs “sustained high import/export” should reference `sensor.ha1_power_grid_net_avg_*` or the 1‑minute house/EV averages.  
+- Historical meters and billing logic must consume the HA1 utility meters:
+  - Import/export daily + weekly counters live in `packages/ev_charging_1_3.yaml` as `sensor.ha1_grid_import_energy_daily`, etc.
+  - Legacy dashboards expecting `sensor.home_load` or similar must keep using the provided compatibility aliases (maintained inside `energy_metrics_1_3.yaml`).
+- Helper values (sliders/toggles) that drive this layer are centralized in `packages/ha1_helpers_1_3.yaml`. Any automation referencing peak limits, SOC thresholds, or override flags must use the `ha1_*` helpers so UI + documentation remain aligned.
+
+The objective is simple: **never** template raw vendor sensors twice. All logic must work off the HA1 namespace so charting, diagnostics, and automation math stay in sync.
 
 ---
 

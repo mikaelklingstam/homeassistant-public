@@ -1,4 +1,4 @@
-Last updated: 2025-11-17 14:20 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-17 14:41 (CET) — Authorized by ChatGPT
 
 # ⚙️ Functions & Settings – HomeAssistant 1.3
 
@@ -158,6 +158,8 @@ All EV operations are funneled through these HA1 scripts so that future optimiza
 
 ### Task 15 – Extended Power Metrics & Rolling Averages
 
+All deliverables below live in `packages/energy_metrics_1_3.yaml` (templates + statistics) and consume the base HA1 flow sensors produced by `packages/energy_core_1_3.yaml`. Utility meters for grid import/export remain in `packages/ev_charging_1_3.yaml`, so every Task 15 concept has a clearly documented home.
+
 - Combined load sensors now expose canonical W signals in kW for dashboards and planning logic:  
   - `sensor.ha1_power_consumption_total_kw` → total house consumption including EV load.  
   - `sensor.ha1_power_consumption_core_kw` → core load excluding the EV charger.  
@@ -169,7 +171,7 @@ All EV operations are funneled through these HA1 scripts so that future optimiza
 
 ## HA1 Extended Template Metrics (Task 15)
 
-These sensors form the “second layer” of HomeAssistant 1.3’s energy-logic model.  
+These sensors form the “second layer” of HomeAssistant 1.3’s energy-logic model. They live in `packages/energy_metrics_1_3.yaml` and reference the canonical W-based flows from `packages/energy_core_1_3.yaml`.  
 They provide planning-friendly abstractions, grid/battery limits, smoothed values, and stability signals used by peak control, export handling, EV logic, and dashboards.
 
 All `ha1_power_*` sensors use **W** unless the name explicitly ends with `_kw`.
