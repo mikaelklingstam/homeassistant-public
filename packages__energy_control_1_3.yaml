@@ -2,55 +2,7 @@
 #
 # HomeAssistant 1.3 - Energy control layer (ha1_control_*)
 # Wraps Huawei battery + Easee charger controls behind HA1 helpers and scripts.
-
-############################################################
-# Helpers – master enable switches and tuning dials
-############################################################
-
-input_boolean:
-  ha1_control_ev_auto:
-    name: HA1 EV Charging – automation enabled
-    icon: mdi:car-electric
-  ha1_control_battery_auto:
-    name: HA1 Battery Optimization – automation enabled
-    icon: mdi:battery-sync
-
-input_number:
-  ha1_ev_limit_current_a:
-    name: HA1 EV Max Current (A)
-    icon: mdi:current-ac
-    min: 0
-    max: 32
-    step: 1
-    mode: slider
-    unit_of_measurement: "A"
-
-  ha1_batt_grid_charge_max_kw:
-    name: HA1 Battery Grid Charge Max (kW)
-    icon: mdi:battery-charging
-    min: 0
-    max: 2.5
-    step: 0.1
-    mode: slider
-    unit_of_measurement: "kW"
-
-  ha1_batt_peak_shaving_soc:
-    name: HA1 Battery Peak-Shaving Target SOC (%)
-    icon: mdi:battery-heart
-    min: 20
-    max: 100
-    step: 1
-    mode: slider
-    unit_of_measurement: "%"
-
-  ha1_batt_grid_charge_cutoff_soc:
-    name: HA1 Battery Grid Charge Cutoff SOC (%)
-    icon: mdi:battery-clock
-    min: 20
-    max: 100
-    step: 1
-    mode: slider
-    unit_of_measurement: "%"
+# Helper entities for this layer live in packages/ha1_helpers_1_3.yaml.
 
 ############################################################
 # Scripts – Huawei battery control
