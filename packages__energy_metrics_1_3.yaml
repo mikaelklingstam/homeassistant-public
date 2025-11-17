@@ -72,7 +72,7 @@ template:
           {% endif %}
 
       # --------------------------------------------------
-      # EV share and peak planning meta sensors
+      # EV share and planning meta sensors
       # --------------------------------------------------
 
       - name: "HA1 EV Share of House Load"
@@ -90,42 +90,6 @@ template:
           {% else %}
             {{ (100 * ev_w / house_w) | round(1) }}
           {% endif %}
-
-      - name: "HA1 Effective Peak Power Reference kW"
-        unique_id: ha1_effective_peak_power_reference_kw
-        unit_of_measurement: "kW"
-        device_class: power
-        state_class: measurement
-        icon: "mdi:flash-alert"
-        availability: >-
-          true
-        state: >
-          {#
-            Future intent:
-            - Base on input_number.ha1_peak_limit_kw
-            - Apply 0.5 factor during 22:00–06:00 per rulebook
-            For now we just expose the helper value directly
-            (or 0 if it does not exist yet).
-          #}
-          {% set peak_str = states('input_number.ha1_peak_limit_kw') %}
-          {% if peak_str in ['unknown', 'unavailable', ''] %}
-            0
-          {% else %}
-            {{ peak_str | float(0) | round(3) }}
-          {% endif %}
-
-      - name: "HA1 Peak Margin kW"
-        unique_id: ha1_peak_margin_kw
-        unit_of_measurement: "kW"
-        device_class: power
-        state_class: measurement
-        icon: "mdi:chart-line"
-        availability: >-
-          {{ not states('sensor.ha1_power_consumption_total_kw') in ['unknown', 'unavailable', ''] }}
-        state: >
-          {% set load_kw = states('sensor.ha1_power_consumption_total_kw') | float(0) %}
-          {% set limit_kw = states('sensor.ha1_effective_peak_power_reference_kw') | float(0) %}
-          {{ (load_kw - limit_kw) | round(3) }}
 
       - name: "HA1 Battery Grid Charge Limit kW"
         unique_id: ha1_batt_grid_charge_limit_kw

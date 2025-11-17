@@ -116,24 +116,3 @@ template:
           {{ p > 100 }}
         availability: >
           {{ states('sensor.ehxdyl83_power') not in ['unknown', 'unavailable', 'none'] }}
-
-utility_meter:
-  ha1_grid_import_energy_daily:
-    source: sensor.qp57qz4q_import_energy
-    name: "HA1 – Grid import energy (daily)"
-    cycle: daily
-
-  ha1_grid_import_energy_weekly:
-    source: sensor.qp57qz4q_import_energy
-    name: "HA1 – Grid import energy (weekly)"
-    cycle: weekly
-
-  ha1_grid_export_energy_daily:
-    source: sensor.qp57qz4q_export_energy
-    name: "HA1 – Grid export energy (daily)"
-    cycle: daily
-
-  ha1_grid_export_energy_weekly:
-    source: sensor.qp57qz4q_export_energy
-    name: "HA1 – Grid export energy (weekly)"
-    cycle: weekly

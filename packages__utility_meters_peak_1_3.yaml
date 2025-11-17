@@ -1,0 +1,189 @@
+# packages/utility_meters_peak_1_3.yaml
+#
+# HomeAssistant 1.3 – Task 17 (Utility meters & peak tracking)
+# - Consolidates all grid import/export utility meters (daily/weekly/monthly)
+# - Adds peak-billing sensors that respect the 22:00–06:00 50% weighting rule
+# - Tracks raw and billable monthly peaks for reporting and automation guards
+
+template:
+  - sensor:
+      # --------------------------------------------------
+      # Peak billing helpers (time-of-day weighting)
+      # --------------------------------------------------
+
+      - name: "HA1 Peak Billing Factor"
+        unique_id: ha1_peak_billing_factor
+        icon: "mdi:timelapse"
+        unit_of_measurement: "ratio"
+        state_class: measurement
+        state: >
+          {% set hour = now().hour %}
+          {% if hour >= 22 or hour < 6 %}
+            0.5
+          {% else %}
+            1
+          {% endif %}
+
+      - name: "HA1 Peak Billable Power kW"
+        unique_id: ha1_peak_billable_power_kw
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:flash-alert"
+        availability: >-
+          {{ not states('sensor.ha1_power_consumption_total_kw') in ['unknown', 'unavailable', ''] }}
+        state: >
+          {% set load_kw = states('sensor.ha1_power_consumption_total_kw') | float(0) %}
+          {% set factor = states('sensor.ha1_peak_billing_factor') | float(1) %}
+          {{ (load_kw * factor) | round(3) }}
+
+      - name: "HA1 Effective Peak Power Reference kW"
+        unique_id: ha1_effective_peak_power_reference_kw
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:flash-outline"
+        state: >
+          {% set peak_str = states('input_number.ha1_peak_limit_kw') %}
+          {% if peak_str in ['unknown', 'unavailable', ''] %}
+            0
+          {% else %}
+            {{ peak_str | float(0) | round(3) }}
+          {% endif %}
+
+      - name: "HA1 Peak Margin kW"
+        unique_id: ha1_peak_margin_kw
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        icon: "mdi:chart-line"
+        availability: >-
+          {{ not states('sensor.ha1_peak_billable_power_kw') in ['unknown', 'unavailable', ''] }}
+        state: >
+          {% set load_kw = states('sensor.ha1_peak_billable_power_kw') | float(0) %}
+          {% set limit_kw = states('sensor.ha1_effective_peak_power_reference_kw') | float(0) %}
+          {{ (load_kw - limit_kw) | round(3) }}
+
+  # --------------------------------------------------
+  # Monthly peak trackers (raw + billable variants)
+  # --------------------------------------------------
+
+  - trigger:
+      - platform: state
+        entity_id: sensor.ha1_power_consumption_total_kw
+        id: sample
+      - platform: time
+        at: "00:00:00"
+        id: midnight
+    sensor:
+      - name: "HA1 Peak Power Monthly Tracker kW"
+        unique_id: ha1_peak_power_monthly_tracker_kw
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        state: >-
+          {% set previous = this.state | float(0) %}
+          {% if trigger.id == 'midnight' %}
+            {% if now().day == 1 %}
+              0
+            {% else %}
+              {{ previous | round(3) }}
+            {% endif %}
+          {% else %}
+            {% set current = states('sensor.ha1_power_consumption_total_kw') | float(0) %}
+            {% if current > previous %}
+              {{ current | round(3) }}
+            {% else %}
+              {{ previous | round(3) }}
+            {% endif %}
+          {% endif %}
+
+  - trigger:
+      - platform: state
+        entity_id: sensor.ha1_peak_billable_power_kw
+        id: sample
+      - platform: time
+        at: "00:00:00"
+        id: midnight
+    sensor:
+      - name: "HA1 Peak Billable Power Monthly Tracker kW"
+        unique_id: ha1_peak_billable_power_monthly_tracker_kw
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        state: >-
+          {% set previous = this.state | float(0) %}
+          {% if trigger.id == 'midnight' %}
+            {% if now().day == 1 %}
+              0
+            {% else %}
+              {{ previous | round(3) }}
+            {% endif %}
+          {% else %}
+            {% set current = states('sensor.ha1_peak_billable_power_kw') | float(0) %}
+            {% if current > previous %}
+              {{ current | round(3) }}
+            {% else %}
+              {{ previous | round(3) }}
+            {% endif %}
+          {% endif %}
+
+utility_meter:
+  # --------------------------------------------------
+  # Grid import energy – per-cycle totals
+  # --------------------------------------------------
+  ha1_grid_import_energy_daily:
+    source: sensor.qp57qz4q_import_energy
+    name: "HA1 – Grid import energy (daily)"
+    unique_id: ha1_grid_import_energy_daily
+    cycle: daily
+
+  ha1_grid_import_energy_weekly:
+    source: sensor.qp57qz4q_import_energy
+    name: "HA1 – Grid import energy (weekly)"
+    unique_id: ha1_grid_import_energy_weekly
+    cycle: weekly
+
+  ha1_grid_import_energy_monthly:
+    source: sensor.qp57qz4q_import_energy
+    name: "HA1 – Grid import energy (monthly)"
+    unique_id: ha1_grid_import_energy_monthly
+    cycle: monthly
+
+  # --------------------------------------------------
+  # Grid export energy – per-cycle totals
+  # --------------------------------------------------
+  ha1_grid_export_energy_daily:
+    source: sensor.qp57qz4q_export_energy
+    name: "HA1 – Grid export energy (daily)"
+    unique_id: ha1_grid_export_energy_daily
+    cycle: daily
+
+  ha1_grid_export_energy_weekly:
+    source: sensor.qp57qz4q_export_energy
+    name: "HA1 – Grid export energy (weekly)"
+    unique_id: ha1_grid_export_energy_weekly
+    cycle: weekly
+
+  ha1_grid_export_energy_monthly:
+    source: sensor.qp57qz4q_export_energy
+    name: "HA1 – Grid export energy (monthly)"
+    unique_id: ha1_grid_export_energy_monthly
+    cycle: monthly
+
+  # --------------------------------------------------
+  # Monthly peak demand partitions (raw vs billable)
+  # --------------------------------------------------
+  ha1_peak_power_monthly:
+    source: sensor.ha1_peak_power_monthly_tracker_kw
+    name: "HA1 – Peak power (monthly max)"
+    unique_id: ha1_peak_power_monthly
+    cycle: monthly
+    delta_values: false
+
+  ha1_peak_power_billable_monthly:
+    source: sensor.ha1_peak_billable_power_monthly_tracker_kw
+    name: "HA1 – Peak billable power (monthly max)"
+    unique_id: ha1_peak_power_billable_monthly
+    cycle: monthly
+    delta_values: false
