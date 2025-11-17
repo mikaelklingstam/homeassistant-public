@@ -1,4 +1,4 @@
-Last updated: 2025-11-17 14:41 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-17 15:53 (CET) — Authorized by ChatGPT
 
 # ⚙️ Functions & Settings – HomeAssistant 1.3
 
@@ -120,6 +120,18 @@ The HA1 control layer wraps Huawei battery and Easee charger controls behind con
 
 - `input_boolean.ha1_control_ev_auto` – Enable/disable EV charging automations.  
 - `input_boolean.ha1_control_battery_auto` – Enable/disable battery optimization automations.
+
+### Task 16 – Helpers & Control Inputs
+
+All HA1.3 helper entities now live in `packages/helpers_1_3.yaml`. They are grouped by role so dashboards and automations reference the same canonical sliders, toggles, and mode selectors:
+
+- **Global / Peak:** `input_boolean.ha1_automation_master_enabled`, `input_boolean.ha1_peak_shaving_enabled`, `input_number.ha1_peak_limit_kw`, `input_number.ha1_peak_warning_kw`.
+- **Battery controls:** `input_boolean.ha1_control_battery_auto`, `input_boolean.ha1_battery_allow_grid_charge`, `input_boolean.ha1_battery_peak_support_enabled`, `input_number.ha1_battery_min_soc_normal`, `input_number.ha1_batt_peak_shaving_soc`, `input_number.ha1_battery_max_soc_target`, `input_number.ha1_batt_grid_charge_max_kw`, `input_number.ha1_batt_grid_charge_cutoff_soc`, `input_boolean.ha1_force_battery_charge_from_grid_now`.
+- **EV charging:** `input_boolean.ha1_control_ev_auto`, `input_boolean.ha1_ev_obey_peak_limit`, `input_boolean.ha1_force_ev_charge_now`, `input_number.ha1_ev_max_charging_power_kw`, `input_number.ha1_ev_limit_current_a`, `input_select.ha1_ev_charging_mode`.
+- **Comfort overrides:** `input_boolean.ha1_comfort_override_enabled`, `input_boolean.ha1_allow_high_price_heating`.
+- **Debug / diagnostics:** `input_boolean.ha1_debug_energy_logic`, `input_boolean.ha1_debug_notifications_enabled`, `input_boolean.ha1_debug_freeze_optimizers`.
+
+Every helper uses the `ha1_` prefix, and no legacy helpers remain; anything not in this list has been deleted or renamed.
 
 ### Control targets (input_numbers)
 

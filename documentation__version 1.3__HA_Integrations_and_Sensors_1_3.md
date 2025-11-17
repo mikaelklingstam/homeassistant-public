@@ -1,4 +1,4 @@
-Last updated: 2025-11-17 14:41 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-17 15:53 (CET) — Authorized by ChatGPT
 
 # 🔌 Integrations & Sensors – HomeAssistant 1.3
 
@@ -252,6 +252,14 @@ These counters supersede ad-hoc dashboards and will back Task 16 peak-cost monit
         name: Current price
         secondary_info: last-changed
     ```
+
+---
+
+## Helpers (Inputs) – HA 1.3
+
+- Canonical helper entities (all `ha1_*`) are defined in `packages/helpers_1_3.yaml`.
+- Categories mirror the Functions & Settings detail: Peak Shaving (master enable + limit sliders), Battery controls (SOC targets, grid-charge limits), EV Charging (automations toggles, kW/A sliders, mode select), Comfort overrides, and Debug/diagnostic toggles.
+- Task 16 removed every legacy helper that was not actively referenced, so the list in `Functions_And_Settings_1_3.md` is the single source of truth.
 
 ---
 

@@ -1,4 +1,4 @@
-Last updated: 2025-11-17 14:41 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-17 15:53 (CET) — Authorized by ChatGPT
 
 # 🧭 HomeAssistant 1.3 – Rulebook
 
@@ -171,7 +171,9 @@ The HA1 template/helper stack is now live after Task 15 and is split into two la
 - Historical meters and billing logic must consume the HA1 utility meters:
   - Import/export daily + weekly counters live in `packages/ev_charging_1_3.yaml` as `sensor.ha1_grid_import_energy_daily`, etc.
   - Legacy dashboards expecting `sensor.home_load` or similar must keep using the provided compatibility aliases (maintained inside `energy_metrics_1_3.yaml`).
-- Helper values (sliders/toggles) that drive this layer are centralized in `packages/ha1_helpers_1_3.yaml`. Any automation referencing peak limits, SOC thresholds, or override flags must use the `ha1_*` helpers so UI + documentation remain aligned.
+- Helper values (sliders/toggles) that drive this layer are centralized in `packages/helpers_1_3.yaml`. Any automation referencing peak limits, SOC thresholds, or override flags must use the `ha1_*` helpers so UI + documentation remain aligned.
+
+**Task 16 helpers consolidation:** All HA1.3 helper entities now live in `packages/helpers_1_3.yaml`, follow the `ha1_` prefix, and replace every legacy 1.1/1.2 helper unless that helper is still explicitly referenced. This keeps dashboards, scripts, and documentation synchronized around a single helpers layer.
 
 The objective is simple: **never** template raw vendor sensors twice. All logic must work off the HA1 namespace so charting, diagnostics, and automation math stay in sync.
 
