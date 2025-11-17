@@ -5,6 +5,52 @@
 # - Adds peak-billing sensors that respect the 22:00–06:00 50% weighting rule
 # - Tracks raw and billable monthly peaks for reporting and automation guards
 
+input_select:
+  ha1_peak_interval_mode:
+    name: "HA1 – Peak interval mode"
+    icon: mdi:chart-timeline-variant
+    options:
+      - "hour"
+      - "15min"
+    initial: "hour"
+
+input_number:
+  ha1_daily_peak_power_cost_adjusted:
+    name: "HA1 – Daily peak power (cost-adjusted)"
+    unit_of_measurement: "kW"
+    min: 0
+    max: 50
+    step: 0.01
+  ha1_month_peak_top1_kw:
+    name: "HA1 – Month peak #1 (kW)"
+    unit_of_measurement: "kW"
+    min: 0
+    max: 50
+    step: 0.01
+  ha1_month_peak_top2_kw:
+    name: "HA1 – Month peak #2 (kW)"
+    unit_of_measurement: "kW"
+    min: 0
+    max: 50
+    step: 0.01
+  ha1_month_peak_top3_kw:
+    name: "HA1 – Month peak #3 (kW)"
+    unit_of_measurement: "kW"
+    min: 0
+    max: 50
+    step: 0.01
+  ha1_peak_tariff_price_per_kw:
+    name: "HA1 – Peak tariff price"
+    unit_of_measurement: "SEK/kW"
+    min: 0
+    max: 1000
+    step: 1
+
+input_text:
+  ha1_peak_tariff_agreement_name:
+    name: "HA1 – Peak tariff agreement"
+    max: 50
+
 template:
   - sensor:
       # --------------------------------------------------
@@ -64,69 +110,159 @@ template:
           {% set limit_kw = states('sensor.ha1_effective_peak_power_reference_kw') | float(0) %}
           {{ (load_kw - limit_kw) | round(3) }}
 
-  # --------------------------------------------------
-  # Monthly peak trackers (raw + billable variants)
-  # --------------------------------------------------
+      - name: "HA1 – Peak interval length (h)"
+        unique_id: ha1_peak_interval_length_hours
+        unit_of_measurement: "h"
+        state: >
+          {% set mode = states('input_select.ha1_peak_interval_mode') %}
+          {% if mode == '15min' %}
+            0.25
+          {% else %}
+            1.0
+          {% endif %}
 
-  - trigger:
-      - platform: state
-        entity_id: sensor.ha1_power_consumption_total_kw
-        id: sample
-      - platform: time
-        at: "00:00:00"
-        id: midnight
-    sensor:
-      - name: "HA1 Peak Power Monthly Tracker kW"
-        unique_id: ha1_peak_power_monthly_tracker_kw
+      - name: "HA1 – Import energy current interval"
+        unique_id: ha1_import_energy_current_interval
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: measurement
+        state: >
+          {% set mode = states('input_select.ha1_peak_interval_mode') %}
+          {% if mode == '15min' %}
+            {{ states('sensor.ha1_grid_import_energy_quarter_hour') }}
+          {% else %}
+            {{ states('sensor.ha1_grid_import_energy_hourly') }}
+          {% endif %}
+
+  - sensor:
+      - name: "HA1 – Peak power interval (real)"
+        unique_id: ha1_peak_power_interval_real
         unit_of_measurement: "kW"
         device_class: power
         state_class: measurement
-        state: >-
-          {% set previous = this.state | float(0) %}
-          {% if trigger.id == 'midnight' %}
-            {% if now().day == 1 %}
-              0
-            {% else %}
-              {{ previous | round(3) }}
-            {% endif %}
+        state: >
+          {% set e = states('sensor.ha1_import_energy_current_interval') | float(0) %}
+          {% set h = states('sensor.ha1_peak_interval_length_hours') | float(1) %}
+          {% if h > 0 %}
+            {{ (e / h) | round(3) }}
           {% else %}
-            {% set current = states('sensor.ha1_power_consumption_total_kw') | float(0) %}
-            {% if current > previous %}
-              {{ current | round(3) }}
-            {% else %}
-              {{ previous | round(3) }}
-            {% endif %}
+            0
           {% endif %}
 
-  - trigger:
-      - platform: state
-        entity_id: sensor.ha1_peak_billable_power_kw
-        id: sample
-      - platform: time
-        at: "00:00:00"
-        id: midnight
-    sensor:
-      - name: "HA1 Peak Billable Power Monthly Tracker kW"
-        unique_id: ha1_peak_billable_power_monthly_tracker_kw
+      - name: "HA1 – Peak power interval (cost-adjusted)"
+        unique_id: ha1_peak_power_interval_cost_adjusted
         unit_of_measurement: "kW"
         device_class: power
         state_class: measurement
-        state: >-
-          {% set previous = this.state | float(0) %}
-          {% if trigger.id == 'midnight' %}
-            {% if now().day == 1 %}
-              0
-            {% else %}
-              {{ previous | round(3) }}
-            {% endif %}
+        state: >
+          {% set base = states('sensor.ha1_peak_power_interval_real') | float(0) %}
+          {% set hour = now().hour %}
+          {% if hour >= 22 or hour < 6 %}
+            {{ (base * 0.5) | round(3) }}
           {% else %}
-            {% set current = states('sensor.ha1_peak_billable_power_kw') | float(0) %}
-            {% if current > previous %}
-              {{ current | round(3) }}
-            {% else %}
-              {{ previous | round(3) }}
-            {% endif %}
+            {{ base | round(3) }}
           {% endif %}
+
+      - name: "HA1 – Monthly peak power (cost-adjusted top3)"
+        unique_id: ha1_monthly_peak_power_cost_adjusted_top3
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set p1 = states('input_number.ha1_month_peak_top1_kw') | float(0) %}
+          {% set p2 = states('input_number.ha1_month_peak_top2_kw') | float(0) %}
+          {% set p3 = states('input_number.ha1_month_peak_top3_kw') | float(0) %}
+          {% set values = [p1, p2, p3] | select('gt', 0) | list %}
+          {% set count = values | length %}
+          {% if count == 0 %}
+            0
+          {% else %}
+            {{ (values | sum / count) | round(3) }}
+          {% endif %}
+
+      - name: "HA1 – Monthly peak cost (estimated)"
+        unique_id: ha1_monthly_peak_cost_estimated
+        unit_of_measurement: "SEK"
+        state: >
+          {% set kW = states('sensor.ha1_monthly_peak_power_cost_adjusted_top3') | float(0) %}
+          {% set price = states('input_number.ha1_peak_tariff_price_per_kw') | float(0) %}
+          {{ (kW * price) | round(0) }}
+        attributes:
+          agreement: "{{ states('input_text.ha1_peak_tariff_agreement_name') }}"
+          interval_mode: "{{ states('input_select.ha1_peak_interval_mode') }}"
+
+      - name: "HA1 – Monthly peak power (real, passthrough)"
+        unique_id: ha1_monthly_peak_power_real
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        state: >
+          {{ states('sensor.ha1_peak_power_interval_real') | float(0) }}
+
+  # --------------------------------------------------
+  # Monthly peak trackers (legacy) – disabled in favor of Task 17 history_max sensors.
+  # TODO: sensor.ha1_peak_power_monthly_tracker_kw / sensor.ha1_peak_billable_power_monthly_tracker_kw kept for reference only.
+  # --------------------------------------------------
+
+  # - trigger:
+  #     - platform: state
+  #       entity_id: sensor.ha1_power_consumption_total_kw
+  #       id: sample
+  #     - platform: time
+  #       at: "00:00:00"
+  #       id: midnight
+  #   sensor:
+  #     - name: "HA1 Peak Power Monthly Tracker kW"
+  #       unique_id: ha1_peak_power_monthly_tracker_kw
+  #       unit_of_measurement: "kW"
+  #       device_class: power
+  #       state_class: measurement
+  #       state: >-
+  #         {% set previous = this.state | float(0) %}
+  #         {% if trigger.id == 'midnight' %}
+  #           {% if now().day == 1 %}
+  #             0
+  #           {% else %}
+  #             {{ previous | round(3) }}
+  #           {% endif %}
+  #         {% else %}
+  #           {% set current = states('sensor.ha1_power_consumption_total_kw') | float(0) %}
+  #           {% if current > previous %}
+  #             {{ current | round(3) }}
+  #           {% else %}
+  #             {{ previous | round(3) }}
+  #           {% endif %}
+  #         {% endif %}
+
+  # - trigger:
+  #     - platform: state
+  #       entity_id: sensor.ha1_peak_billable_power_kw
+  #       id: sample
+  #     - platform: time
+  #       at: "00:00:00"
+  #       id: midnight
+  #   sensor:
+  #     - name: "HA1 Peak Billable Power Monthly Tracker kW"
+  #       unique_id: ha1_peak_billable_power_monthly_tracker_kw
+  #       unit_of_measurement: "kW"
+  #       device_class: power
+  #       state_class: measurement
+  #       state: >-
+  #         {% set previous = this.state | float(0) %}
+  #         {% if trigger.id == 'midnight' %}
+  #           {% if now().day == 1 %}
+  #             0
+  #           {% else %}
+  #             {{ previous | round(3) }}
+  #           {% endif %}
+  #         {% else %}
+  #           {% set current = states('sensor.ha1_peak_billable_power_kw') | float(0) %}
+  #           {% if current > previous %}
+  #             {{ current | round(3) }}
+  #           {% else %}
+  #             {{ previous | round(3) }}
+  #           {% endif %}
+  #         {% endif %}
 
 utility_meter:
   # --------------------------------------------------
@@ -150,6 +286,18 @@ utility_meter:
     unique_id: ha1_grid_import_energy_monthly
     cycle: monthly
 
+  ha1_grid_import_energy_hourly:
+    source: sensor.qp57qz4q_import_energy
+    name: "HA1 – Grid import energy (hourly)"
+    unique_id: ha1_grid_import_energy_hourly
+    cycle: hourly
+
+  ha1_grid_import_energy_quarter_hour:
+    source: sensor.qp57qz4q_import_energy
+    name: "HA1 – Grid import energy (15min)"
+    unique_id: ha1_grid_import_energy_quarter_hour
+    cycle: quarter-hourly
+
   # --------------------------------------------------
   # Grid export energy – per-cycle totals
   # --------------------------------------------------
@@ -172,18 +320,29 @@ utility_meter:
     cycle: monthly
 
   # --------------------------------------------------
-  # Monthly peak demand partitions (raw vs billable)
+  # Monthly peak demand partitions (legacy) – Task 17 history_max renders these redundant.
+  # TODO: sensor.ha1_peak_power_monthly / sensor.ha1_peak_power_billable_monthly preserved only for reference.
   # --------------------------------------------------
-  ha1_peak_power_monthly:
-    source: sensor.ha1_peak_power_monthly_tracker_kw
-    name: "HA1 – Peak power (monthly max)"
-    unique_id: ha1_peak_power_monthly
-    cycle: monthly
-    delta_values: false
+  # ha1_peak_power_monthly:
+  #   source: sensor.ha1_peak_power_monthly_tracker_kw
+  #   name: "HA1 – Peak power (monthly max)"
+  #   unique_id: ha1_peak_power_monthly
+  #   cycle: monthly
+  #   delta_values: false
 
-  ha1_peak_power_billable_monthly:
-    source: sensor.ha1_peak_billable_power_monthly_tracker_kw
-    name: "HA1 – Peak billable power (monthly max)"
-    unique_id: ha1_peak_power_billable_monthly
-    cycle: monthly
-    delta_values: false
+  # ha1_peak_power_billable_monthly:
+  #   source: sensor.ha1_peak_billable_power_monthly_tracker_kw
+  #   name: "HA1 – Peak billable power (monthly max)"
+  #   unique_id: ha1_peak_power_billable_monthly
+  #   cycle: monthly
+  #   delta_values: false
+
+sensor:
+  - platform: statistics
+    name: "HA1 – Monthly peak power (real, history max)"
+    entity_id: sensor.ha1_peak_power_interval_real
+    state_characteristic: value_max
+    max_age:
+      days: 31
+    sampling_size: 500
+    precision: 3

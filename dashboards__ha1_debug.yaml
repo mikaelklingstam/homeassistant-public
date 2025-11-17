@@ -203,3 +203,189 @@ views:
                 name: Apply Grid Charge Max (kW) from Helper
               - entity: script.ha1_batt_set_peak_shaving_mode
                 name: Set Working Mode = Peak Shaving
+
+  - title: HA1 Status
+    path: ha1-status
+    icon: mdi:clipboard-pulse
+    cards:
+      - type: markdown
+        content: |
+          # 📋 HA1 System Status
+          Task 18 snapshot of HA1.3 core sensors, peak trackers and helper overrides.
+
+      - type: entities
+        title: ⚡ Core Power & Flow
+        show_header_toggle: false
+        entities:
+          - entity: sensor.ha1_power_consumption_total_kw
+            name: House Total Load (kW)
+          - entity: sensor.ha1_power_consumption_core_kw
+            name: House Core Load (kW)
+          - entity: sensor.ha1_power_net_load_kw
+            name: Grid Net Load (kW)
+          - type: divider
+          - entity: sensor.ha1_flow_grid_import
+            name: Grid Import (W)
+          - entity: sensor.ha1_flow_grid_export
+            name: Grid Export (W)
+          - entity: sensor.ha1_flow_ev_charging_power
+            name: EV Charging Flow (W)
+          # - entity: sensor.ha1_ev_share_of_house_load_pct
+          #   name: EV Share of House Load (%)  # TODO: reintroduce EV share metric in energy_metrics_1_3.yaml
+          - entity: sensor.ha1_power_balance_error_abs
+            name: Model Balance Error (W)
+          - entity: binary_sensor.ha1_flag_power_balance_bad
+            name: Model Balance Problem?
+
+      - type: entities
+        title: 🔋 Huawei Solar & Battery
+        show_header_toggle: false
+        entities:
+          - entity: sensor.ha1_huawei_solar_power
+            name: Huawei Solar Power (kW)
+          - entity: sensor.ha1_huawei_grid_power
+            name: Huawei Grid Power (kW)
+          - entity: sensor.ha1_huawei_battery_power
+            name: Huawei Battery Power (kW)
+          - entity: sensor.ha1_huawei_battery_soc
+            name: Huawei Battery SOC (%)
+          - entity: binary_sensor.ha1_huawei_battery_charging
+            name: Battery Charging?
+          - entity: binary_sensor.ha1_huawei_battery_discharging
+            name: Battery Discharging?
+          - type: divider
+          - entity: sensor.ha1_huawei_solar_energy_today
+            name: Solar Energy Today (kWh)
+          - entity: sensor.ha1_huawei_battery_energy_charged_today
+            name: Battery Charged Today (kWh)
+          - entity: sensor.ha1_huawei_battery_energy_discharged_today
+            name: Battery Discharged Today (kWh)
+          - type: divider
+          - entity: number.battery_grid_charge_maximum_power
+            name: Grid Charge Limit (W)
+          - entity: number.battery_maximum_charging_power
+            name: Total Charge Limit (W)
+          - entity: input_boolean.ha1_battery_allow_grid_charge
+            name: Allow Grid Charge
+          - entity: input_boolean.ha1_battery_peak_support_enabled
+            name: Peak Support Enabled
+
+      - type: entities
+        title: 🚗 EV Charger & Vehicle
+        show_header_toggle: false
+        entities:
+          - entity: binary_sensor.ev_is_charging
+            name: EV Charging?
+          - entity: sensor.ev_charger_power
+            name: EV Charger Power (kW)
+          - entity: sensor.ev_charger_power_w
+            name: EV Charger Power (W)
+          - entity: sensor.ev_charger_current
+            name: Charger Current (A)
+          - entity: sensor.ev_charger_current_limit
+            name: Charger Current Limit (A)
+          - type: divider
+          - entity: sensor.ev_session_energy
+            name: Session Energy (kWh)
+          - entity: sensor.ev_charging_time_left
+            name: Charging Time Left
+          - entity: sensor.ev_battery_soc
+            name: EV Battery SOC (%)
+          - entity: sensor.ev_estimated_range
+            name: EV Estimated Range (km)
+          - type: divider
+          - entity: input_number.ha1_ev_limit_current_a
+            name: EV Current Limit Helper (A)
+          - entity: input_boolean.ha1_force_ev_charge_now
+            name: Force Charge Now
+          - entity: input_boolean.ha1_control_ev_auto
+            name: EV Automations Enabled
+          - entity: input_boolean.ha1_ev_obey_peak_limit
+            name: Obey Peak Limit
+
+      - type: entities
+        title: 📈 Peak & Utility Summary
+        show_header_toggle: false
+        entities:
+          - entity: sensor.ha1_peak_billable_power_kw
+            name: Peak Billable Power (kW)
+          - entity: sensor.ha1_peak_power_interval_cost_adjusted
+            name: Peak Interval (Cost-Adjusted)
+          - entity: sensor.ha1_peak_power_interval_real
+            name: Peak Interval (Real)
+          - entity: sensor.ha1_monthly_peak_power_real_history_max
+            name: Monthly Peak (Real)
+          - entity: sensor.ha1_monthly_peak_power_cost_adjusted_top3
+            name: Monthly Peak (Billable Top3)  # TODO: ensure entity slug matches template after HA reload
+          - entity: sensor.ha1_monthly_peak_cost_estimated
+            name: Monthly Peak Cost (SEK)
+          - type: divider
+          - entity: sensor.ha1_grid_import_energy_daily
+            name: Grid Import Daily (kWh)
+          - entity: sensor.ha1_grid_import_energy_monthly
+            name: Grid Import Monthly (kWh)
+          - entity: sensor.ha1_grid_export_energy_daily
+            name: Grid Export Daily (kWh)
+          - entity: sensor.ha1_grid_export_energy_monthly
+            name: Grid Export Monthly (kWh)
+          - type: divider
+          - entity: input_number.ha1_daily_peak_power_cost_adjusted
+            name: Daily Peak (Helper)
+          - entity: input_number.ha1_peak_limit_kw
+            name: Peak Limit (kW)
+          - entity: input_number.ha1_peak_warning_kw
+            name: Peak Warning (kW)
+          - entity: input_select.ha1_peak_interval_mode
+            name: Peak Interval Length
+          - entity: input_number.ha1_month_peak_top1_kw
+            name: Month Peak #1
+          - entity: input_number.ha1_month_peak_top2_kw
+            name: Month Peak #2
+          - entity: input_number.ha1_month_peak_top3_kw
+            name: Month Peak #3
+          - entity: input_number.ha1_peak_tariff_price_per_kw
+            name: Peak Tariff Price (SEK/kW)
+          - entity: input_text.ha1_peak_tariff_agreement_name
+            name: Tariff Agreement Name
+
+      - type: entities
+        title: 🎛️ System Helpers & Overrides
+        show_header_toggle: false
+        entities:
+          - entity: input_boolean.ha1_automation_master_enabled
+            name: Master Automation Enable
+          - entity: input_boolean.ha1_peak_shaving_enabled
+            name: Peak Shaving Enabled
+          - entity: input_boolean.ha1_control_battery_auto
+            name: Battery Automations Enabled
+          - entity: input_boolean.ha1_control_ev_auto
+            name: EV Automations Enabled
+          - entity: input_boolean.ha1_battery_allow_grid_charge
+            name: Allow Grid Charge
+          - entity: input_boolean.ha1_battery_peak_support_enabled
+            name: Battery Peak Support
+          - entity: input_boolean.ha1_force_battery_charge_from_grid_now
+            name: Force Battery Grid Charge Now
+          - entity: input_boolean.ha1_force_ev_charge_now
+            name: Force EV Charge Now
+          - entity: input_boolean.ha1_comfort_override_enabled
+            name: Comfort Override Enabled
+          - entity: input_boolean.ha1_allow_high_price_heating
+            name: Allow High-Price Heating
+          - entity: input_boolean.ha1_debug_energy_logic
+            name: Debug Energy Logic
+          - entity: input_boolean.ha1_debug_notifications_enabled
+            name: Debug Notifications Enabled
+          - entity: input_boolean.ha1_debug_freeze_optimizers
+            name: Freeze Optimizers
+          - type: divider
+          - entity: input_number.ha1_battery_min_soc_normal
+            name: Battery Min SOC (Normal)
+          - entity: input_number.ha1_battery_max_soc_target
+            name: Battery Max SOC Target
+          - entity: input_number.ha1_batt_peak_shaving_soc
+            name: Battery Peak Shaving SOC
+          - entity: input_number.ha1_batt_grid_charge_cutoff_soc
+            name: Battery Grid Charge Cutoff SOC
+          - entity: input_number.ha1_batt_grid_charge_max_kw
+            name: Battery Grid Charge Max (kW)

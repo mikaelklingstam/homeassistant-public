@@ -1,0 +1,208 @@
+# packages/logging_diagnostics_1_3.yaml
+#
+# Task 18 – Logging, Diagnostics & Status Groups
+# - Provides HA1.3-specific diagnostic groups for grid, Huawei, EV and peak helpers
+# - Adds logbook-friendly automations for peak updates, EV charging and battery modes
+
+group:
+  ha1_diag_grid_flows:
+    name: "HA1 – Diagnostics: Grid & Flow"
+    icon: mdi:transmission-tower
+    entities:
+      - sensor.ha1_power_net_load_kw
+      - sensor.ha1_power_grid_total_net
+      - sensor.ha1_flow_grid_import
+      - sensor.ha1_flow_grid_export
+      - sensor.ha1_power_balance_error
+      - sensor.ha1_power_balance_error_abs
+      - binary_sensor.ha1_flag_power_balance_bad
+      - sensor.ha1_grid_meter_mismatch
+      - sensor.ha1_grid_meter_mismatch_abs
+      - binary_sensor.ha1_flag_grid_meter_mismatch
+
+  ha1_diag_huawei_battery:
+    name: "HA1 – Diagnostics: Huawei & Battery"
+    icon: mdi:battery-clock
+    entities:
+      - sensor.ha1_huawei_solar_power
+      - sensor.ha1_huawei_grid_power
+      - sensor.ha1_huawei_battery_power
+      - sensor.ha1_huawei_battery_soc
+      - sensor.ha1_huawei_solar_energy_today
+      - sensor.ha1_huawei_battery_energy_charged_today
+      - sensor.ha1_huawei_battery_energy_discharged_today
+      - binary_sensor.ha1_huawei_battery_charging
+      - binary_sensor.ha1_huawei_battery_discharging
+      - number.battery_grid_charge_maximum_power
+      - number.battery_maximum_charging_power
+      - input_boolean.ha1_battery_allow_grid_charge
+      - input_boolean.ha1_battery_peak_support_enabled
+
+  ha1_diag_ev_charger:
+    name: "HA1 – Diagnostics: EV Charger & Vehicle"
+    icon: mdi:ev-plug-type2
+    entities:
+      - binary_sensor.ev_is_charging
+      - sensor.ev_charger_power
+      - sensor.ev_charger_power_w
+      - sensor.ev_charger_current
+      - sensor.ev_charger_current_limit
+      - sensor.ev_session_energy
+      - sensor.ev_total_energy
+      - sensor.ev_charging_time_left
+      - sensor.ev_battery_soc
+      - sensor.ev_estimated_range
+      - input_number.ha1_ev_limit_current_a
+      - input_boolean.ha1_force_ev_charge_now
+      - input_boolean.ha1_ev_obey_peak_limit
+      - input_boolean.ha1_control_ev_auto
+
+  ha1_diag_peak_status:
+    name: "HA1 – Diagnostics: Peak & Utility Summary"
+    icon: mdi:chart-bell-curve
+    entities:
+      - sensor.ha1_peak_billable_power_kw
+      - sensor.ha1_peak_margin_kw
+      - sensor.ha1_peak_power_interval_cost_adjusted
+      - sensor.ha1_peak_power_interval_real
+      - sensor.ha1_monthly_peak_power_real_history_max
+      - sensor.ha1_monthly_peak_power_cost_adjusted_top3
+      # - sensor.ha1_peak_power_monthly_tracker_kw  # TODO: legacy tracker removed in favor of history_max sensor.ha1_monthly_peak_power_real_history_max
+      - sensor.ha1_monthly_peak_cost_estimated
+      - sensor.ha1_grid_import_energy_daily
+      - sensor.ha1_grid_import_energy_monthly
+      - sensor.ha1_grid_export_energy_daily
+      - sensor.ha1_grid_export_energy_monthly
+      - input_number.ha1_daily_peak_power_cost_adjusted
+      - input_number.ha1_peak_limit_kw
+      - input_number.ha1_peak_warning_kw
+      - input_number.ha1_peak_tariff_price_per_kw
+      - input_text.ha1_peak_tariff_agreement_name
+      - input_number.ha1_month_peak_top1_kw
+      - input_number.ha1_month_peak_top2_kw
+      - input_number.ha1_month_peak_top3_kw
+      - input_select.ha1_peak_interval_mode
+
+  ha1_diag_core_helpers:
+    name: "HA1 – Diagnostics: Core Helpers & Overrides"
+    icon: mdi:tune
+    entities:
+      - input_boolean.ha1_automation_master_enabled
+      - input_boolean.ha1_peak_shaving_enabled
+      - input_boolean.ha1_control_battery_auto
+      - input_boolean.ha1_control_ev_auto
+      - input_boolean.ha1_battery_allow_grid_charge
+      - input_boolean.ha1_battery_peak_support_enabled
+      - input_boolean.ha1_force_battery_charge_from_grid_now
+      - input_boolean.ha1_force_ev_charge_now
+      - input_boolean.ha1_comfort_override_enabled
+      - input_boolean.ha1_allow_high_price_heating
+      - input_boolean.ha1_debug_energy_logic
+      - input_boolean.ha1_debug_notifications_enabled
+      - input_boolean.ha1_debug_freeze_optimizers
+      - input_number.ha1_battery_min_soc_normal
+      - input_number.ha1_battery_max_soc_target
+      - input_number.ha1_batt_peak_shaving_soc
+      - input_number.ha1_batt_grid_charge_cutoff_soc
+      - input_number.ha1_batt_grid_charge_max_kw
+
+
+automation:
+  - id: ha1_log_peak_billable_update
+    alias: "HA1 – Log monthly peak increases"
+    description: "Task 18 – record logbook entries whenever the billable monthly peak increases."
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: sensor.ha1_monthly_peak_power_cost_adjusted_top3
+    condition:
+      - condition: template
+        value_template: >-
+          {% set from_ok = trigger.from_state is not none and trigger.from_state.state not in ['unknown', 'unavailable', 'none'] %}
+          {% set to_ok = trigger.to_state is not none and trigger.to_state.state not in ['unknown', 'unavailable', 'none'] %}
+          {% set old = trigger.from_state.state | float(0) if from_ok else 0 %}
+          {% set new = trigger.to_state.state | float(0) if to_ok else 0 %}
+          {{ from_ok and to_ok and (new - old) > 0.02 }}
+    action:
+      - variables:
+          new_peak: "{{ trigger.to_state.state | float(0) }}"
+          previous_peak: "{{ trigger.from_state.state | float(0) if trigger.from_state is not none else 0 }}"
+          delta: >-
+            {{ (trigger.to_state.state | float(0)) - (trigger.from_state.state | float(0) if trigger.from_state is not none else 0) }}
+          interval_mode: "{{ states('input_select.ha1_peak_interval_mode') }}"
+      - service: logbook.log
+        data:
+          name: "HA1 Peak Tracker"
+          message: >-
+            New billable monthly peak recorded: {{ new_peak | float | round(2) }} kW (Δ{{ delta | float | round(2) }} kW, {{ interval_mode }} slots).
+          entity_id: sensor.ha1_monthly_peak_power_cost_adjusted_top3
+
+  - id: ha1_log_ev_charging_started
+    alias: "HA1 – Log EV charging start"
+    description: "Task 18 – logbook entry when the Easee/ID.4 charging session starts."
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.ev_is_charging
+        to: 'on'
+    condition:
+      - condition: template
+        value_template: >-
+          {{ trigger.from_state is none or trigger.from_state.state != 'on' }}
+    action:
+      - variables:
+          power_kw: "{{ states('sensor.ev_charger_power') | float(0) }}"
+          amps: "{{ states('sensor.ev_charger_current') | float(0) }}"
+          limit_amps: "{{ states('sensor.ev_charger_current_limit') | float(0) }}"
+      - service: logbook.log
+        data:
+          name: "HA1 EV Charger"
+          message: >-
+            EV charging started ({{ power_kw | float | round(2) }} kW @ {{ amps | float | round(0) }} A, limit {{ limit_amps | float | round(0) }} A).
+          entity_id: binary_sensor.ev_is_charging
+
+  - id: ha1_log_ev_charging_stopped
+    alias: "HA1 – Log EV charging stop"
+    description: "Task 18 – logbook entry when the Easee/ID.4 charging session ends."
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.ev_is_charging
+        to: 'off'
+    condition:
+      - condition: template
+        value_template: >-
+          {{ trigger.from_state is not none and trigger.from_state.state == 'on' }}
+    action:
+      - variables:
+          session_energy: "{{ states('sensor.ev_session_energy') | float(0) }}"
+          soc: "{{ states('sensor.ev_battery_soc') | float(0) }}"
+          range_km: "{{ states('sensor.ev_estimated_range') | float(0) }}"
+      - service: logbook.log
+        data:
+          name: "HA1 EV Charger"
+          message: >-
+            EV charging stopped. Session {{ session_energy | float | round(2) }} kWh, SOC {{ soc | float | round(0) }}%, est. range {{ range_km | float | round(0) }} km.
+          entity_id: binary_sensor.ev_is_charging
+
+  - id: ha1_log_battery_mode_change
+    alias: "HA1 – Log Huawei battery working mode changes"
+    description: "Task 18 – logbook entry when the Huawei battery working mode changes."
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: select.battery_working_mode
+    condition:
+      - condition: template
+        value_template: >-
+          {{ trigger.to_state is not none and trigger.to_state.state not in ['unknown', 'unavailable', 'none'] and (trigger.from_state is none or trigger.from_state.state != trigger.to_state.state) }}
+    action:
+      - variables:
+          new_mode: "{{ trigger.to_state.state }}"
+          old_mode: "{{ trigger.from_state.state if trigger.from_state is not none and trigger.from_state.state not in ['unknown', 'unavailable', 'none'] else 'unknown' }}"
+      - service: logbook.log
+        data:
+          name: "HA1 Battery"
+          message: >-
+            Huawei battery working mode changed from {{ old_mode }} to {{ new_mode }}.
+          entity_id: select.battery_working_mode

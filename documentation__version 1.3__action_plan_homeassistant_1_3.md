@@ -72,7 +72,7 @@ Task 15 finishes the sensor/helper foundation by layering planning-friendly metr
 - `packages/energy_core_1_3.yaml` now exposes canonical HA1 power/flow signals for solar → house/grid, battery → house/grid, and EV load so every downstream consumer uses the same sign conventions.  
 - `packages/energy_metrics_1_3.yaml` converts the raw W-based channels into human-scale kW summaries (`sensor.ha1_power_consumption_total_kw`, `sensor.ha1_power_net_load_kw`, etc.), peak-limit helpers, and EV share KPIs.  
 - Statistics-based rolling averages (`sensor.ha1_power_house_total_avg_1m`, `sensor.ha1_flow_grid_import_avg_5m`, etc.) smooth noisy measurements for dashboards and guards.  
-- The same package also adds Huawei charge-limit mirrors (`sensor.ha1_batt_grid_charge_limit_kw`, `sensor.ha1_batt_total_charge_limit_kw`) so automations know the physical caps before scheduling EV/battery activity.  
+- The same package also surfaces the Huawei charge-limit numbers (`number.battery_grid_charge_maximum_power`, `number.battery_maximum_charging_power`) so automations know the physical caps before scheduling EV/battery activity.  
 - Utility meters for grid import/export (daily + weekly) and the legacy `sensor.home_load` alias were refreshed to keep old dashboards working without extra YAML.
 
 These deliverables close Phase 3 so Task 16 can introduce helper-driven behavior without reworking sensors again.

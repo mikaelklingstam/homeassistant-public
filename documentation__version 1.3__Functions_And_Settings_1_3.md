@@ -34,6 +34,30 @@ Limit monthly peak power while respecting comfort and necessary charging.
   - “Allow comfort override”
 - Related sensors from grid meter and utility meters.
 
+## Peak Control & Effect Tariff (HA 1.3)
+
+### Peak helpers and tariff inputs (HA 1.3)
+
+| Entity ID                                       | Type          | Description |
+|-------------------------------------------------|---------------|-------------|
+| `input_select.ha1_peak_interval_mode`          | input_select  | Selects whether peak calculation uses hourly or 15-minute intervals. Options: `"hour"`, `"15min"`. |
+| `input_number.ha1_daily_peak_power_cost_adjusted` | input_number | Highest interval power (cost-adjusted) for the current day. |
+| `input_number.ha1_month_peak_top1_kw`          | input_number  | Highest daily peak (kW) in the current month. |
+| `input_number.ha1_month_peak_top2_kw`          | input_number  | Second-highest daily peak (kW) in the current month. |
+| `input_number.ha1_month_peak_top3_kw`          | input_number  | Third-highest daily peak (kW) in the current month. |
+| `input_number.ha1_peak_tariff_price_per_kw`    | input_number  | Peak tariff price (SEK/kW). |
+| `input_text.ha1_peak_tariff_agreement_name`    | input_text    | Agreement identifier/name (metadata only). |
+
+**Ellevio effect tariff logic (HA 1.3)**  
+Peak billing is calculated as:  
+1. Determine average import power per interval (1 hour or 15 min).  
+2. Apply 50% weighting between 22:00–06:00.  
+3. Track the highest interval per day (cost-adjusted).  
+4. Take the highest 3 days of the month.  
+5. Final billed peak = average of those 3 values.
+
+This section defines all helpers and sensors needed to support that logic.
+
 ---
 
 ## 2. Price-Driven Logic (Nordpool)
@@ -194,7 +218,7 @@ All `ha1_power_*` sensors use **W** unless the name explicitly ends with `_kw`.
 
 | Entity ID | Description | Unit | Based On |
 |----------|-------------|------|----------|
-| **sensor.ha1_ev_share_of_house_load_pct** | EV charging as a percentage of total household load. Useful for detecting when EV dominates consumption. | % | `ha1_power_ev_charger`, `ha1_power_house_total` |
+<!-- TODO: sensor.ha1_ev_share_of_house_load_pct – restore EV share metric once rebuilt in energy_metrics_1_3.yaml -->
 | **sensor.ha1_effective_peak_power_reference_kw** | Effective peak limit currently enforced by the system. Placeholder until Task 16 introduces helper-driven rule (incl. 22–06 0.5 factor). | kW | `input_number.ha1_peak_limit_kw` (future) |
 | **sensor.ha1_peak_margin_kw** | Difference between current total consumption (kW) and the effective peak limit. Negative = under limit, positive = over limit. | kW | `ha1_power_consumption_total_kw`, `ha1_effective_peak_power_reference_kw` |
 
@@ -206,8 +230,8 @@ These expose the real physical constraints of your Huawei inverter/LUNA system.
 
 | Entity ID | Description | Unit | Based Based On |
 |----------|-------------|------|----------------|
-| **sensor.ha1_batt_grid_charge_limit_kw** | Maximum battery **grid-charging power** the inverter will accept. Clamped to **2.5 kW** as per hardware limit. | kW | `number.battery_grid_charge_maximum_power` (W) |
-| **sensor.ha1_batt_total_charge_limit_kw** | Maximum **overall** battery charge rate (grid + solar). Reflects the inverter’s full charging capability. | kW | `number.battery_maximum_charging_power` (W) |
+| **number.battery_grid_charge_maximum_power** | Maximum battery **grid-charging power** the inverter will accept. Clamped to **2.5 kW** as per hardware limit. | W | Huawei Solar integration |
+| **number.battery_maximum_charging_power** | Maximum **overall** battery charge rate (grid + solar). Reflects the inverter’s full charging capability. | W | Huawei Solar integration |
 
 Notes:  
 - Grid-only charging is capped at ~2500 W.  

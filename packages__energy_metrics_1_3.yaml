@@ -75,57 +75,60 @@ template:
       # EV share and planning meta sensors
       # --------------------------------------------------
 
-      - name: "HA1 EV Share of House Load"
-        unique_id: ha1_ev_share_of_house_load_pct
-        unit_of_measurement: "%"
-        state_class: measurement
-        icon: "mdi:car-electric"
-        availability: >-
-          {{ not states('sensor.ha1_power_house_total') in ['unknown', 'unavailable', ''] }}
-        state: >
-          {% set house_w = states('sensor.ha1_power_house_total') | float(0) %}
-          {% set ev_w    = states('sensor.ha1_power_ev_charger') | float(0) %}
-          {% if house_w | abs < 1 %}
-            0
-          {% else %}
-            {{ (100 * ev_w / house_w) | round(1) }}
-          {% endif %}
+      # TODO: sensor.ha1_ev_share_of_house_load_pct – reintroduce EV share metric once Task 18 follow-up defines a reliable calculation.
+      # - name: "HA1 EV Share of House Load"
+      #   unique_id: ha1_ev_share_of_house_load_pct
+      #   unit_of_measurement: "%"
+      #   state_class: measurement
+      #   icon: "mdi:car-electric"
+      #   availability: >-
+      #     {{ not states('sensor.ha1_power_house_total') in ['unknown', 'unavailable', ''] }}
+      #   state: >
+      #     {% set house_w = states('sensor.ha1_power_house_total') | float(0) %}
+      #     {% set ev_w    = states('sensor.ha1_power_ev_charger') | float(0) %}
+      #     {% if house_w | abs < 1 %}
+      #       0
+      #     {% else %}
+      #       {{ (100 * ev_w / house_w) | round(1) }}
+      #     {% endif %}
 
-      - name: "HA1 Battery Grid Charge Limit kW"
-        unique_id: ha1_batt_grid_charge_limit_kw
-        unit_of_measurement: "kW"
-        device_class: power
-        state_class: measurement
-        icon: "mdi:transmission-tower-export"
-        availability: >-
-          {{ not states('number.battery_grid_charge_maximum_power') in ['unknown','unavailable',''] }}
-        state: >
-          {% set w = states('number.battery_grid_charge_maximum_power') | float(0) %}
-          {% set kw = (w / 1000) | float(0) %}
-          {# Clamp to physical grid-charge limit 2.5 kW #}
-          {% if kw < 0 %}
-            0
-          {% elif kw > 2.5 %}
-            2.5
-          {% else %}
-            {{ kw | round(2) }}
-          {% endif %}
+      # TODO: sensor.ha1_batt_grid_charge_limit_kw – prefer native Huawei numbers. Keep template commented for potential future use.
+      # - name: "HA1 Battery Grid Charge Limit kW"
+      #   unique_id: ha1_batt_grid_charge_limit_kw
+      #   unit_of_measurement: "kW"
+      #   device_class: power
+      #   state_class: measurement
+      #   icon: "mdi:transmission-tower-export"
+      #   availability: >-
+      #     {{ not states('number.battery_grid_charge_maximum_power') in ['unknown','unavailable',''] }}
+      #   state: >
+      #     {% set w = states('number.battery_grid_charge_maximum_power') | float(0) %}
+      #     {% set kw = (w / 1000) | float(0) %}
+      #     {# Clamp to physical grid-charge limit 2.5 kW #}
+      #     {% if kw < 0 %}
+      #       0
+      #     {% elif kw > 2.5 %}
+      #       2.5
+      #     {% else %}
+      #       {{ kw | round(2) }}
+      #     {% endif %}
 
-      - name: "HA1 Battery Total Charge Limit kW"
-        unique_id: ha1_batt_total_charge_limit_kw
-        unit_of_measurement: "kW"
-        device_class: power
-        state_class: measurement
-        icon: "mdi:battery-charging-high"
-        availability: >-
-          {{ not states('number.battery_maximum_charging_power') in ['unknown','unavailable',''] }}
-        state: >
-          {% set w = states('number.battery_maximum_charging_power') | float(0) %}
-          {% if w <= 0 %}
-            0
-          {% else %}
-            {{ (w / 1000) | round(2) }}
-          {% endif %}
+      # TODO: sensor.ha1_batt_total_charge_limit_kw – use number.battery_maximum_charging_power directly until a new helper is justified.
+      # - name: "HA1 Battery Total Charge Limit kW"
+      #   unique_id: ha1_batt_total_charge_limit_kw
+      #   unit_of_measurement: "kW"
+      #   device_class: power
+      #   state_class: measurement
+      #   icon: "mdi:battery-charging-high"
+      #   availability: >-
+      #     {{ not states('number.battery_maximum_charging_power') in ['unknown','unavailable',''] }}
+      #   state: >
+      #     {% set w = states('number.battery_maximum_charging_power') | float(0) %}
+      #     {% if w <= 0 %}
+      #       0
+      #     {% else %}
+      #       {{ (w / 1000) | round(2) }}
+      #     {% endif %}
 
 sensor:
   # Rolling averages / smoothing for grid power signals

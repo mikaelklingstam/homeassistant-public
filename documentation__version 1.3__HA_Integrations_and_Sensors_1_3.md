@@ -206,9 +206,22 @@ These sensors are the **standard interface** for all EV-related logic in HomeAss
 | `sensor.ha1_power_net_load_kw` / `_abs_kw` | Signed/absolute net grid load in kW. | `sensor.ha1_power_grid_total_net`. |
 | `sensor.ha1_effective_peak_power_reference_kw` | Active peak limit reference (currently helper passthrough). | `input_number.ha1_peak_limit_kw`. |
 | `sensor.ha1_peak_margin_kw` | Distance between current load and peak limit. | `sensor.ha1_power_consumption_total_kw`. |
-| `sensor.ha1_ev_share_of_house_load_pct` | Shows when EV dominates consumption. | `sensor.ha1_power_house_total`, `sensor.ha1_power_ev_charger`. |
-| `sensor.ha1_batt_grid_charge_limit_kw` / `_total_charge_limit_kw` | Mirrors Huawei charge limits in kW, clamped. | `number.battery_grid_charge_maximum_power`, `number.battery_maximum_charging_power`. |
+<!-- TODO: sensor.ha1_ev_share_of_house_load_pct – rebuild EV share helper. -->
+| `number.battery_grid_charge_maximum_power` / `number.battery_maximum_charging_power` | Native Huawei charge-limit numbers (grid-only vs total). Used for planning helpers. | Huawei Solar integration |
 | Rolling averages (`sensor.ha1_power_grid_net_avg_1m/5m`, `sensor.ha1_power_house_total_avg_1m`, `sensor.ha1_flow_grid_import_avg_1m/5m`, etc.) | Smooth noisy datasets for automation guards and dashboards. | `statistics` platform inside the same package. |
+
+## Utility Meters & Energy Counters
+
+### Utility meters – Grid import/export (HA 1.3)
+
+| Entity ID                                 | Description                                      |
+|-------------------------------------------|--------------------------------------------------|
+| `sensor.ha1_grid_import_energy_daily`     | Grid import energy per day (kWh).               |
+| `sensor.ha1_grid_import_energy_monthly`   | Grid import energy per month (kWh).             |
+| `sensor.ha1_grid_import_energy_hourly`    | Grid import energy per hour (kWh); basis for hourly peak calculation. |
+| `sensor.ha1_grid_import_energy_quarter_hour` | Grid import energy per 15-minute interval (kWh); used when peak mode is 15 min. |
+| `sensor.ha1_grid_export_energy_daily`     | Grid export energy per day (kWh).               |
+| `sensor.ha1_grid_export_energy_monthly`   | Grid export energy per month (kWh).             |
 
 ### 2.3 Utility Meters (Grid)
 
@@ -218,6 +231,21 @@ These sensors are the **standard interface** for all EV-related logic in HomeAss
 | `sensor.ha1_grid_export_energy_daily` / `_weekly` | Daily / weekly export totals. | Source: `sensor.qp57qz4q_export_energy`. |
 
 These counters supersede ad-hoc dashboards and will back Task 16 peak-cost monitoring.
+
+## Peak Tracking & Tariff Logic
+
+### Peak tracking – interval power, peaks and cost (HA 1.3)
+
+| Entity ID                                              | Description |
+|--------------------------------------------------------|-------------|
+| `sensor.ha1_peak_interval_length_hours`               | Current peak interval length in hours: `1.0` for hourly mode, `0.25` for 15-minute mode. |
+| `sensor.ha1_import_energy_current_interval`           | Import energy for the active interval (kWh). Selects hourly or 15-minute utility meter based on peak interval mode. |
+| `sensor.ha1_peak_power_interval_real`                 | Real average import power for the current interval (kW). |
+| `sensor.ha1_peak_power_interval_cost_adjusted`        | Cost-adjusted interval power (50% during 22:00–06:00). |
+| `sensor.ha1_monthly_peak_power_cost_adjusted_top3`    | Ellevio billing peak (kW): average of the top 3 daily cost-adjusted peaks. |
+| `sensor.ha1_monthly_peak_power_real`                  | Real interval power passthrough (kW) used for history/analytics. |
+| `sensor.ha1_monthly_peak_power_real_history_max`      | 31-day historical maximum real interval power (statistics). |
+| `sensor.ha1_monthly_peak_cost_estimated`              | Estimated peak cost (SEK): `kW * input_number.ha1_peak_tariff_price_per_kw`. |
 
 ---
 
@@ -495,7 +523,7 @@ All `ha1_power_*` sensors use **W** unless the name explicitly ends with `_kw`.
 
 | Entity ID | Description | Unit | Based On |
 |----------|-------------|------|----------|
-| **sensor.ha1_ev_share_of_house_load_pct** | EV charging as a percentage of total household load. Useful for detecting when EV dominates consumption. | % | `ha1_power_ev_charger`, `ha1_power_house_total` |
+<!-- TODO: sensor.ha1_ev_share_of_house_load_pct – recreate EV share metric once available. -->
 | **sensor.ha1_effective_peak_power_reference_kw** | Effective peak limit currently enforced by the system. Placeholder until Task 16 introduces helper-driven rule (incl. 22–06 0.5 factor). | kW | `input_number.ha1_peak_limit_kw` (future) |
 | **sensor.ha1_peak_margin_kw** | Difference between current total consumption (kW) and the effective peak limit. Negative = under limit, positive = over limit. | kW | `ha1_power_consumption_total_kw`, `ha1_effective_peak_power_reference_kw` |
 
@@ -507,8 +535,8 @@ These expose the real physical constraints of your Huawei inverter/LUNA system.
 
 | Entity ID | Description | Unit | Based Based On |
 |----------|-------------|------|----------------|
-| **sensor.ha1_batt_grid_charge_limit_kw** | Maximum battery **grid-charging power** the inverter will accept. Clamped to **2.5 kW** as per hardware limit. | kW | `number.battery_grid_charge_maximum_power` (W) |
-| **sensor.ha1_batt_total_charge_limit_kw** | Maximum **overall** battery charge rate (grid + solar). Reflects the inverter’s full charging capability. | kW | `number.battery_maximum_charging_power` (W) |
+| **number.battery_grid_charge_maximum_power** | Maximum battery **grid-charging power** the inverter will accept. Clamped at the Huawei hardware limit. | W | Huawei Solar integration |
+| **number.battery_maximum_charging_power** | Maximum **overall** battery charge rate (grid + solar). Reflects the inverter’s full charging capability. | W | Huawei Solar integration |
 
 Notes:  
 - Grid-only charging is capped at ~2500 W.  
