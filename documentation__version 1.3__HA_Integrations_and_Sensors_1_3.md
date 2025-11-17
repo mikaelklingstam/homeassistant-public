@@ -1,4 +1,4 @@
-Last updated: 2025-11-17 01:06 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-17 14:18 (CET) — Authorized by ChatGPT
 
 # 🔌 Integrations & Sensors – HomeAssistant 1.3
 
@@ -85,6 +85,28 @@ This file is the **technical reference**; the rulebook remains the high-level de
 - `sensor.qp57qz4q_export_energy`
   - Canonical: Total grid export (kWh)
   - Device class: `energy`
+
+**Utility meters (HA1 billing windows)**
+
+- `sensor.ha1_grid_import_energy_daily`
+  - Source: `sensor.qp57qz4q_import_energy` via `utility_meter`
+  - Cycle: resets daily
+  - Use: tracks daily import for dashboards, reports, and sanity checks versus Nordpool billing.
+
+- `sensor.ha1_grid_import_energy_weekly`
+  - Source: `sensor.qp57qz4q_import_energy`
+  - Cycle: resets weekly (Utility Meter default week)
+  - Use: reference for weekly import budgets and future Task 16 alerts.
+
+- `sensor.ha1_grid_export_energy_daily`
+  - Source: `sensor.qp57qz4q_export_energy`
+  - Cycle: resets daily
+  - Use: monitors daily export totals when comparing PV/battery strategies.
+
+- `sensor.ha1_grid_export_energy_weekly`
+  - Source: `sensor.qp57qz4q_export_energy`
+  - Cycle: resets weekly (Utility Meter default week)
+  - Use: weekly export accounting for dashboards/notifications.
 
 **Diagnostic / secondary (Huawei Solar meter)**
 

@@ -1,4 +1,4 @@
-Last updated: 2025-11-17 01:06 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-17 14:20 (CET) — Authorized by ChatGPT
 
 # ⚙️ Functions & Settings – HomeAssistant 1.3
 
@@ -22,6 +22,10 @@ Limit monthly peak power while respecting comfort and necessary charging.
 - `sensor.grid_import_export_power` – signed kW value used for peak math (positive import / negative export).
 - `sensor.grid_active_power` – magnitude-only kW reference for dashboards and guards.
 - `sensor.qp57qz4q_import_energy` / `sensor.qp57qz4q_export_energy` – canonical daily/ monthly billing totals.
+
+**Utility meter roll-ups (Task 15 additions):**
+- `sensor.ha1_grid_import_energy_daily` / `sensor.ha1_grid_export_energy_daily` – daily import/export counters derived from the canonical Easee meter totals. Used for dashboards, reports, and quick telemetry checks before billing data arrives.
+- `sensor.ha1_grid_import_energy_weekly` / `sensor.ha1_grid_export_energy_weekly` – weekly versions of the above, intended for future budget/alert automations (e.g., Task 16 peak monitoring).
 
 **Controlled by (planned):**
 - Peak target slider(s).
