@@ -404,3 +404,118 @@ Expose a normalized weather interface (SMHI primary, Met.no backup) and Forecast
 - Dashboards should pull outdoor temperature/humidity/wind from the HA1 template sensors, not directly from the weather integration, to keep units/sign conventions uniform.
 - Climate/comfort automations (including the AC section above) will start referencing `sensor.ha1_outdoor_temperature` once the guardrails are defined.
 - When Task 13+ introduces forecasting logic, reuse these Forecast.Solar entities instead of recreating ad-hoc forecasts.
+
+## 🔍 Diagnostics & Status (HA 1.3)
+
+The Diagnostics layer provides a unified technical overview of the HomeAssistant 1.3 energy system.
+It is designed for **debugging**, **system validation**, and **automation insight**, not as a GUI layer.
+
+Diagnostics are divided into functional groups:
+
+### 🏭 `group.ha1_diag_grid` — Grid & Import/Export
+Key sensors related to grid interaction:
+- Real-time import/export power
+- Net grid power (kW)
+- Interval power (real & cost-adjusted)
+- Daily/hourly/monthly import energy
+- Monthly peak values
+
+Used to verify tariff behaviour, interval tracking, and peak shaving.
+
+### 🔋 `group.ha1_diag_solar_battery` — Solar & Battery
+Summarizes PV production, battery power flow, and internal energy routing:
+- Solar input/output power
+- Battery SOC and charge/discharge power
+- Canonical HA1 flows (solar→house, solar→battery, battery→house, house→grid, EV from grid)
+
+Used to confirm correct energy distribution between PV, battery, house, and EV.
+
+### 🚗 `group.ha1_diag_ev` — EV & Charger
+Combines Easee + ID.4 entities:
+- Instant charging power
+- Charger state & enable switch
+- Session and lifetime energy
+- Vehicle charging time left, SOC, and charging state
+
+Used to verify EV charging behaviour and automations.
+
+### 💰 `group.ha1_diag_prices` — Nordpool Prices
+Includes Nordpool raw price and HA1-level derived price signals:
+- Current price
+- Today’s average/min/max
+- Status sensors (cheap/normal/expensive, relative%)
+
+Used to inspect price-driven automation behaviour.
+
+### 📈 `group.ha1_diag_peaks` — Peak Tracking
+Contains all peak and interval-based tariff metrics:
+- Current interval length, energy, power
+- Top-3 peaks
+- Monthly peak values (real & cost-adjusted)
+- Monthly top-3 averages
+
+Used to validate peak-shaving logic and tariff calculations.
+
+### 🛠 `group.ha1_diag_helpers` — Modes, Toggles & Overrides
+Displays the current system control state:
+- Peak interval mode
+- Peak limit & warning margin
+- Battery automation toggle + limits
+- EV automation toggle + SOC & current limits
+- Comfort override + force-charge controls
+
+Used to inspect current automation inputs/settings.
+
+## ⭐ `group.ha1_system_status` — Headline Status View
+
+A compact group used for GUI and at-a-glance monitoring.
+Includes:
+- Net grid power (kW)
+- Battery SOC
+- EV charging power
+- Current price
+- Interval power
+- Peak shaving enabled
+- Price level (cheap/normal/expensive)
+- Peak near limit (boolean)
+
+Designed as the **top-level card** in the upcoming HA 1.3 GUI work.
+
+## 🧠 Status Sensors (HA1 Summary Signals)
+
+The diagnostics layer defines several “meta” state sensors:
+
+**`sensor.ha1_status_price_level`**  
+Classifies current price vs average price.  
+States: **cheap**, **normal**, **expensive**
+
+**`sensor.ha1_status_price_relative`**  
+Percentage difference between current and today’s average price.
+
+**`sensor.ha1_status_peak_near_limit`**  
+True when interval power is within the configured peak-warning margin.
+
+**`sensor.ha1_status_ev_state`**  
+Summarized EV state: **charging**, **plugged in**, **idle**
+
+**`sensor.ha1_status_battery_state`**  
+Summarized battery behaviour: **charging**, **discharging**, **idle**
+
+## 📝 Logging Helper Scripts (HA1 Unified Logbook Events)
+
+The HA 1.3 logging package provides reusable scripts for writing structured messages to the Logbook:
+- `script.ha1_log` — Generic events
+- `script.ha1_log_peak` — Peak-related events
+- `script.ha1_log_price` — Price transitions
+- `script.ha1_log_ev` — EV/charger events
+- `script.ha1_log_battery` — Battery events
+- `script.ha1_log_override` — Overrides & system mode changes
+
+Used by automations to ensure clean, consistent Logbook entries.
+
+## ✔ Purpose of the Diagnostics Layer
+- Make the system easy to debug
+- Give clear insight into automation decisions
+- Ensure HA1.3 behaviour is predictable and inspectable
+- Provide the backend structure for GUI views (Tasks 19–22)
+- Support future AI/optimizer logic

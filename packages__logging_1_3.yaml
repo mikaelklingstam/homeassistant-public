@@ -1,0 +1,89 @@
+###############################################################################
+# HomeAssistant 1.3 – Logging Helper Scripts
+# File: packages/logging_1_3.yaml
+#
+# Purpose:
+#   - Provide reusable logging functions for automations
+#   - Standardize message formatting across HA1 subsystems
+#   - Keep automations clean and consistent
+###############################################################################
+
+script:
+
+  ###########################################################################
+  # Generic Logging Script
+  ###########################################################################
+  ha1_log:
+    alias: "HA1 – Log: Generic"
+    description: "Write a generic HA1 message to the logbook"
+    mode: parallel
+    sequence:
+      - service: logbook.log
+        data:
+          name: "HA1"
+          message: "{{ message }}"
+
+  ###########################################################################
+  # Peak Event Logging
+  ###########################################################################
+  ha1_log_peak:
+    alias: "HA1 – Log: Peak Event"
+    description: "Log peak-related events (new peak, interval warning, etc.)"
+    mode: parallel
+    sequence:
+      - service: logbook.log
+        data:
+          name: "HA1 Peak"
+          message: "{{ message }}"
+
+  ###########################################################################
+  # Price Event Logging
+  ###########################################################################
+  ha1_log_price:
+    alias: "HA1 – Log: Price Event"
+    description: "Log price-related events (cheap/normal/expensive or hourly transitions)"
+    mode: parallel
+    sequence:
+      - service: logbook.log
+        data:
+          name: "HA1 Price"
+          message: "{{ message }}"
+
+  ###########################################################################
+  # EV/Charger Logging
+  ###########################################################################
+  ha1_log_ev:
+    alias: "HA1 – Log: EV Event"
+    description: "Log EV/charger events (start/stop, plugged/unplugged)"
+    mode: parallel
+    sequence:
+      - service: logbook.log
+        data:
+          name: "HA1 EV"
+          message: "{{ message }}"
+
+  ###########################################################################
+  # Battery Logging
+  ###########################################################################
+  ha1_log_battery:
+    alias: "HA1 – Log: Battery Event"
+    description: "Log battery charging/discharging/min SOC events"
+    mode: parallel
+    sequence:
+      - service: logbook.log
+        data:
+          name: "HA1 Battery"
+          message: "{{ message }}"
+
+  ###########################################################################
+  # Override / System Mode Logging
+  ###########################################################################
+  ha1_log_override:
+    alias: "HA1 – Log: Overrides & System Mode"
+    description: "Log comfort overrides, system mode changes, and force-charge events"
+    mode: parallel
+    sequence:
+      - service: logbook.log
+        data:
+          name: "HA1 Override"
+          message: "{{ message }}"
