@@ -67,7 +67,7 @@ group:
   ha1_diag_prices:
     name: "HA1 – Diagnostics – Prices"
     entities:
-      - sensor.nordpool_kwh_se3_sek_3_10_0
+      - sensor.nordpool_kwh_se3_sek_3_10_025
       - sensor.ha1_price_current
       - sensor.ha1_price_today_avg
       - sensor.ha1_price_today_min

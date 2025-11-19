@@ -1,0 +1,62 @@
+###############################################################################
+# HomeAssistant 1.3 – Price & Interval Compat Layer
+# File: packages/ha1_price_and_interval_compat_1_3.yaml
+#
+# Purpose:
+#   - Provide missing ha1_* sensors used by HA1 Debug / Energy view:
+#       * ha1_price_current / ha1_price_today_avg / min / max
+#       * ha1_grid_import_energy_quarter_hour
+#       * ha1_peak_interval_length_hours
+###############################################################################
+
+template:
+  - sensor:
+
+      #######################################################################
+      # PRICE HELPERS (based on Nordpool main sensor)
+      #######################################################################
+      - name: "HA1 Price Current"
+        unit_of_measurement: "SEK/kWh"
+        state: >
+          {{ states('sensor.nordpool_kwh_se3_sek_3_10_025') | float(0) }}
+
+      - name: "HA1 Price Today Avg"
+        unit_of_measurement: "SEK/kWh"
+        state: >
+          {{ state_attr('sensor.nordpool_kwh_se3_sek_3_10_025', 'average') | float(0) }}
+
+      - name: "HA1 Price Today Min"
+        unit_of_measurement: "SEK/kWh"
+        state: >
+          {{ state_attr('sensor.nordpool_kwh_se3_sek_3_10_025', 'min') | float(0) }}
+
+      - name: "HA1 Price Today Max"
+        unit_of_measurement: "SEK/kWh"
+        state: >
+          {{ state_attr('sensor.nordpool_kwh_se3_sek_3_10_025', 'max') | float(0) }}
+
+      #######################################################################
+      # GRID IMPORT ENERGY – QUARTER HOUR
+      # Alias to the "current interval" import energy sensor
+      #######################################################################
+      - name: "HA1 Grid Import Energy Quarter Hour"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state: >
+          {{ states('sensor.ha1_import_energy_current_interval') | float(0) }}
+
+      #######################################################################
+      # PEAK INTERVAL LENGTH (HOURS)
+      # Derived from peak interval mode; adjust mode strings if needed.
+      #######################################################################
+      - name: "HA1 Peak Interval Length Hours"
+        unit_of_measurement: "h"
+        state: >
+          {% set mode = states('input_select.ha1_peak_interval_mode') %}
+          {% if mode in ['15min', '15 min', '15 minutes'] %}
+            0.25
+          {% elif mode in ['60min', '1h', '60 min', '60 minutes', '1 hour'] %}
+            1
+          {% else %}
+            1
+          {% endif %}

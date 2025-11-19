@@ -144,3 +144,10 @@ These deliverables close Phase 3 so Task 16 can introduce helper-driven behavior
 - ✅ Task 12 – Integration #6: Weather & Environment (SMHI primary provider, Met.no backup, Forecast.Solar documented for PV planning).
 - [x] Task 14 – Template Sensor Framework & Naming Standard (completed; see Task 14 summary above).
 - ✅ Task 15 – Sensor Layer / Template Sensors & Rolling Metrics (canonical `ha1_*` flows, kW rollups, statistics smoothing, and Huawei charge-limit mirrors).
+
+### ✅ Task 18 – Diagnostics & Status Layer
+
+- Implemented HA1 diagnostics groups (grid, solar/battery, EV, prices, peaks, helpers).
+- Added HA1 system status sensors for at-a-glance behaviour.
+- Introduced HA1 logging helper scripts for structured Logbook events.
+- Verified and fixed all HA1 Debug / Energy entity references.

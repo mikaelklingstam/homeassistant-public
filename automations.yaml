@@ -965,9 +965,12 @@
         data: {}
   mode: single
 - id: '1733873353563'
-  alias: Charger Auth Reminder
-  description: Plays a reminder message on Hallway speaker every 15 minutes while
-    EHXDYL83 Status is waiting for authorization
+  alias: Charger Auth Reminder (Full Smart Version)
+  description: 'If charger waits for authorization, test 5x (1 min apart) if ID4 is
+    home. If home → authorize Easee. If not → wait 15 min then play TTS reminder.
+    Continues every 15 min until authorization cleared. Cleans up reminder flag.
+
+    '
   triggers:
   - device_id: f0e8850e90d3ff8ce4e4c2870ec4de6d
     domain: easee
@@ -976,80 +979,82 @@
     trigger: device
   conditions: []
   actions:
-  - alias: Attempt Easee auto-authorization when car is home
+  - alias: Step 1 - Loop up to 5 times to check if car is home
     repeat:
-      count: 4
+      count: 5
       sequence:
-      - choose:
-        - conditions:
-          - condition: state
-            entity_id: device_tracker.id4pro_position
-            state: home
-          - condition: state
-            entity_id: binary_sensor.id4pro_charging_cable_connected
-            state: 'on'
-          sequence:
-          - action: easee.action_command
-            metadata: {}
-            data:
-              device_id: f0e8850e90d3ff8ce4e4c2870ec4de6d
-              action_command: start
-          - stop: EV authorization completed automatically
-      - choose:
-        - conditions:
-          - condition: template
-            value_template: '{{ repeat.index < repeat.count }}'
-          sequence:
-          - delay:
-              hours: 0
-              minutes: 5
-              seconds: 0
-              milliseconds: 0
-  - condition: device
-    device_id: f0e8850e90d3ff8ce4e4c2870ec4de6d
-    domain: easee
-    entity_id: sensor.ehxdyl83_status
-    type: awaiting_authorization
-  - action: input_boolean.turn_on
-    metadata: {}
-    data: {}
-    target:
-      entity_id: input_boolean.charge_reminder
-  - alias: Initial reminder message
-    action: tts.speak
-    metadata: {}
-    data:
-      cache: true
-      message: Don't forget to confirm in Easee app for smart charging of the car
-      media_player_entity_id: media_player.hallway
-    target:
-      entity_id: tts.piper
-  - alias: Repeat every 15 min while "EHXDYL83 Status is waiting for authorization"
-    repeat:
+      - if:
+        - condition: state
+          entity_id: device_tracker.id4pro_position
+          state: home
+        then:
+        - alias: Car is home → start Easee authorization
+          device_id: f0e8850e90d3ff8ce4e4c2870ec4de6d
+          domain: easee
+          type: start
+        - stop: Authorization started, stop loop.
+        else:
+        - delay:
+            minutes: 1
+  - alias: Step 2 - If not home after 5 tries → start reminder flow
+    choose:
+    - conditions:
+      - condition: not
+        conditions:
+        - condition: state
+          entity_id: device_tracker.id4pro_position
+          state: home
       sequence:
-      - delay:
-          hours: 0
-          minutes: 15
-          seconds: 0
-          milliseconds: 0
-      - action: tts.speak
-        metadata: {}
-        data:
-          cache: true
-          message: Don't forget to confirm in Easee app for smart charging of the
-            car
-          media_player_entity_id: media_player.hallway
+      - alias: Turn on reminder flag
+        action: input_boolean.turn_on
         target:
-          entity_id: tts.piper
-      while:
-      - condition: device
-        device_id: f0e8850e90d3ff8ce4e4c2870ec4de6d
-        domain: easee
-        entity_id: sensor.ehxdyl83_status
-        type: awaiting_authorization
-      - condition: state
-        entity_id: input_boolean.charge_reminder
-        state: 'on'
+          entity_id: input_boolean.charge_reminder
+      - alias: Wait 15 minutes before first reminder
+        delay:
+          minutes: 15
+      - alias: Repeat every 15 minutes while waiting for authorization
+        repeat:
+          sequence:
+          - alias: Speak reminder message on Hallway speaker
+            action: tts.speak
+            data:
+              cache: true
+              message: Don't forget to confirm in Easee app for smart charging of
+                the car
+              media_player_entity_id: media_player.hallway
+            target:
+              entity_id: tts.piper
+          - delay:
+              minutes: 15
+          while:
+          - condition: device
+            device_id: f0e8850e90d3ff8ce4e4c2870ec4de6d
+            domain: easee
+            entity_id: sensor.ehxdyl83_status
+            type: awaiting_authorization
+          - condition: state
+            entity_id: input_boolean.charge_reminder
+            state: 'on'
+  - alias: Step 3 - Cleanup reminder flag when not awaiting or charging
+    choose:
+    - conditions:
+      - condition: or
+        conditions:
+        - condition: not
+          conditions:
+          - condition: device
+            device_id: f0e8850e90d3ff8ce4e4c2870ec4de6d
+            domain: easee
+            entity_id: sensor.ehxdyl83_status
+            type: awaiting_authorization
+        - condition: state
+          entity_id: switch.ehxdyl83_charging
+          state: 'on'
+      sequence:
+      - alias: Turn off reminder flag
+        action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.charge_reminder
   mode: single
 - id: '1743706555854'
   alias: Feeding the cat

@@ -294,7 +294,7 @@ views:
             name: Interval Power (Real)
           - entity: sensor.ha1_interval_power_cost_adjusted
             name: Interval Power (Cost Adjusted)
-          - entity: sensor.ha1_monthly_peak_power_real
+          - entity: sensor.ha1_monthly_peak_power_real_history_max_2
             name: Monthly Peak Power (Real)
           - entity: sensor.ha1_monthly_peak_power_cost_adjusted
             name: Monthly Peak Power (Cost Adjusted)
@@ -340,7 +340,7 @@ views:
           - type: divider
           - entity: sensor.id4pro_charging_time_left
             name: ID.4 Charging Time Left
-          - entity: binary_sensor.id4pro_charging
+          - entity: binary_sensor.ev_is_charging
             name: ID.4 Charging?
           - entity: sensor.id4pro_battery_level
             name: ID.4 Battery Level (%)
@@ -351,7 +351,7 @@ views:
         title: 💰 Diagnostics – Prices (diagnostics_1_3)
         show_header_toggle: false
         entities:
-          - entity: sensor.nordpool_kwh_se3_sek_3_10_0
+          - entity: sensor.nordpool_kwh_se3_sek_3_10_025
             name: Nordpool SE3 Price
           - entity: sensor.ha1_price_current
             name: HA1 Price Current
@@ -404,7 +404,7 @@ views:
             name: Import Energy – Current Interval
           - entity: sensor.ha1_peak_interval_length_hours
             name: Peak Interval Length (h)
-          - entity: sensor.ha1_monthly_peak_power_cost_adjusted_top3
+          - entity: sensor.ha1_monthly_peak_power_cost_adjusted
             name: Monthly Peak Power (Cost Adjusted Top3)
           - entity: sensor.ha1_monthly_peak_cost_estimated
             name: Monthly Peak Cost (SEK)
@@ -432,7 +432,7 @@ views:
             name: Monthly Avg Peak (Real)
           - entity: sensor.ha1_monthly_top3_avg_power_cost_adjusted
             name: Monthly Avg Peak (Cost Adjusted)
-          - entity: sensor.ha1_monthly_peak_power_real
+          - entity: sensor.ha1_monthly_peak_power_real_history_max_2
             name: Monthly Peak Power (Real)
           - entity: sensor.ha1_monthly_peak_power_cost_adjusted
             name: Monthly Peak Power (Cost Adjusted)
@@ -632,9 +632,9 @@ views:
             name: Peak Interval (Cost-Adjusted)
           - entity: sensor.ha1_peak_power_interval_real
             name: Peak Interval (Real)
-          - entity: sensor.ha1_monthly_peak_power_real_history_max
+          - entity: sensor.ha1_monthly_peak_power_real_history_max_2
             name: Monthly Peak (Real)
-          - entity: sensor.ha1_monthly_peak_power_cost_adjusted_top3
+          - entity: sensor.ha1_monthly_peak_power_cost_adjusted
             name: Monthly Peak (Billable Top3)  # TODO: ensure entity slug matches template after HA reload
           - entity: sensor.ha1_monthly_peak_cost_estimated
             name: Monthly Peak Cost (SEK)

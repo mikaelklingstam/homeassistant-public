@@ -219,3 +219,10 @@ Further documentation for 1.3 will be placed in:
 - `documentation/version 1.3/Functions_And_Settings_1_3.md`  
 
 If you edit this file again yourself, remember: update the **Last updated:** line at the top.
+
+### Task 18 – Diagnostics, Status & Logging
+
+- Introduced HA1 diagnostics groups for grid, solar/battery, EV, prices, peaks and helpers.
+- Added HA1 system status sensors (price level, peak near limit, EV/battery short states).
+- Created HA1 logging helper scripts for peak, price, EV, battery and override events.
+- Cleaned up legacy groups and aligned HA1 Debug dashboard entities with the canonical HA1 sensors.

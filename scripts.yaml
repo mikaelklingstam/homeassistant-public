@@ -2,7 +2,7 @@
   alias: verisure arm home
   sequence:
   - data:
-      code: '!secret verisure_lockcode'
+      code: !secret verisure_lockcode
     target:
       device_id: 000a7b6fd0689fafd0c2ecf1804900ee
     action: alarm_control_panel.alarm_arm_home
@@ -14,7 +14,7 @@ verisure_arm_away:
   - target:
       device_id: 000a7b6fd0689fafd0c2ecf1804900ee
     data:
-      code: '!secret verisure_lockcode'
+      code: !secret verisure_lockcode
     action: alarm_control_panel.alarm_arm_away
   mode: single
   icon: mdi:shield-home-outline
@@ -24,7 +24,7 @@ verisure_disarm:
   - target:
       device_id: 000a7b6fd0689fafd0c2ecf1804900ee
     data:
-      code: '!secret verisure_lockcode'
+      code: !secret verisure_lockcode
     action: alarm_control_panel.alarm_disarm
   mode: single
   icon: mdi:shield-account-outline
@@ -32,7 +32,7 @@ verisure_unlock:
   alias: verisure unlock
   sequence:
   - data:
-      code: '!secret verisure_lockcode'
+      code: !secret verisure_lockcode
     target:
       entity_id: lock.entre
     action: lock.unlock
@@ -294,7 +294,7 @@ verisure_lock:
   alias: verisure lock
   sequence:
   - data:
-      code: '!secret verisure_lockcode'
+      code: !secret verisure_lockcode
     target:
       device_id: dd3e5481b180f8dea7a3eec55d3ea2c4
     action: lock.lock
