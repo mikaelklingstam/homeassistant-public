@@ -1,4 +1,4 @@
-Last updated: 2025-11-17 15:53 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-20 16:05 (CET) — Authorized by ChatGPT
 
 # ⚙️ Functions & Settings – HomeAssistant 1.3
 
@@ -191,6 +191,71 @@ These scripts wrap Easee action commands and dynamic limit services:
 - `script.ha1_ev_set_dynamic_current_from_helper` – Calls `easee.set_charger_dynamic_limit` with the current value from `input_number.ha1_ev_limit_current_a`.
 
 All EV operations are funneled through these HA1 scripts so that future optimization logic changes only in one place.
+
+### HA1 Debug – Energy & Peaks View
+
+**Purpose**  
+Technical / engineering dashboard used to inspect and debug the full HA1.3 energy stack: grid, solar, battery, EV, Nordpool price, peaks, helpers and diagnostics.
+
+**Location**  
+- Dashboard file: `dashboards/ha1_debug_energy.yaml`  
+- Dashboard title: **HA1 Debug – Energy**  
+- View: **Energy & Peaks** (`path: ha1-debug-energy`)
+
+**What it exposes**
+
+- **System Status**
+  - `group.ha1_system_status` summary
+  - Net grid power and automation posture (on/off helpers)
+  - Battery SOC
+  - EV charger power and ID.4 charging time left
+  - Current Nordpool SE3 price
+
+- **Grid & Peaks**
+  - Net grid power (W/kW) and rolling load metrics
+  - Import/export power and energy from the Easee Equalizer
+  - Interval and monthly peak sensors, including:
+    - billable peak load
+    - reference peak
+    - margin to peak
+    - real and cost-adjusted interval power
+    - monthly real and cost-adjusted peaks
+    - estimated monthly peak cost
+
+- **Solar & Battery**
+  - PV AC production power (`sensor.ha1_power_solar_ac`)
+  - Net battery power (`sensor.ha1_power_battery_net`)
+  - Battery SOC
+  - Key HA1 flow sensors such as `sensor.ha1_flow_battery_discharge`
+  - 24-hour history graph for PV, battery power and SOC
+
+- **EV / Easee**
+  - Charger power and charger status
+  - ID.4 charging time left
+  - HA1 EV power/flow sensor(s) such as `sensor.ha1_power_ev_charger` and `sensor.ha1_flow_ev_charging_power`
+  - 24-hour history graph of EV charging power
+
+- **Price & Planning**
+  - Nordpool SE3 price with HA1 helpers for:
+    - current price
+    - daily min/avg/max
+    - price-level diagnostics (low/normal/high etc.)
+  - 48-hour price history graph for planning and correlation with automations
+
+- **Helpers & Modes**
+  - Peak helpers: peak-shaving enable, interval mode, peak limit/warning, daily and monthly top-3 peaks, tariff price and agreement name
+  - Battery helpers: automation enable, grid charge/peak-support flags, forced charge, SOC limits and grid-charge power/cut-off
+  - EV helpers: automation enable, obey-peak flag, force-charge, EV charging mode, max power and current limit
+  - Comfort/debug helpers: master automation enable, comfort override, high-price heating allowance, energy-logic debug flags, notification/debug freeze helpers
+
+- **Diagnostic Groups**
+  - `group.ha1_diag_grid`
+  - `group.ha1_diag_solar_battery`
+  - `group.ha1_diag_ev`
+  - `group.ha1_diag_peaks`
+  - `group.ha1_diag_helpers`
+  - `group.ha1_diag_prices`
+  - plus `group.ha1_system_status` for consolidated system status.
 
 ### Task 15 – Extended Power Metrics & Rolling Averages
 

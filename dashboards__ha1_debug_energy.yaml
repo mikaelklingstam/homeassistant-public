@@ -1,0 +1,254 @@
+# HA 1.3 – Technical debug dashboard for energy logic
+# This dashboard is meant to live long-term as the engineer view.
+# All entity names are 1.3-native; any TODOs are placeholders to refine.
+
+title: "HA1 Debug – Energy"
+views:
+  - title: "Energy & Peaks"
+    path: ha1-debug-energy
+    icon: mdi:math-compass
+    cards:
+
+      # ─────────────────────────────────────────
+      # System Status – high-level overview
+      # ─────────────────────────────────────────
+      - type: entities
+        title: "System Status"
+        show_header_toggle: false
+        entities:
+          - entity: group.ha1_system_status
+            name: HA1 system status (group)
+          - entity: sensor.ha1_net_grid_power_kw
+            name: Net grid power (kW)
+          - entity: sensor.nordpool_kwh_se3_sek_3_10_025
+            name: Nordpool SE3 price (SEK/kWh)
+          - entity: sensor.huawei_battery_soc
+            name: Battery SOC
+          - entity: sensor.ehxdyl83_power
+            name: EV charger power (Easee)
+          - entity: sensor.id4pro_charging_time_left
+            name: ID.4 – charging time left
+          - entity: input_boolean.ha1_peak_shaving_enabled
+            name: Peak shaving enabled
+          - entity: input_boolean.ha1_comfort_override_enabled
+            name: Comfort override enabled
+
+      # ─────────────────────────────────────────
+      # Grid & Peaks – real-time and monthly view
+      # ─────────────────────────────────────────
+      - type: entities
+        title: "Grid & Peaks – Power & Energy"
+        show_header_toggle: false
+        entities:
+          - entity: sensor.qp57qz4q_import_power
+            name: Grid import power (kW)
+          - entity: sensor.qp57qz4q_export_power
+            name: Grid export power (kW)
+          - entity: sensor.qp57qz4q_import_energy
+            name: Grid import energy (kWh)
+          - entity: sensor.qp57qz4q_export_energy
+            name: Grid export energy (kWh)
+          - entity: sensor.ha1_net_grid_power
+            name: HA1 net grid power (W)
+          - entity: sensor.ha1_peak_billable_power_kw
+            name: Peak billable power (kW)
+          - entity: sensor.ha1_effective_peak_power_reference_kw
+            name: Peak reference (kW)
+          - entity: sensor.ha1_peak_margin_kw
+            name: Peak margin (kW)
+          - entity: sensor.ha1_peak_power_interval_real
+            name: Interval peak power (real)
+          - entity: sensor.ha1_peak_power_interval_cost_adjusted
+            name: Interval peak power (cost-adjusted)
+          - entity: sensor.ha1_monthly_peak_power_cost_adjusted
+            name: Monthly peak power (cost-adjusted top3)
+          - entity: sensor.ha1_monthly_peak_power_real_history_max
+            name: Monthly peak power (real history max)
+          - entity: sensor.ha1_monthly_peak_cost_estimated
+            name: Estimated monthly peak cost (SEK)
+
+      - type: history-graph
+        title: "Grid Power & Peaks – last 24h"
+        hours_to_show: 24
+        refresh_interval: 60
+        entities:
+          - entity: sensor.qp57qz4q_import_power
+          - entity: sensor.qp57qz4q_export_power
+          - entity: sensor.ha1_net_grid_power
+
+      # ─────────────────────────────────────────
+      # Solar & Battery – production and flows
+      # ─────────────────────────────────────────
+      - type: entities
+        title: "Solar & Battery – Status"
+        show_header_toggle: false
+        entities:
+          - entity: sensor.huawei_solar_input_power
+            name: PV production power (W)
+          - entity: sensor.huawei_battery_charge_discharge_power
+            name: Battery charge/discharge power (W)
+          - entity: sensor.huawei_battery_soc
+            name: Battery SOC
+          - entity: sensor.ha1_power_solar_ac
+            name: Solar AC power (ha1)
+          - entity: sensor.ha1_power_battery_net
+            name: Battery net power (+charge/-discharge)
+          - entity: sensor.ha1_flow_battery_discharge
+            name: Battery discharge flow (W)
+
+      - type: history-graph
+        title: "Solar & Battery – last 24h"
+        hours_to_show: 24
+        refresh_interval: 60
+        entities:
+          - entity: sensor.huawei_solar_input_power
+          - entity: sensor.huawei_battery_charge_discharge_power
+          - entity: sensor.huawei_battery_soc
+
+      # ─────────────────────────────────────────
+      # EV / Easee – charger and car state
+      # ─────────────────────────────────────────
+      - type: entities
+        title: "EV & Easee – Charging"
+        show_header_toggle: false
+        entities:
+          - entity: sensor.ehxdyl83_power
+            name: Charger power (Easee)
+          - entity: sensor.ehxdyl83_status
+            name: Charger status
+          - entity: sensor.id4pro_charging_time_left
+            name: ID.4 – charging time left
+          - entity: sensor.ha1_power_ev_charger
+            name: EV charger power (ha1 W)
+          - entity: sensor.ha1_flow_ev_charging_power
+            name: EV charging flow (W)
+
+      - type: history-graph
+        title: "EV Charging – last 24h"
+        hours_to_show: 24
+        refresh_interval: 60
+        entities:
+          - entity: sensor.ehxdyl83_power
+          # - entity: sensor.ha1_ev_charging_power  # TODO
+
+      # ─────────────────────────────────────────
+      # Price & Planning – Nordpool view
+      # ─────────────────────────────────────────
+      - type: entities
+        title: "Price & Planning"
+        show_header_toggle: false
+        entities:
+          - entity: sensor.nordpool_kwh_se3_sek_3_10_025
+            name: Nordpool SE3 price (SEK/kWh)
+          - entity: sensor.ha1_price_current
+            name: HA1 price current (SEK/kWh)
+          - entity: sensor.ha1_price_today_avg
+            name: Price today average
+          - entity: sensor.ha1_price_today_min
+            name: Price today minimum
+          - entity: sensor.ha1_price_today_max
+            name: Price today maximum
+          - entity: sensor.ha1_status_price_level
+            name: Price level (cheap/normal/expensive)
+          - entity: sensor.ha1_status_price_relative
+            name: Price relative (% vs avg)
+
+      - type: history-graph
+        title: "Nordpool Price – last 48h"
+        hours_to_show: 48
+        refresh_interval: 300
+        entities:
+          - entity: sensor.nordpool_kwh_se3_sek_3_10_025
+
+      # ─────────────────────────────────────────
+      # Helpers & Modes – what the logic “thinks”
+      # ─────────────────────────────────────────
+      - type: entities
+        title: "Helpers & Modes – Peak, Battery, EV"
+        show_header_toggle: false
+        entities:
+          - entity: input_boolean.ha1_peak_shaving_enabled
+            name: Peak shaving enabled
+          - entity: input_select.ha1_peak_interval_mode
+            name: Peak interval mode
+          - entity: input_number.ha1_peak_limit_kw
+            name: Peak limit (kW)
+          - entity: input_number.ha1_peak_warning_kw
+            name: Peak warning (kW)
+          - entity: input_number.ha1_daily_peak_power_cost_adjusted
+            name: Daily peak (cost-adjusted)
+          - entity: input_number.ha1_month_peak_top1_kw
+            name: Month peak #1
+          - entity: input_number.ha1_month_peak_top2_kw
+            name: Month peak #2
+          - entity: input_number.ha1_month_peak_top3_kw
+            name: Month peak #3
+          - entity: input_number.ha1_peak_tariff_price_per_kw
+            name: Peak tariff price (SEK/kW)
+          - entity: input_text.ha1_peak_tariff_agreement_name
+            name: Peak tariff agreement
+
+          - entity: input_boolean.ha1_control_battery_auto
+            name: Battery automations enabled
+          - entity: input_boolean.ha1_battery_allow_grid_charge
+            name: Allow battery grid charge
+          - entity: input_boolean.ha1_battery_peak_support_enabled
+            name: Battery peak support enabled
+          - entity: input_boolean.ha1_force_battery_charge_from_grid_now
+            name: Force battery grid charge now
+          - entity: input_number.ha1_battery_min_soc_normal
+            name: Battery min SOC (normal)
+          - entity: input_number.ha1_batt_peak_shaving_soc
+            name: Battery peak-shaving SOC
+          - entity: input_number.ha1_battery_max_soc_target
+            name: Battery max SOC target
+          - entity: input_number.ha1_batt_grid_charge_max_kw
+            name: Battery grid charge max (kW)
+          - entity: input_number.ha1_batt_grid_charge_cutoff_soc
+            name: Battery grid charge cutoff SOC
+
+          - entity: input_boolean.ha1_control_ev_auto
+            name: EV automations enabled
+          - entity: input_boolean.ha1_ev_obey_peak_limit
+            name: EV obeys peak limit
+          - entity: input_boolean.ha1_force_ev_charge_now
+            name: Force EV charge now
+          - entity: input_select.ha1_ev_charging_mode
+            name: EV charging mode
+          - entity: input_number.ha1_ev_max_charging_power_kw
+            name: EV max charging power (kW)
+          - entity: input_number.ha1_ev_limit_current_a
+            name: EV current limit (A)
+
+          - entity: input_boolean.ha1_automation_master_enabled
+            name: Automation master enable
+          - entity: input_boolean.ha1_comfort_override_enabled
+            name: Comfort override enabled
+          - entity: input_boolean.ha1_allow_high_price_heating
+            name: Allow high-price heating
+          - entity: input_boolean.ha1_debug_energy_logic
+            name: "Debug: energy logic"
+          - entity: input_boolean.ha1_debug_notifications_enabled
+            name: "Debug: notifications enabled"
+          - entity: input_boolean.ha1_debug_freeze_optimizers
+            name: "Debug: freeze optimizers"
+
+      # ─────────────────────────────────────────
+      # Diagnostic Groups – Task 18
+      # ─────────────────────────────────────────
+      - type: entities
+        title: "Diagnostic Groups – Grid / Solar / EV / Peaks / Helpers"
+        show_header_toggle: false
+        entities:
+          - entity: group.ha1_diag_grid
+            name: Grid diagnostics
+          - entity: group.ha1_diag_solar_battery
+            name: Solar & battery diagnostics
+          - entity: group.ha1_diag_ev
+            name: EV / Easee diagnostics
+          - entity: group.ha1_diag_prices
+            name: Price diagnostics
+          - entity: group.ha1_diag_peaks
+            name: Peaks & intervals diagnostics
+          - entity: group.ha1_diag_helpers
+            name: Helpers & modes diagnostics
