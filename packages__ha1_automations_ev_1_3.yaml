@@ -1,0 +1,149 @@
+###############################################################################
+# HomeAssistant 1.3 – EV Charging Automations (Task 22)
+# File: packages/ha1_automations_ev_1_3.yaml
+#
+# Scope:
+#   - First-pass EV automation logic built on Task 20 scaffolds
+#   - Aligns with the HA1 automation guard framework (master + EV toggles)
+#   - Uses canonical ha1_* sensors, planner helpers, and Task 20 start/stop scripts
+###############################################################################
+
+automation:
+  - id: ha1_ev_start_cheap_window_v13
+    alias: "HA1 EV – start cheap-only charging window"
+    description: "Task 22 – Start Easee charging when cheap-only mode aligns with a cheap hour and the calculated charge window is open."
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id:
+          - input_boolean.ha1_flag_ev_charge_window
+          - input_select.ha1_ev_charging_mode
+          - sensor.ha1_status_price_level
+          - sensor.id4pro_charging_time_left
+      - platform: time_pattern
+        minutes: "/5"
+    condition:
+      - condition: state
+        entity_id: input_boolean.ha1_automation_master_enabled
+        state: "on"
+      - condition: template
+        value_template: >-
+          {{ is_state('input_boolean.ha1_ev_automation_enabled', 'on') or
+             is_state('input_boolean.ha1_control_ev_auto', 'on') }}
+      - condition: state
+        entity_id: input_select.ha1_ev_charging_mode
+        state: "cheap_only"
+      - condition: template
+        value_template: "{{ states('sensor.ha1_status_price_level') == 'cheap' }}"
+      - condition: state
+        entity_id: input_boolean.ha1_flag_ev_charge_window
+        state: "on"
+      - condition: state
+        entity_id: binary_sensor.ev_is_charging
+        state: "off"
+    action:
+      - variables:
+          peak_margin_kw: "{{ states('sensor.ha1_peak_margin_kw') | float(0) }}"
+          net_grid_kw: "{{ (states('sensor.ha1_net_grid_power') | float(0) / 1000) | round(2) }}"
+          price_level: "{{ states('sensor.ha1_status_price_level') }}"
+          time_left_min: >-
+            {% set raw = states('sensor.id4pro_charging_time_left') %}
+            {% if raw in ['unknown', 'unavailable', 'none', '', None] %}
+              0
+            {% elif ':' in raw %}
+              {% set parts = raw.split(':') %}
+              {% if parts | length == 3 %}
+                {% set hours = parts[0] | int(0) %}
+                {% set minutes = parts[1] | int(0) %}
+                {% set seconds = parts[2] | int(0) %}
+                {{ hours * 60 + minutes + (seconds / 60) }}
+              {% elif parts | length == 2 %}
+                {% set hours = parts[0] | int(0) %}
+                {% set minutes = parts[1] | int(0) %}
+                {{ hours * 60 + minutes }}
+              {% else %}
+                0
+              {% endif %}
+            {% else %}
+              {{ raw | float(0) }}
+            {% endif %}
+      - service: script.ha1_ev_start_charging_simple
+      - service: logbook.log
+        data:
+          name: "HA1 EV"
+          entity_id: binary_sensor.ev_is_charging
+          message: >-
+            HA1: Cheap-only charge start – {{ time_left_min | float(0) | round(0) }} min left, price {{ price_level }}, margin {{ peak_margin_kw | round(2) }} kW, net grid {{ net_grid_kw }} kW.
+
+  - id: ha1_ev_stop_expensive_or_peak_v13
+    alias: "HA1 EV – pause on expensive hour or peak limit"
+    description: "Task 22 – Pause Easee charging when peak limits are exceeded or the hour becomes very expensive."
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id:
+          - sensor.ha1_status_price_level
+          - sensor.ha1_peak_margin_kw
+          - input_boolean.ha1_flag_peak_event_active
+          - binary_sensor.ev_is_charging
+      - platform: time_pattern
+        minutes: "/5"
+    condition:
+      - condition: state
+        entity_id: input_boolean.ha1_automation_master_enabled
+        state: "on"
+      - condition: template
+        value_template: >-
+          {{ is_state('input_boolean.ha1_ev_automation_enabled', 'on') or
+             is_state('input_boolean.ha1_control_ev_auto', 'on') }}
+      - condition: state
+        entity_id: binary_sensor.ev_is_charging
+        state: "on"
+    action:
+      - variables:
+          ev_mode: "{{ states('input_select.ha1_ev_charging_mode') }}"
+          price_level: "{{ states('sensor.ha1_status_price_level') }}"
+          margin_kw: "{{ states('sensor.ha1_peak_margin_kw') | float(0) }}"
+          obey_peak: "{{ is_state('input_boolean.ha1_ev_obey_peak_limit', 'on') }}"
+          peak_event: "{{ is_state('input_boolean.ha1_flag_peak_event_active', 'on') }}"
+          force_charge: "{{ is_state('input_boolean.ha1_force_ev_charge_now', 'on') }}"
+          net_grid_kw: "{{ (states('sensor.ha1_net_grid_power') | float(0) / 1000) | round(2) }}"
+          ev_kw: "{{ (states('sensor.ha1_power_ev_charger') | float(0) / 1000) | round(2) }}"
+          time_left_min: >-
+            {% set raw = states('sensor.id4pro_charging_time_left') %}
+            {% if raw in ['unknown', 'unavailable', 'none', '', None] %}
+              0
+            {% elif ':' in raw %}
+              {% set parts = raw.split(':') %}
+              {% if parts | length == 3 %}
+                {% set hours = parts[0] | int(0) %}
+                {% set minutes = parts[1] | int(0) %}
+                {% set seconds = parts[2] | int(0) %}
+                {{ hours * 60 + minutes + (seconds / 60) }}
+              {% elif parts | length == 2 %}
+                {% set hours = parts[0] | int(0) %}
+                {% set minutes = parts[1] | int(0) %}
+                {{ hours * 60 + minutes }}
+              {% else %}
+                0
+              {% endif %}
+            {% else %}
+              {{ raw | float(0) }}
+            {% endif %}
+          expensive_hour_block: >-
+            {{ (not force_charge) and ev_mode in ['cheap_only', 'balanced'] and price_level == 'expensive' }}
+          peak_over_limit: >-
+            {{ obey_peak and (margin_kw >= 0.1 or peak_event) }}
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{ peak_over_limit or expensive_hour_block }}
+            sequence:
+              - service: script.ha1_ev_stop_charging_simple
+              - service: logbook.log
+                data:
+                  name: "HA1 EV"
+                  entity_id: binary_sensor.ev_is_charging
+                  message: >-
+                    HA1: EV paused due to {{ 'peak limit' if peak_over_limit else 'expensive hour' }} – margin {{ margin_kw | round(2) }} kW, price {{ price_level }}, force_override={{ 'on' if force_charge else 'off' }}, load {{ ev_kw }} kW, net grid {{ net_grid_kw }} kW, {{ time_left_min | float(0) | round(0) }} min left.

@@ -1,0 +1,115 @@
+# --- HomeAssistant 1.3 – Core Automation Framework & Safety Guardrails ---
+# File: packages/ha1_automations_core_1_3.yaml
+#
+# Scope:
+# - Core/meta automations that support HA1.3 energy logic
+# - Startup health logging
+# - Mode / toggle change logging
+# - Manual debug snapshot logging
+
+automation:
+
+  # ---------------------------------------------------------------------------
+  # HA1 – Core: automations startup
+  # Logs when HA1 core automations come online after Home Assistant boot.
+  # ---------------------------------------------------------------------------
+  - id: ha1_core_automations_startup
+    alias: "HA1 – Core: automations startup"
+    mode: single
+    trigger:
+      - platform: homeassistant
+        event: start
+    condition: []
+    action:
+      - service: logbook.log
+        data:
+          name: "HA1 Core"
+          message: >
+            HA1 core automations started after Home Assistant boot.
+
+      # Optional: log current toggle states for quick visibility in logbook.
+      - service: logbook.log
+        data:
+          name: "HA1 Core"
+          message: >
+            HA1 toggles at startup:
+            master={{ states('input_boolean.ha1_automations_master_enable') }},
+            ev={{ states('input_boolean.ha1_ev_automation_enabled') }},
+            battery={{ states('input_boolean.ha1_battery_automation_enabled') }},
+            peak={{ states('input_boolean.ha1_peak_shaving_enabled') }},
+            comfort={{ states('input_boolean.ha1_comfort_override_enabled') }}.
+
+
+  # ---------------------------------------------------------------------------
+  # HA1 – Core: mode / toggle change logger
+  # Logs when the key HA1.3 automation toggles are enabled/disabled.
+  # This runs even if the master is off (by design).
+  # ---------------------------------------------------------------------------
+  - id: ha1_core_mode_toggle_logger
+    alias: "HA1 – Core: mode/toggle change logger"
+    mode: single
+    trigger:
+      - platform: state
+        entity_id:
+          - input_boolean.ha1_automations_master_enable
+          - input_boolean.ha1_peak_shaving_enabled
+          - input_boolean.ha1_ev_automation_enabled
+          - input_boolean.ha1_battery_automation_enabled
+          - input_boolean.ha1_comfort_override_enabled
+    condition: []
+    action:
+      - service: logbook.log
+        data:
+          name: "HA1 Core"
+          entity_id: "{{ trigger.entity_id }}"
+          message: >
+            {% set labels = {
+              'input_boolean.ha1_automations_master_enable': 'Automations master',
+              'input_boolean.ha1_peak_shaving_enabled': 'Peak shaving',
+              'input_boolean.ha1_ev_automation_enabled': 'EV automations',
+              'input_boolean.ha1_battery_automation_enabled': 'Battery automations',
+              'input_boolean.ha1_comfort_override_enabled': 'Comfort override'
+            } %}
+            HA1: {{ labels.get(trigger.entity_id, trigger.entity_id) }}
+            {{ 'enabled' if trigger.to_state.state == 'on' else 'disabled' }}.
+
+
+  # ---------------------------------------------------------------------------
+  # HA1 – Core: debug snapshot logger
+  # Triggered by running script.ha1_debug_log_system_state.
+  # Logs a compact snapshot of key energy-related values to the logbook.
+  #
+  # Note:
+  # - If script.ha1_debug_log_system_state doesn't exist yet, you can create
+  #   a simple empty script with that id, or comment this automation out until
+  #   it is created. Nonexistent entities in templates will just render 'unknown'.
+  # ---------------------------------------------------------------------------
+  - id: ha1_core_debug_snapshot_logger
+    alias: "HA1 – Core: debug snapshot logger"
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: script.ha1_debug_log_system_state
+        from: "off"
+        to: "on"
+    # This one *does* honor the master toggle.
+    condition:
+      - condition: state
+        entity_id: input_boolean.ha1_automations_master_enable
+        state: "on"
+    action:
+      - service: logbook.log
+        data:
+          name: "HA1 Debug"
+          message: >
+            HA1 debug snapshot:
+            net_grid={{ states('sensor.ha1_net_grid_power') }} W,
+            net_grid_avg_2min={{ states('sensor.ha1_net_grid_power_avg_2min') }} W,
+            battery_soc={{ states('sensor.huawei_battery_soc') }} %,
+            ev_power={{ states('sensor.ha1_power_ev_charger') }} W,
+            peak_ref={{ states('sensor.ha1_monthly_peak_power_cost_adjusted') }} kW,
+            master={{ states('input_boolean.ha1_automations_master_enable') }},
+            ev_auto={{ states('input_boolean.ha1_ev_automation_enabled') }},
+            battery_auto={{ states('input_boolean.ha1_battery_automation_enabled') }},
+            peak_auto={{ states('input_boolean.ha1_peak_shaving_enabled') }},
+            comfort={{ states('input_boolean.ha1_comfort_override_enabled') }}.

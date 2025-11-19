@@ -22,6 +22,14 @@ input_boolean:
     name: "HA1 – Battery automations enabled"
     icon: mdi:battery-clock
 
+  ha1_ev_automation_enabled:
+    name: "HA1 – EV automations enabled"
+    icon: mdi:car-electric
+
+  ha1_battery_automation_enabled:
+    name: "HA1 – Battery automations enabled"
+    icon: mdi:battery-sync
+
   # --- HA 1.3 Helpers – Battery ---
   ha1_battery_allow_grid_charge:
     name: "HA1 – Battery: allow grid charging"

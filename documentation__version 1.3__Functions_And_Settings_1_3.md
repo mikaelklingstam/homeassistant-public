@@ -7,6 +7,30 @@ Describe how the main functions of HomeAssistant 1.3 behave, which settings cont
 
 ---
 
+## Automation Framework & Safety Guardrails
+
+### HA1.3 Automation Framework & Safety Guardrails
+
+- All HA1.3 automations use a **global master toggle**:
+  - `input_boolean.ha1_automations_master_enable`
+- Domain-level toggles:
+  - EV automations: `input_boolean.ha1_ev_automation_enabled`
+  - Battery automations: `input_boolean.ha1_battery_automation_enabled`
+  - Peak shaving: `input_boolean.ha1_peak_shaving_enabled`
+  - Comfort override: `input_boolean.ha1_comfort_override_enabled`
+- Standard guard pattern:
+  - EV automations: master **AND** EV toggle must be ON.
+  - Battery automations: master **AND** battery toggle must be ON.
+  - Peak automations: master **AND** peak toggle must be ON.
+  - Core automations: startup and mode logging do **not** depend on master; debug/safety logic usually does.
+- Core framework automations (in `packages/ha1_automations_core_1_3.yaml`):
+  - `HA1 – Core: automations startup` logs when HA1 core automations come online after HA boot and records the current toggle states.
+  - `HA1 – Core: mode/toggle change logger` logs enable/disable events for master, EV, battery, peak and comfort override toggles.
+  - `HA1 – Core: debug snapshot logger` logs a compact snapshot of key HA1.3 energy values when `script.ha1_debug_log_system_state` is executed.
+- Logging standard:
+  - `logbook.log` with `name` prefixes: `HA1 Core`, `HA1 EV`, `HA1 Battery`, `HA1 Peak`, `HA1 Debug`.
+  - Messages are short, English, and start with `HA1:` for easy filtering.
+
 ## 1. Peak Shaving
 
 **Goal:**  
