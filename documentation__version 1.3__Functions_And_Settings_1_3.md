@@ -1,4 +1,4 @@
-Last updated: 2025-11-20 16:05 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-19 18:15 (CET) — Authorized by ChatGPT
 
 # ⚙️ Functions & Settings – HomeAssistant 1.3
 
@@ -191,6 +191,37 @@ These scripts wrap Easee action commands and dynamic limit services:
 - `script.ha1_ev_set_dynamic_current_from_helper` – Calls `easee.set_charger_dynamic_limit` with the current value from `input_number.ha1_ev_limit_current_a`.
 
 All EV operations are funneled through these HA1 scripts so that future optimization logic changes only in one place.
+
+## Core Energy Scripts (HA1.3)
+
+### EV scripts
+
+- `script.ha1_ev_start_charging_simple`  
+  Starts Easee charging for the ID.4 using `easee.start`, overrides the local schedule so charging begins immediately, and ensures the charger is enabled. No price/peak conditions.
+
+- `script.ha1_ev_stop_charging_simple`  
+  Stops/pause charging using `easee.stop` if the charger is currently charging and then disables the charger switch. Used as the basic “stop now” primitive by automations and manual buttons.
+
+### Battery scripts (Huawei LUNA2000)
+
+- `script.ha1_battery_allow_grid_charge_on`  
+  Enables grid charging for the Huawei battery via `switch.battery_charge_from_grid`. Used when cheap prices or planned charging windows should allow filling the battery from the grid.
+
+- `script.ha1_battery_allow_grid_charge_off`  
+  Disables grid charging from the grid. Used during peak shaving, export priority or manual override.
+
+- `script.ha1_battery_apply_grid_charge_limit`  
+  Reads `input_number.ha1_battery_grid_charge_limit_kw` (kW), converts it to watts, clamps to the Huawei limit (2500 W) and writes the result to `number.battery_grid_charge_maximum_power`.
+
+### Peak / emergency scripts
+
+- `script.ha1_peak_emergency_reduce_load`  
+  Emergency load-shed action: stops EV charging, blocks battery grid charging and forces the battery grid-charge limit helper to 0 kW before applying it to the Huawei charge limit. Intended to be called when interval power exceeds the allowed peak margin.
+
+### Debug scripts
+
+- `script.ha1_debug_log_system_state_energy`  
+  Sends a one-line snapshot of key HA1 energy values (grid, solar, battery, EV charger, available battery kWh and peak metrics) to the logbook for debugging and verification.
 
 ### HA1 Debug – Energy & Peaks View
 

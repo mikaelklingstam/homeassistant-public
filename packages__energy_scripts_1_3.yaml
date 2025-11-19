@@ -1,0 +1,164 @@
+# --- HomeAssistant 1.3 – Core Energy Control Scripts ---
+# Purpose: Reusable building-block scripts for EV, battery, peaks & overrides
+# Scope:   Called by HA1.3 automations and dashboards, not used directly in UI
+
+script:
+  ha1_peak_emergency_reduce_load:
+    alias: "HA1 – Peak: emergency reduce load"
+    mode: single
+    icon: mdi:alert-decagram
+    description: >
+      Emergency load-shed action: stops EV charging, blocks battery grid charging,
+      and forces the battery grid-charge limit to 0 kW. Intended to be called by
+      peak/overload automations when the interval power is above the allowed margin.
+    sequence:
+      # 1) Stop EV charging (simple primitive)
+      - service: script.ha1_ev_stop_charging_simple
+
+      # 2) Block battery grid charging
+      - service: script.ha1_battery_allow_grid_charge_off
+
+      # 3) Force the grid-charge limit helper to 0 kW
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.ha1_battery_grid_charge_limit_kw
+        data:
+          value: 0
+
+      # 4) Apply the new 0 kW limit to the Huawei number entity
+      - service: script.ha1_battery_apply_grid_charge_limit
+
+  ha1_debug_log_system_state_energy:
+    alias: "HA1 – Debug: log energy system snapshot"
+    mode: single
+    icon: mdi:clipboard-pulse-outline
+    description: >
+      Writes a one-line snapshot of key HA1 energy values to the logbook:
+      grid power, solar, battery, EV charger, battery kWh available and
+      current monthly peak metrics. Used for debugging and verification.
+    sequence:
+      - service: logbook.log
+        data:
+          name: "HA1 Energy Debug"
+          entity_id: sensor.ha1_net_grid_power
+          message: >-
+            Grid={{ states('sensor.ha1_net_grid_power') }} W;
+            Solar={{ states('sensor.ha1_power_solar_ac') }} W;
+            Battery={{ states('sensor.ha1_power_battery_net') }} W;
+            EV={{ states('sensor.ha1_power_ev_charger') }} W;
+            BattAvail={{ states('sensor.ha1_battery_energy_available_kwh') }} kWh;
+            PeakReal={{ states('sensor.ha1_monthly_peak_power_real_history_max_2') }} W;
+            PeakCostAdj={{ states('sensor.ha1_monthly_peak_power_cost_adjusted') }} SEK.
+
+  ha1_battery_allow_grid_charge_on:
+    alias: "HA1 – Battery: allow grid charging"
+    mode: single
+    icon: mdi:transmission-tower-export
+    description: >
+      Enables Huawei LUNA2000 grid charging. Used when cheap price or planned charging window
+      requires filling the battery.
+    sequence:
+      - service: switch.turn_on
+        target:
+          entity_id: switch.battery_charge_from_grid
+
+  ha1_battery_allow_grid_charge_off:
+    alias: "HA1 – Battery: block grid charging"
+    mode: single
+    icon: mdi:transmission-tower-off
+    description: >
+      Disables Huawei LUNA2000 grid charging. Used during peak shaving, export priority,
+      or manual override.
+    sequence:
+      - service: switch.turn_off
+        target:
+          entity_id: switch.battery_charge_from_grid
+
+  ha1_battery_apply_grid_charge_limit:
+    alias: "HA1 – Battery: apply grid-charge limit (from helper)"
+    mode: single
+    icon: mdi:meter-electric
+    description: >
+      Reads helper input_number.ha1_battery_grid_charge_limit_kw (kW), converts to W,
+      clamps to Huawei limit (2500 W), and applies the result to
+      number.battery_grid_charge_maximum_power.
+    sequence:
+      - variables:
+          raw_kw: "{{ states('input_number.ha1_battery_grid_charge_limit_kw') | float(0) }}"
+          raw_w: "{{ (raw_kw * 1000) | round(0) }}"
+          safe_w: >
+            {% if raw_w > 2500 %}
+              2500
+            {% else %}
+              {{ raw_w }}
+            {% endif %}
+      - service: number.set_value
+        target:
+          entity_id: number.battery_grid_charge_maximum_power
+        data:
+          value: "{{ safe_w }}"
+
+  ha1_ev_start_charging_simple:
+    alias: "HA1 – EV: start charging (simple)"
+    mode: single
+    icon: mdi:ev-station
+    description: >
+      Start Easee charging immediately for ID.4. Uses easee.start and
+      overrides the charging schedule so charging begins now. No price/peak logic.
+    sequence:
+      - variables:
+          ha1_easee_charger_id: "f0e8850e90d3ff8ce4e4c2870ec4de6d"
+
+      # Do nothing if it's already charging
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: sensor.ehxdyl83_status
+                state: "charging"
+            sequence: []
+        default:
+          # 1) Start charging via Easee action service
+          - service: easee.start
+            data:
+              charger_id: "{{ ha1_easee_charger_id }}"
+
+          # 2) Override any delayed schedule so charging starts now
+          - service: button.press
+            target:
+              entity_id: button.ehxdyl83_override_schedule
+
+          # 3) Ensure the charger is enabled (idempotent safety)
+          - service: switch.turn_on
+            target:
+              entity_id: switch.ehxdyl83_charger_enabled
+  
+  
+  ha1_ev_stop_charging_simple:
+    alias: "HA1 – EV: stop/pause charging (simple)"
+    mode: single
+    icon: mdi:ev-station-off
+    description: >
+      Stop or pause Easee charging immediately for ID.4 using easee.stop.
+      No price/peak or planning logic; safe to call repeatedly.
+    sequence:
+      - variables:
+          # MUST match the charger_id used in ha1_ev_start_charging_simple
+          ha1_easee_charger_id: "f0e8850e90d3ff8ce4e4c2870ec4de6d"
+
+      - choose:
+          # If we are currently charging, issue a proper Easee stop
+          - conditions:
+              - condition: state
+                entity_id: sensor.ehxdyl83_status
+                state: "charging"
+            sequence:
+              - service: easee.stop
+                data:
+                  charger_id: "{{ ha1_easee_charger_id }}"
+        default:
+          []
+
+      # Regardless of status, ensure charger is disabled (idempotent)
+      - service: switch.turn_off
+        target:
+          entity_id: switch.ehxdyl83_charger_enabled

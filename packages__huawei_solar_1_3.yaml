@@ -99,6 +99,19 @@ template:
           {% set p = states('sensor.power_meter_active_power') | float(0) %}
           {{ (p / 1000) | round(3) }}
 
+      # 11. Battery energy available (above reserve)
+      - name: "HA1 – Battery energy available"
+        unique_id: ha1_battery_energy_available_kwh
+        icon: mdi:battery-high
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: measurement
+        state: >
+          {# TODO: replace with your real SOC sensor from Huawei integration #}
+          {% set soc = states('sensor.huawei_battery_soc') | float(0) %}
+          {% set min_soc = states('input_number.ha1_battery_min_soc_reserve') | float(0) %}
+          {% set capacity = states('input_number.ha1_battery_nominal_capacity_kwh') | float(0) %}
+
   - binary_sensor:
       # 11. Battery charging / discharging helpers (sign convention)
       - name: "HA1 Huawei Battery Charging"
