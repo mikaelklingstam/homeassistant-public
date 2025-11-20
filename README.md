@@ -6,7 +6,7 @@ This repository contains a public mirror of selected folders from my private Hom
 - \dashboards\
 - \packages\
 - \scripts\
-- \automations.yaml\
+- \automations.yaml\
 - \scripts.yaml\
 
 The private configuration (including secrets) remains in a separate private repository.
