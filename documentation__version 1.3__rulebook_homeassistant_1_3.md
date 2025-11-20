@@ -1,4 +1,4 @@
-Last updated: 2025-11-17 15:53 (CET) — Authorized by ChatGPT
+Last updated: 2025-01-21 15:55 (CET) — Authorized by ChatGPT
 
 # 🧭 HomeAssistant 1.3 – Rulebook
 
@@ -154,6 +154,21 @@ The practical hierarchy in 1.3 is:
      - Always stay within the Equaliser’s circuit limit and main-fuse assumptions.
      - Use charger dynamic limit and start/stop as the primary tools to implement the optimization logic defined in this rulebook.
    - This ensures that the Easee Equaliser continues doing its built-in load balancing job, while the 1.3 energy logic adds an extra optimization layer on top without fighting the hardware.
+
+### EV price thresholds & mode map (Task 22 sync)
+- Price classification now uses numeric sliders (old text-based mappings removed):
+  - `input_number.ha1_ev_price_cheap_max`
+  - `input_number.ha1_ev_price_normal_max`
+  - `input_number.ha1_ev_price_expensive_max`
+- Derived sensor: `sensor.ha1_ev_price_level`  
+  cheap ≤ cheap_max; normal between cheap_max and normal_max; expensive between normal_max and expensive_max; very_expensive above expensive_max.
+- Modes:
+  - `cheap_only`: cheap; normal if time_left ≤ 3h; never expensive/very_expensive; peak start guard 80% of peak limit.
+  - `balanced`: cheap/normal; expensive only if time_left ≤ 1h; never very_expensive unless <1h; peak start guard 90%.
+  - `aggressive`: cheap/normal/expensive; very_expensive only if time_left ≤ 1h; peak start guard 95%.
+- Pause guards:
+  - Peak pause always if charging and net grid avg ≥ peak limit (`ha1_ev_pause_on_peak_limit`).
+  - Very-expensive pause for balanced (>3h left) and aggressive (>1h left) via `ha1_ev_pause_on_very_expensive_price`.
 
 ---
 

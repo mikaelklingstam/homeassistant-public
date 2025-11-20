@@ -1,4 +1,4 @@
-Last updated: 2025-11-17 14:41 (CET) — Authorized by ChatGPT
+Last updated: 2025-01-21 15:55 (CET) — Authorized by ChatGPT
 
 # ⚙️ Action Plan – HomeAssistant 1.3
 
@@ -151,3 +151,11 @@ These deliverables close Phase 3 so Task 16 can introduce helper-driven behavior
 - Added HA1 system status sensors for at-a-glance behaviour.
 - Introduced HA1 logging helper scripts for structured Logbook events.
 - Verified and fixed all HA1 Debug / Energy entity references.
+
+### ✅ Task 22 – EV Charging Automations (Phase 3)
+- EV price-threshold sliders added (`ha1_ev_price_cheap_max`, `ha1_ev_price_normal_max`, `ha1_ev_price_expensive_max`).
+- EV price-level derived sensor added (`sensor.ha1_ev_price_level`).
+- Automations updated to cheap_only/balanced/aggressive logic with peak and very-expensive guards.
+- Cheap-only & time-critical fallback finalized; balanced/aggressive scaffolds documented.
+
+### ☐ Task 23 – EV charging — Phase 2 automation refinement (runtime tuning & edge cases)

@@ -162,3 +162,26 @@ script:
       - service: switch.turn_off
         target:
           entity_id: switch.ehxdyl83_charger_enabled
+
+  ha1_ev_apply_current_limit_from_helper:
+    alias: "HA1 – EV: apply current limit from helper"
+    mode: single
+    description: >
+      Reads input_number.ha1_ev_limit_current_a and applies it as the
+      charger current limit for the Easee charger. The actual Easee
+      service call must be wired to your environment.
+    sequence:
+      - variables:
+          current_limit: "{{ states('input_number.ha1_ev_limit_current_a') | float(0) | int }}"
+      # TODO: Wire this to the correct Easee service for your setup.
+      # Example placeholders (do NOT enable until verified):
+      # - service: easee.set_charger_dynamic_current
+      #   data:
+      #     charger_id: "EHXDYL83"        # <-- replace with your real charger id
+      #     current: "{{ current_limit }}"
+      - service: logbook.log
+        data:
+          name: "HA1 EV"
+          message: >
+            EV current limit helper applied ({{ current_limit }} A) –
+            placeholder script, Easee service wiring pending.

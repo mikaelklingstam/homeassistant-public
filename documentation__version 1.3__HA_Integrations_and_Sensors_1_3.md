@@ -1,4 +1,4 @@
-Last updated: 2025-11-17 15:53 (CET) — Authorized by ChatGPT
+Last updated: 2025-01-21 15:55 (CET) — Authorized by ChatGPT
 
 # 🔌 Integrations & Sensors – HomeAssistant 1.3
 
@@ -173,8 +173,15 @@ These sensors are the **standard interface** for all EV-related logic in HomeAss
 - `sensor.ev_charging_time_left` – Planning input, passthrough of `sensor.id4pro_charging_time_left`.
 - `sensor.ev_battery_soc` – EV battery state of charge % (alias of `sensor.id4pro_battery_level`).
 - `sensor.ev_estimated_range` – EV estimated driving range in km (alias of `sensor.id4pro_electric_range`).
+- `sensor.ha1_ev_price_level` – EV-specific price classification derived from `sensor.ha1_price_current` and the numeric thresholds (`ha1_ev_price_cheap_max`, `ha1_ev_price_normal_max`, `ha1_ev_price_expensive_max`).
+- `sensor.ha1_ev_cheap_hours_remaining_24h` – Remaining cheap hours in the next 24h window (Nordpool today/tomorrow arrays).
 
 **Important:** `sensor.ev_charging_time_left` is explicitly treated as a **planning input** for EV charging automations (cheapest hours, peak shaving, and grid/battery coordination).
+
+**EV price threshold helpers (Task 22)**
+- `input_number.ha1_ev_price_cheap_max` – Max SEK/kWh considered cheap.
+- `input_number.ha1_ev_price_normal_max` – Max SEK/kWh considered normal.
+- `input_number.ha1_ev_price_expensive_max` – Max SEK/kWh considered expensive; above this is very_expensive.
 
 ---
 

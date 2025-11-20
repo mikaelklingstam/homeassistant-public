@@ -1,4 +1,4 @@
-Last updated: 2025-11-19 18:15 (CET) — Authorized by ChatGPT
+Last updated: 2025-01-21 15:55 (CET) — Authorized by ChatGPT
 
 # ⚙️ Functions & Settings – HomeAssistant 1.3
 
@@ -914,3 +914,52 @@ All events appear in **Activities (Logbook)**. Typical entries include:
 - “EV charging started by adaptive fallback”
 
 This section completes the user-facing manual for EV Charging Automations – Phase 1.
+
+### EV Charging Modes – cheap_only, balanced, aggressive (HA 1.3 Task 22)
+
+#### New EV Price-Level Thresholds (SEK/kWh)
+EV price classification now uses numeric sliders (replacing the old text-based mapping):
+- `input_number.ha1_ev_price_cheap_max`
+- `input_number.ha1_ev_price_normal_max`
+- `input_number.ha1_ev_price_expensive_max`
+
+Classification:
+- `cheap` = price ≤ cheap_max
+- `normal` = price > cheap_max and ≤ normal_max
+- `expensive` = price > normal_max and ≤ expensive_max
+- `very_expensive` = price > expensive_max
+
+These thresholds drive the EV price sensor (`sensor.ha1_ev_price_level`) that controls EV start/stop logic and mode behaviour (`cheap_only`, `balanced`, `aggressive`).
+
+#### Mode: cheap_only
+- Charges in `cheap`; also in `normal` if time_left ≤ 3h.
+- Never charges in `expensive` or `very_expensive`.
+- Peak safety: start only if net grid avg ≤ 80% of peak limit.
+- Automations: `ha1_ev_start_cheap_only`, `ha1_ev_start_time_critical_adaptive`.
+
+#### Mode: balanced
+- Charges in `cheap` and `normal`.
+- Charges in `expensive` only if time_left ≤ 1h.
+- Never charges in `very_expensive` unless time_left < 1h.
+- Peak safety: start only if net grid avg ≤ 90% of peak limit.
+- Applies `input_number.ha1_ev_limit_current_a` on start.
+- Automation: `ha1_ev_start_balanced`.
+
+#### Mode: aggressive
+- Charges in `cheap`, `normal`, `expensive`.
+- Charges in `very_expensive` only if time_left ≤ 1h.
+- Peak safety: start only if net grid avg ≤ 95% of peak limit.
+- Applies `input_number.ha1_ev_limit_current_a` on start.
+- Automation: `ha1_ev_start_aggressive`.
+
+#### EV Charging Pause Conditions
+- Peak limit pause: if charging and net grid avg ≥ peak limit → pause. Automation: `ha1_ev_pause_on_peak_limit`.
+- Very expensive pause:
+  - Balanced: pause if `very_expensive` and time_left > 3h.
+  - Aggressive: pause if `very_expensive` and time_left > 1h.
+  - Automation: `ha1_ev_pause_on_very_expensive_price`.
+
+#### Entity Reference (new/updated)
+- Helpers: `input_number.ha1_ev_price_cheap_max`, `input_number.ha1_ev_price_normal_max`, `input_number.ha1_ev_price_expensive_max`, `input_number.ha1_ev_limit_current_a`.
+- Sensor: `sensor.ha1_ev_price_level`.
+- Automations: `ha1_ev_start_cheap_only`, `ha1_ev_start_time_critical_adaptive`, `ha1_ev_pause_on_peak_limit`, `ha1_ev_start_balanced`, `ha1_ev_start_aggressive`, `ha1_ev_pause_on_very_expensive_price`.
