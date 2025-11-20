@@ -198,6 +198,231 @@ These scripts wrap the writable Huawei battery entities:
 - `script.ha1_batt_disable_grid_charge` – Turns off `switch.battery_charge_from_grid`.  
 - `script.ha1_batt_apply_peak_shaving_soc` – Writes `input_number.ha1_batt_peak_shaving_soc` into `number.battery_peak_shaving_soc`.  
 - `script.ha1_batt_apply_grid_charge_cutoff_soc` – Writes `input_number.ha1_batt_grid_charge_cutoff_soc` into `number.battery_grid_charge_cutoff_soc`.  
+
+## EV Charging Automations – Phase 1 (Task 22)
+
+### Scope
+
+Phase 1 implements a safe, price-aware EV charging baseline for the Easee charger + ID.4, using:
+
+- Canonical HA1 sensors (power/flows, net grid, cheap-hours helper)
+- EV-specific price classification
+- Global + EV guardrails
+- Core EV start/stop scripts from Task 20
+
+Focus is on **start/stop logic**; power/current limiting is prepared via helpers but not yet automated.
+
+---
+
+### Modes & guardrails
+
+**Control entities**
+
+- `input_boolean.ha1_automations_master_enable`  
+  Global master switch for all HA1 energy automations.  
+  If `off`, EV automations do nothing.
+
+- `input_boolean.ha1_ev_automation_enabled`  
+  EV-specific automation switch.  
+  If `off`, EV automations do nothing even if master is `on`.
+
+- `input_select.ha1_ev_charging_mode`  
+  EV charging mode selector:
+  - `off` – no automatic start; user/scripts only.
+  - `cheap_only` – **Phase 1 logic implemented** (see below).
+  - `balanced` – reserved for Phase 2 (currently behaves like `manual`).
+  - `aggressive` – reserved for Phase 2 (currently behaves like `manual`).
+  - `manual` – no automatic start; user/scripts only.
+
+In Phase 1, **only `cheap_only` has active automation logic**. All other modes effectively disable automatic start (but peak-limit pause still protects the system).
+
+---
+
+### Price logic for EV (absolute thresholds)
+
+EV uses its own price classification based on **absolute SEK/kWh thresholds**, independent from the global price level sensor.
+
+**Helpers (set on debug / maintenance dashboard)**
+
+- `input_number.ha1_ev_price_cheap_max`  
+  Max price for **cheap** (SEK/kWh).
+
+- `input_number.ha1_ev_price_normal_max`  
+  Max price for **normal** (SEK/kWh).
+
+- `input_number.ha1_ev_price_expensive_max`  
+  Max price for **expensive** (SEK/kWh).  
+  Anything above this is treated as **very_expensive**.
+
+**Derived EV price sensor**
+
+- `sensor.ha1_price_current`  
+  Base Nordpool price (SEK/kWh) for current hour.
+
+- `sensor.ha1_ev_price_level`  
+  EV-specific price classification:
+
+  - `cheap` – `price <= ha1_ev_price_cheap_max`  
+  - `normal` – `cheap_max < price <= normal_max`  
+  - `expensive` – `normal_max < price <= expensive_max`  
+  - `very_expensive` – `price > ha1_ev_price_expensive_max`
+
+This sensor is used **only by EV automations**.  
+Global logic continues to use `sensor.ha1_status_price_level` from the price/interval package.
+
+---
+
+### Other key inputs & sensors
+
+- `sensor.ha1_net_grid_power_avg_2min`  
+  2-minute average net grid power (W), used for peak-limit safety.
+
+- `input_number.ha1_peak_limit_kw`  
+  User-defined peak limit (kW). EV start logic uses an 80 % margin; pause logic triggers at (≥ limit).
+
+- `sensor.ha1_ev_cheap_hours_remaining_24h`  
+  Template sensor estimating how many **cheap hours** remain in the next 24 h (from now), based on the Nordpool today/tomorrow arrays. Used for the time-critical fallback.
+
+- `sensor.id4pro_charging_time_left`  
+  ID.4’s own estimate of remaining charging time. Parsed as `hours_left` and used both for “don’t start too late” logic and adaptive fallback.
+
+- `sensor.ehxdyl83_status`  
+  Easee charger status (`awaiting_start`, `ready_to_charge`, `charging`, etc.), used to decide if we can/should start or need to pause.
+
+- `switch.ehxdyl83_charger_enabled`  
+  Charger on/off state; used as an extra guard in start/stop conditions.
+
+---
+
+### Core EV scripts used
+
+Automations **do not call Easee services directly**; they call HA1 EV scripts:
+
+- `script.ha1_ev_start_charging_simple`  
+  Simple “start charging now” behavior:
+  - Enables the charger.
+  - Can optionally press the Easee “override schedule” button (as implemented in Task 20).
+
+- `script.ha1_ev_stop_charging_simple`  
+  Simple “stop/pause charging” behavior:
+  - Disables the charger.
+
+Future phases may introduce scripts for current-limit control; Phase 1 explicitly uses only these start/stop scripts.
+
+---
+
+### Phase 1 behaviors
+
+#### 1. Start charging in cheap hours (mode: cheap_only)
+
+Automation: `ha1_ev_start_cheap_only`
+
+**Active when:**
+
+- `input_boolean.ha1_automations_master_enable = on`
+- `input_boolean.ha1_ev_automation_enabled = on`
+- `input_select.ha1_ev_charging_mode = cheap_only`
+- EV is plugged in and **not charging**:
+  - `sensor.ehxdyl83_status` in `['awaiting_start', 'ready_to_charge']`
+  - `switch.ehxdyl83_charger_enabled = off`
+- Peak margin is safe:
+  - Use `sensor.ha1_net_grid_power_avg_2min` vs `input_number.ha1_peak_limit_kw`.
+  - Only start if avg net power ≤ 80 % of the configured peak limit.
+
+**Price & time-left logic:**
+
+- Normal case: start when `sensor.ha1_ev_price_level = cheap`.
+- “Time-critical” case: if ID.4 reports **≤ 3 hours** left (`sensor.id4pro_charging_time_left`) and price is `normal`, we allow start even if not cheap.
+- We **never** start when EV price level is `expensive` or `very_expensive`.
+
+**Action:**
+
+- Call `script.ha1_ev_start_charging_simple`.
+- Log to Activities via `logbook.log` with:
+  - Mode
+  - EV price level
+  - Current Nordpool price.
+
+---
+
+#### 2. Pause charging on peak-limit breach
+
+Automation: `ha1_ev_pause_on_peak_limit`
+
+**Active when:**
+
+- `input_boolean.ha1_automations_master_enable = on`
+- `input_boolean.ha1_ev_automation_enabled = on`
+- EV is **currently charging**:
+  - `sensor.ehxdyl83_status = 'charging'`
+  - `switch.ehxdyl83_charger_enabled = on`
+- `sensor.ha1_net_grid_power_avg_2min >= input_number.ha1_peak_limit_kw * 1000`
+
+This automation is **independent of EV mode** for safety: if peak limit is breached, EV charging is paused regardless of `cheap_only/aggressive/manual`.
+
+**Action:**
+
+- Call `script.ha1_ev_stop_charging_simple`.
+- Log to Activities with:
+  - Average net grid power
+  - Configured peak limit.
+
+---
+
+#### 3. Adaptive time-critical fallback (cheap_only)
+
+Automation: `ha1_ev_start_time_critical_adaptive`
+
+This provides a “don’t miss departure” escape route for `cheap_only` mode.
+
+**Active when:**
+
+- Same guardrails as above:
+  - Master and EV automation toggles = `on`
+  - Mode = `cheap_only`
+  - EV plugged in and not charging
+  - Peak margin safe (≤ 80 % of peak limit)
+- `sensor.id4pro_charging_time_left` is **valid** and parsed as `hours_left`.
+- `sensor.ha1_ev_cheap_hours_remaining_24h` is valid and parsed as `cheap_hours`.
+- Condition:  
+  `hours_left > cheap_hours + 0.5`  
+  (i.e. we no longer have enough cheap hours left, plus a small safety margin).
+- Current EV price level is `normal`:
+  - Not `cheap` (that case is handled by the cheap-only automation).
+  - Not `expensive` or `very_expensive`.
+
+**Action:**
+
+- Call `script.ha1_ev_start_charging_simple`.
+- Log to Activities with:
+  - Mode
+  - Charging time left
+  - Cheap hours remaining (24h window)
+  - EV price level.
+
+---
+
+### Unavailable / unknown sensors
+
+- If `sensor.id4pro_charging_time_left` is `unknown`/`unavailable`:
+  - Cheap-only start falls back to a **non-time-critical** path:
+    - It will still start in cheap hours.
+    - Time-critical fallback will not trigger until the sensor becomes valid again.
+- If `sensor.ha1_ev_cheap_hours_remaining_24h` is `unknown`:
+  - Adaptive fallback will not run (safety: we avoid guesses about the remaining cheap budget).
+
+---
+
+### Current & power limit preparation
+
+Phase 1 **does not yet adjust charging power automatically**, but the following helpers are in place for future phases:
+
+- `input_number.ha1_ev_max_charging_power_kw`  
+- `input_number.ha1_ev_limit_current_a`
+
+Future tasks will introduce scripts/automations that translate these into Easee current-limit commands, possibly coordinated with peak shaving and battery behavior.
+
+---
 - `script.ha1_batt_apply_grid_charge_limit` – Writes `input_number.ha1_batt_grid_charge_max_kw` into `number.battery_grid_charge_maximum_power`.  
 - `script.ha1_batt_set_peak_shaving_mode` – Sets `select.battery_working_mode` to peak shaving mode.
 
@@ -639,3 +864,53 @@ Used by automations to ensure clean, consistent Logbook entries.
 - Ensure HA1.3 behaviour is predictable and inspectable
 - Provide the backend structure for GUI views (Tasks 19–22)
 - Support future AI/optimizer logic
+
+## Using EV Charging Automations – Phase 1
+
+### Overview
+Phase 1 automates safe EV charging: it prefers cheap hours, obeys your peak-limit slider, and triggers a time-critical fallback if charging is running late. Manual overrides remain available, and **automatic charging currently works only when the EV mode is set to `cheap_only`.**
+
+### Required setup
+Before automations can run, confirm:
+- EV is plugged in and the Easee charger reports `awaiting_start` or `ready_to_charge`.
+- `input_boolean.ha1_automations_master_enable` = ON.
+- `input_boolean.ha1_ev_automation_enabled` = ON.
+- `input_select.ha1_ev_charging_mode` = `cheap_only`.
+- `input_number.ha1_peak_limit_kw` is set to match your tariff.
+- EV price threshold sliders are adjusted on the maintenance card:
+  - `input_number.ha1_ev_price_cheap_max`
+  - `input_number.ha1_ev_price_normal_max`
+  - `input_number.ha1_ev_price_expensive_max`
+
+### How to use the system
+1. Plug in the car as usual.
+2. Leave the EV mode on `cheap_only` (or switch to it).
+3. Ensure the master and EV automation toggles are ON.
+4. The system will start charging automatically when price and peak conditions are safe. It also pauses charging if the peak limit is breached.
+5. To charge immediately regardless of price, either enable `input_boolean.ha1_force_ev_charge_now` or switch to `manual` mode and start charging from the Easee app/dashboard.
+
+### EV charging modes
+- `off` – No automatic starts; use manual controls only.
+- `cheap_only` – Phase‑1 automation logic (cheap-preferring with fallback).
+- `balanced` – Placeholder for Phase 2 (currently behaves like manual).
+- `aggressive` – Placeholder for Phase 2 (currently behaves like manual).
+- `manual` – User controls charging fully; automation stays idle.
+
+### When sensors are unavailable
+- If `sensor.id4pro_charging_time_left` is unavailable, cheap-only starts still occur, but the time-critical fallback is disabled until the sensor recovers.
+- If `sensor.ha1_ev_cheap_hours_remaining_24h` is unavailable, the adaptive fallback is disabled so the system never guesses when it is unsure.
+
+### Tips for best results
+- Tune the EV price thresholds to reflect your comfort level and current market conditions.
+- Align the peak-limit slider with your actual tariff limit to avoid unnecessary stops.
+- Set a realistic “cheap” price—too low may delay charging until very late.
+- Let the vehicle “wake up” periodically so SOC and time-left data stay fresh.
+- Use “Force charge now” sparingly; turn it off when you want automations to resume control.
+
+### Where to view automation activity
+All events appear in **Activities (Logbook)**. Typical entries include:
+- “EV charging started (cheap price)”
+- “EV charging paused due to peak limit”
+- “EV charging started by adaptive fallback”
+
+This section completes the user-facing manual for EV Charging Automations – Phase 1.

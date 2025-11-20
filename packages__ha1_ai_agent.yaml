@@ -1,0 +1,8 @@
+
+
+sensor:
+  - platform: rest
+    name: ha1_ai_ev_suggestion
+    resource: http://ha-ai-agent.local:5001/suggestion
+    value_template: "{{ value_json.suggestion }}"
+    scan_interval: 5

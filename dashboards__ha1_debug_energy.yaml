@@ -233,6 +233,17 @@ views:
           - entity: input_boolean.ha1_debug_freeze_optimizers
             name: "Debug: freeze optimizers"
 
+      - type: entities
+        title: "HA1 – EV price thresholds (SEK/kWh)"
+        show_header_toggle: false
+        entities:
+          - entity: input_number.ha1_ev_price_cheap_max
+            name: Cheap max (SEK/kWh)
+          - entity: input_number.ha1_ev_price_normal_max
+            name: Normal max (SEK/kWh)
+          - entity: input_number.ha1_ev_price_expensive_max
+            name: Expensive max (SEK/kWh)
+
       # ─────────────────────────────────────────
       # Diagnostic Groups – Task 18
       # ─────────────────────────────────────────

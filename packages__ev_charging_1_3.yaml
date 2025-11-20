@@ -105,6 +105,79 @@ template:
         availability: >
           {{ states('sensor.id4pro_electric_range') not in ['unknown', 'unavailable', 'none'] }}
 
+      # -------------------------------------------------------------------
+      # HA1 – EV: derived price level based on numeric thresholds
+      # -------------------------------------------------------------------
+      - name: "HA1 – EV price level"
+        unique_id: ha1_ev_price_level
+        icon: mdi:tag
+        state: >
+          {% set price = states('sensor.ha1_price_current') | float(0) %}
+          {% set cheap_max     = states('input_number.ha1_ev_price_cheap_max') | float(0) %}
+          {% set normal_max    = states('input_number.ha1_ev_price_normal_max') | float(0) %}
+          {% set expensive_max = states('input_number.ha1_ev_price_expensive_max') | float(0) %}
+
+          {# If thresholds are not configured properly, fall back to 'normal' #}
+          {% if normal_max <= 0 %}
+            normal
+          {% else %}
+            {% if price <= cheap_max %}
+              cheap
+            {% elif price <= normal_max %}
+              normal
+            {% elif price <= expensive_max %}
+              expensive
+            {% else %}
+              very_expensive
+            {% endif %}
+          {% endif %}
+
+      # -------------------------------------------------------------------
+      # HA1 – EV: cheap hours remaining in the next 24h (from now)
+      # -------------------------------------------------------------------
+      - name: "HA1 – EV cheap hours remaining 24h"
+        unique_id: ha1_ev_cheap_hours_remaining_24h
+        unit_of_measurement: "h"
+        state: >
+          {% set today = state_attr('sensor.nordpool_kwh_se3_sek_3_10_025', 'today') %}
+          {% set tomorrow = state_attr('sensor.nordpool_kwh_se3_sek_3_10_025', 'tomorrow') %}
+          {% if today is not sequence or (today | length == 0) %}
+            unknown
+          {% else %}
+            {% set now_hour = now().hour %}
+            {% set prices = [] %}
+
+            {# Add remaining hours of today from current hour #}
+            {% for i in range(now_hour, today | length) %}
+              {% set _ = prices.append(today[i]) %}
+            {% endfor %}
+
+            {# Add hours from tomorrow until we have a 24h window #}
+            {% if tomorrow is sequence and (tomorrow | length > 0) %}
+              {% for i in range(0, tomorrow | length) %}
+                {% if prices | length >= 24 %}
+                  {% break %}
+                {% endif %}
+                {% set _ = prices.append(tomorrow[i]) %}
+              {% endfor %}
+            {% endif %}
+
+            {% if prices | length == 0 %}
+              unknown
+            {% else %}
+              {# Simple cheap definition: below the average of this 24h window.
+                 TODO: adjust this if you want "cheap" to match ha1_status_price_level logic. #}
+              {% set avg = (prices | sum(0)) / (prices | length) %}
+              {% set ns = namespace(remaining=0) %}
+              {% for p in prices %}
+                {% if p <= avg %}
+                  {% set ns.remaining = ns.remaining + 1 %}
+                {% endif %}
+              {% endfor %}
+              {{ ns.remaining }}
+            {% endif %}
+          {% endif %}
+
   - binary_sensor:
       # True when EV is actively charging (simple power-based detector)
       - name: "EV Is Charging"
