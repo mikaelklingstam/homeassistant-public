@@ -1,0 +1,167 @@
+# --- HomeAssistant 1.3 – Peak Shaving Automations (Phase 1) ---
+# Coordinates EV + (later) battery behavior to protect monthly peak using
+# sensor.ha1_net_grid_power vs input_number.ha1_peak_limit_kw.
+#
+# Zones (using kW helpers, converted to W in templates):
+#   limit_kw   = input_number.ha1_peak_limit_kw
+#   margin_kw  = input_number.ha1_peak_warning_margin_kw
+#   warning_kw = limit_kw - margin_kw
+#
+#   Normal:   net_grid_power < warning_kw
+#   Warning:  warning_kw <= net_grid_power < limit_kw  (for 1 min)
+#   Breach:   net_grid_power >= limit_kw               (for 1 min)
+#   Recovery: net_grid_power < warning_kw              (for 5 min)
+#
+# Guardrails:
+#   input_boolean.ha1_automations_master_enable
+#   input_boolean.ha1_peak_shaving_enabled
+#   input_boolean.ha1_ev_automation_enabled
+#   (later) input_boolean.ha1_battery_automation_enabled
+#
+# NOTE:
+#   - Assumes EV stop script: script.ha1_ev_stop_charging
+#     (adjust the script id if your EV stop script is named differently).
+#   - Battery grid-charge OFF hook is left as a TODO with a comment
+#     to avoid guessing the script id.
+
+automation:
+
+  # -------------------------------------------------------------------
+  # 1) Soft protection: warning zone → pause EV charging
+  # -------------------------------------------------------------------
+  - id: ha1_peak_warning_ev_soft_protection
+    alias: "HA1 – Peak: EV soft protection (warning zone)"
+    mode: single
+    trigger:
+      - platform: template
+        # Trigger when net grid power is between warning and hard limit for 1 minute.
+        value_template: >
+          {% set limit_kw   = states('input_number.ha1_peak_limit_kw')|float(0) %}
+          {% set margin_kw  = states('input_number.ha1_peak_warning_margin_kw')|float(1.0) %}
+          {% set margin_kw  = [margin_kw, 0]|max %}
+          {% set warning_kw = (limit_kw - margin_kw) %}
+          {% set limit_w    = limit_kw * 1000 %}
+          {% set warning_w  = warning_kw * 1000 %}
+          {% set p          = states('sensor.ha1_net_grid_power')|float(0) %}
+          {{ p >= warning_w and p < limit_w }}
+        for:
+          minutes: 1
+    condition:
+      # Global guardrails
+      - condition: state
+        entity_id: input_boolean.ha1_automations_master_enable
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.ha1_peak_shaving_enabled
+        state: "on"
+      # Domain guardrail – EV
+      - condition: state
+        entity_id: input_boolean.ha1_ev_automation_enabled
+        state: "on"
+    action:
+      # Soft action: pause/stop EV charging (script from EV Task 22).
+      # If your EV stop script has a different id, adjust this entity_id.
+      - service: script.ha1_ev_stop_charging
+        data: {}
+      - service: logbook.log
+        data:
+          name: "HA1 Peak"
+          message: >
+            EV charging paused (warning zone). Grid power
+            {{ states('sensor.ha1_net_grid_power') }} W is near peak limit
+            {{ (states('input_number.ha1_peak_limit_kw')|float(0) * 1000)|int }} W.
+          entity_id: sensor.ha1_net_grid_power
+
+  # -------------------------------------------------------------------
+  # 2) Hard protection: breach → enforce EV stop (+ battery later)
+  # -------------------------------------------------------------------
+  - id: ha1_peak_hard_limit_protection
+    alias: "HA1 – Peak: Hard limit breach protection"
+    mode: single
+    trigger:
+      - platform: template
+        # Trigger when net grid power is above or equal to hard limit for 1 minute.
+        value_template: >
+          {% set limit_kw   = states('input_number.ha1_peak_limit_kw')|float(0) %}
+          {% set limit_w    = limit_kw * 1000 %}
+          {% set p          = states('sensor.ha1_net_grid_power')|float(0) %}
+          {{ p >= limit_w }}
+        for:
+          minutes: 1
+    condition:
+      # Global guardrails
+      - condition: state
+        entity_id: input_boolean.ha1_automations_master_enable
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.ha1_peak_shaving_enabled
+        state: "on"
+    action:
+      - choose:
+          # 2a) Always enforce EV stop if EV automation is enabled
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.ha1_ev_automation_enabled
+                state: "on"
+            sequence:
+              - service: script.ha1_ev_stop_charging
+                data: {}
+          # 2b) Battery grid-charging suppression hook (TODO)
+          #     When you confirm the exact script name from Task 20/23,
+          #     add a call here to disable grid charging of the battery.
+          #     Example once confirmed:
+          #
+          #     - conditions:
+          #         - condition: state
+          #           entity_id: input_boolean.ha1_battery_automation_enabled
+          #           state: "on"
+          #       sequence:
+          #         - service: script.ha1_battery_grid_charge_off
+          #           data: {}
+      - service: logbook.log
+        data:
+          name: "HA1 Peak"
+          message: >
+            Hard peak protection triggered. Grid power
+            {{ states('sensor.ha1_net_grid_power') }} W exceeded peak limit
+            {{ (states('input_number.ha1_peak_limit_kw')|float(0) * 1000)|int }} W.
+            EV charging has been paused; battery grid-charge suppression
+            is TODO once script id is wired in.
+          entity_id: sensor.ha1_net_grid_power
+
+  # -------------------------------------------------------------------
+  # 3) Recovery: exit protection once safely below warning threshold
+  # -------------------------------------------------------------------
+  - id: ha1_peak_recovery_from_protection
+    alias: "HA1 – Peak: Recovery (below warning threshold)"
+    mode: single
+    trigger:
+      - platform: template
+        # Trigger when net grid power is below warning threshold for 5 minutes.
+        value_template: >
+          {% set limit_kw   = states('input_number.ha1_peak_limit_kw')|float(0) %}
+          {% set margin_kw  = states('input_number.ha1_peak_warning_margin_kw')|float(1.0) %}
+          {% set margin_kw  = [margin_kw, 0]|max %}
+          {% set warning_kw = (limit_kw - margin_kw) %}
+          {% set warning_w  = warning_kw * 1000 %}
+          {% set p          = states('sensor.ha1_net_grid_power')|float(0) %}
+          {{ p < warning_w }}
+        for:
+          minutes: 5
+    condition:
+      - condition: state
+        entity_id: input_boolean.ha1_automations_master_enable
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.ha1_peak_shaving_enabled
+        state: "on"
+    action:
+      # In Phase 1 we *don't* force EV charging to resume here.
+      # We just stop enforcing protection; EV/battery logic decide what to do next.
+      - service: logbook.log
+        data:
+          name: "HA1 Peak"
+          message: >
+            Peak protection recovered. Grid power has been below the warning
+            threshold for 5 minutes. EV/battery automations may resume normal behavior.
+          entity_id: sensor.ha1_net_grid_power
