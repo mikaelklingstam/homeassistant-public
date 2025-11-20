@@ -15,7 +15,7 @@ automation:
         entity_id: sensor.ha1_peak_billable_power_kw
     condition:
       - condition: state
-        entity_id: input_boolean.ha1_automation_master_enabled
+        entity_id: input_boolean.ha1_automations_master_enable
         state: 'on'
       - condition: state
         entity_id: input_boolean.ha1_peak_shaving_enabled
@@ -78,7 +78,7 @@ automation:
         entity_id: sensor.ha1_huawei_battery_soc
     condition:
       - condition: state
-        entity_id: input_boolean.ha1_automation_master_enabled
+        entity_id: input_boolean.ha1_automations_master_enable
         state: 'on'
       - condition: state
         entity_id: input_boolean.ha1_control_battery_auto
@@ -142,7 +142,7 @@ automation:
           - input_number.ha1_batt_peak_shaving_soc
     condition:
       - condition: state
-        entity_id: input_boolean.ha1_automation_master_enabled
+        entity_id: input_boolean.ha1_automations_master_enable
         state: 'on'
       - condition: state
         entity_id: input_boolean.ha1_control_battery_auto
@@ -205,7 +205,7 @@ automation:
           - sensor.ha1_peak_margin_kw
     condition:
       - condition: state
-        entity_id: input_boolean.ha1_automation_master_enabled
+        entity_id: input_boolean.ha1_automations_master_enable
         state: 'on'
       - condition: state
         entity_id: input_boolean.ha1_control_ev_auto
@@ -293,7 +293,7 @@ automation:
           - binary_sensor.ev_is_charging
     condition:
       - condition: state
-        entity_id: input_boolean.ha1_automation_master_enabled
+        entity_id: input_boolean.ha1_automations_master_enable
         state: 'on'
       - condition: state
         entity_id: input_boolean.ha1_control_ev_auto

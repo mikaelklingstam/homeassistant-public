@@ -1,7 +1,8 @@
 ###############################################################################
-# HA1.3 – AI Agent Interface (EV domain)
+# HA1.3 - AI Agent Interface (EV domain) - ha1_ai_agent_ev_1_3.yaml
 #
-# Connects external AI agent to Home Assistant for EV decisions.
+# EV domain interface that connects the external AI agent's EV suggestion
+# to Home Assistant.
 #
 # - REST sensor reads AI result from: http://192.168.2.32:5001/suggestion
 # - Template sensors expose clean / friendly states

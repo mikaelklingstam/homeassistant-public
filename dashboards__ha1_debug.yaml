@@ -441,7 +441,7 @@ views:
         title: 🎚️ Helper Controls – Peaks & Modes
         show_header_toggle: false
         entities:
-          - entity: input_boolean.ha1_automation_master_enabled
+          - entity: input_boolean.ha1_automations_master_enable
             name: Automation Master Enable
           - entity: input_boolean.ha1_peak_shaving_enabled
             name: Peak Shaving Enabled
@@ -671,7 +671,7 @@ views:
         title: 🎛️ System Helpers & Overrides
         show_header_toggle: false
         entities:
-          - entity: input_boolean.ha1_automation_master_enabled
+          - entity: input_boolean.ha1_automations_master_enable
             name: Master Automation Enable
           - entity: input_boolean.ha1_peak_shaving_enabled
             name: Peak Shaving Enabled

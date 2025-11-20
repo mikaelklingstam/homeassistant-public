@@ -296,7 +296,7 @@ automation:
   #       minutes: "/5"
   #   condition:
   #     - condition: state
-  #       entity_id: input_boolean.ha1_automation_master_enabled
+  #       entity_id: input_boolean.ha1_automations_master_enable
   #       state: "on"
   #     - condition: template
   #       value_template: >-
@@ -362,7 +362,7 @@ automation:
   #       minutes: "/5"
   #   condition:
   #     - condition: state
-  #       entity_id: input_boolean.ha1_automation_master_enabled
+  #       entity_id: input_boolean.ha1_automations_master_enable
   #       state: "on"
   #     - condition: template
   #       value_template: >-

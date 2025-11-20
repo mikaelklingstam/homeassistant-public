@@ -1,0 +1,136 @@
+###############################################################################
+# HA1.3 – AI Agent Interface (Battery domain)
+#
+# Connects the external AI agent's "battery" suggestion into Home Assistant.
+#
+# Responsibilities:
+# - Read AI suggestion for the battery domain from the external agent.
+# - Expose it as canonical + friendly sensors.
+# - Apply the suggestion via battery-related actions when:
+#     * Global AI mode      = auto
+#     * Master automations  = on
+#     * Battery automations = on
+#
+# Assumptions:
+# - External AI agent is reachable at:
+#       http://192.168.2.32:5001/suggestion
+#   and returns JSON like:
+#       {
+#         "ev": "start_charging",
+#         "battery": "charge",
+#         "suggestion": "start_charging"
+#       }
+#
+# - The following helpers already exist:
+#       input_boolean.ha1_automations_master_enable
+#       input_boolean.ha1_battery_automation_enabled
+#
+# - Grid-charge / battery control is primarily done via:
+#       switch.battery_charge_from_grid
+#   (and optionally helpers/scripts you already have).
+#
+# NOTE:
+#   For säkerhet gör vi initialt *bara* enkla åtgärder:
+#     "charge"     → enable grid charge
+#     "discharge"  → disable grid charge (låter batteriet arbeta mot lasten)
+#     "idle"       → ingen direkt förändring
+###############################################################################
+
+sensor:
+  # Raw battery suggestion from the external AI agent.
+  # Uses the "battery" field in the JSON payload.
+  - platform: rest
+    name: HA1 – AI Battery suggestion
+    unique_id: ha1_ai_battery_suggestion_raw
+    resource: http://192.168.2.32:5001/suggestion
+    method: GET
+    scan_interval: 10
+    timeout: 2
+    value_template: "{{ value_json.battery | default('idle') }}"
+
+  # Canonical and friendly battery suggestion sensors.
+  - platform: template
+    sensors:
+      ha1_ai_battery_decision:
+        friendly_name: "HA1 – AI Battery decision"
+        value_template: >
+          {% set s = states('sensor.ha1_ai_battery_suggestion') %}
+          {% set allowed = ['charge', 'discharge', 'idle'] %}
+          {% if s in allowed %}
+            {{ s }}
+          {% else %}
+            idle
+          {% endif %}
+
+      ha1_ai_battery_decision_friendly:
+        friendly_name: "HA1 – AI Battery decision (friendly)"
+        value_template: >
+          {% set s = states('sensor.ha1_ai_battery_decision') %}
+          {% if s == 'charge' %}
+            Charge battery (enable grid charging)
+          {% elif s == 'discharge' %}
+            Discharge / avoid grid charging
+          {% elif s == 'idle' %}
+            Keep current battery mode
+          {% else %}
+            Keep current battery mode
+          {% endif %}
+
+automation:
+  # Apply Battery AI suggestions when:
+  # - Global AI mode           = auto
+  # - Master automations       = on
+  # - Battery automations      = on
+  - id: ha1_ai_battery_apply_suggestion
+    alias: "HA1 – AI: apply Battery decision"
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: sensor.ha1_ai_battery_decision
+
+    condition:
+      # Global AI mode must be AUTO
+      - condition: state
+        entity_id: input_select.ha1_ai_mode
+        state: "auto"
+
+      # Global automations master must be ON
+      - condition: state
+        entity_id: input_boolean.ha1_automations_master_enable
+        state: "on"
+
+      # Battery automations must be ON
+      - condition: state
+        entity_id: input_boolean.ha1_battery_automation_enabled
+        state: "on"
+
+    action:
+      - choose:
+          # AI says: charge → enable grid charge
+          - conditions:
+              - condition: state
+                entity_id: sensor.ha1_ai_battery_decision
+                state: "charge"
+            sequence:
+              - service: switch.turn_on
+                target:
+                  entity_id: switch.battery_charge_from_grid
+
+          # AI says: discharge → disable grid charge
+          - conditions:
+              - condition: state
+                entity_id: sensor.ha1_ai_battery_decision
+                state: "discharge"
+            sequence:
+              - service: switch.turn_off
+                target:
+                  entity_id: switch.battery_charge_from_grid
+
+          # AI says: idle → no explicit change, keep current mode
+          - conditions:
+              - condition: state
+                entity_id: sensor.ha1_ai_battery_decision
+                state: "idle"
+            sequence: []
+
+        default: []

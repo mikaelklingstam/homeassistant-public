@@ -24,10 +24,10 @@ input_select:
     name: HA1 - AI global mode
     icon: mdi:robot
     options:
-      - off
-      - suggest
-      - auto
-    initial: suggest
+      - "off"
+      - "suggest"
+      - "auto"
+    initial: "off"
 
 # Optional: simple status sensor hooks (can be populated later via templates)
 sensor:
@@ -36,13 +36,13 @@ sensor:
       ha1_ai_status:
         friendly_name: "HA1 - AI status"
         value_template: >
-          {% set mode = states('input_select.ha1_ai_mode') %}
-          {% if mode == 'off' %}
-            Disabled
-          {% elif mode == 'suggest' %}
+          {% set m = states('input_select.ha1_ai_mode') %}
+          {% if m == 'off' %}
+            Off
+          {% elif m == 'suggest' %}
             Suggest-only
-          {% elif mode == 'auto' %}
-            Auto-apply
+          {% elif m == 'auto' %}
+            Auto apply
           {% else %}
             Unknown
           {% endif %}

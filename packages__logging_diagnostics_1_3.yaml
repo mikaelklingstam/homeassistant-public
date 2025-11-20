@@ -87,7 +87,7 @@ group:
     name: "HA1 – Diagnostics: Core Helpers & Overrides"
     icon: mdi:tune
     entities:
-      - input_boolean.ha1_automation_master_enabled
+      - input_boolean.ha1_automations_master_enable
       - input_boolean.ha1_peak_shaving_enabled
       - input_boolean.ha1_control_battery_auto
       - input_boolean.ha1_control_ev_auto

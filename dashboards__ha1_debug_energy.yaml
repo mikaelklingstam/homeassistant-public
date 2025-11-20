@@ -220,7 +220,7 @@ views:
           - entity: input_number.ha1_ev_limit_current_a
             name: EV current limit (A)
 
-          - entity: input_boolean.ha1_automation_master_enabled
+          - entity: input_boolean.ha1_automations_master_enable
             name: Automation master enable
           - entity: input_boolean.ha1_comfort_override_enabled
             name: Comfort override enabled
@@ -263,3 +263,21 @@ views:
             name: Peaks & intervals diagnostics
           - entity: group.ha1_diag_helpers
             name: Helpers & modes diagnostics
+
+      - type: entities
+        title: "HA1 – AI: EV & Battery decisions"
+        show_header_toggle: false
+        entities:
+          - entity: input_select.ha1_ai_mode
+            name: AI mode
+          - entity: input_boolean.ha1_automations_master_enable
+            name: Automations master
+          - entity: input_boolean.ha1_ev_automation_enabled
+            name: EV automations
+          - entity: input_boolean.ha1_battery_automation_enabled
+            name: Battery automations
+          - type: divider
+          - entity: sensor.ha1_ai_ev_decision_friendly
+            name: EV AI decision
+          - entity: sensor.ha1_ai_battery_decision_friendly
+            name: Battery AI decision
