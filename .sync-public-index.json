@@ -2,221 +2,226 @@
   {
     "flattened": "automations.yaml",
     "original": "automations.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "dashboards__ha1_debug_energy.yaml",
     "original": "dashboards/ha1_debug_energy.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "dashboards__ha1_debug.yaml",
     "original": "dashboards/ha1_debug.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "documentation__version 1.1___index.md",
     "original": "documentation/version 1.1/_index.md",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "documentation__version 1.1__action_plan_homeassistant1.1.md",
     "original": "documentation/version 1.1/action_plan_homeassistant1.1.md",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "documentation__version 1.1__Functions_And_Settings.md",
     "original": "documentation/version 1.1/Functions_And_Settings.md",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "documentation__version 1.1__HA_System_Inventory.md",
     "original": "documentation/version 1.1/HA_System_Inventory.md",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "documentation__version 1.1__rulebook_homeassistant_1_1.md",
     "original": "documentation/version 1.1/rulebook_homeassistant_1_1.md",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "documentation__version 1.2__automation_inventory_1_2.md",
     "original": "documentation/version 1.2/automation_inventory_1_2.md",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "documentation__version 1.2__ha1_entities.md",
     "original": "documentation/version 1.2/ha1_entities.md",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "documentation__version 1.2__integration_entities.md",
     "original": "documentation/version 1.2/integration_entities.md",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "documentation__version 1.2__rulebook_homeassistant_1_2.md",
     "original": "documentation/version 1.2/rulebook_homeassistant_1_2.md",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "documentation__version 1.3__action_plan_homeassistant_1_3.md",
     "original": "documentation/version 1.3/action_plan_homeassistant_1_3.md",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "documentation__version 1.3__Functions_And_Settings_1_3.md",
     "original": "documentation/version 1.3/Functions_And_Settings_1_3.md",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "documentation__version 1.3__HA_Integrations_and_Sensors_1_3.md",
     "original": "documentation/version 1.3/HA_Integrations_and_Sensors_1_3.md",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "documentation__version 1.3__rulebook_homeassistant_1_3.md",
     "original": "documentation/version 1.3/rulebook_homeassistant_1_3.md",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "documentation__version 1.3__Task_Procedure_HA1.3.md",
     "original": "documentation/version 1.3/Task_Procedure_HA1.3.md",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "documentation__version 1.3__task14_template_sensor_framework_stub.md",
     "original": "documentation/version 1.3/task14_template_sensor_framework_stub.md",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__diagnostics_1_3.yaml",
     "original": "packages/diagnostics_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__energy_automations_core_1_3.yaml",
     "original": "packages/energy_automations_core_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__energy_control_1_3.yaml",
     "original": "packages/energy_control_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__energy_core_1_3.yaml",
     "original": "packages/energy_core_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__energy_metrics_1_3.yaml",
     "original": "packages/energy_metrics_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__energy_scripts_1_3.yaml",
     "original": "packages/energy_scripts_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__ev_charging_1_3.yaml",
     "original": "packages/ev_charging_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__grid_meter_1_3.yaml",
     "original": "packages/grid_meter_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__ha1_ai_agent_battery_1_3.yaml",
     "original": "packages/ha1_ai_agent_battery_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__ha1_ai_agent_ev_1_3.yaml",
     "original": "packages/ha1_ai_agent_ev_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__ha1_ai_agent.yaml",
     "original": "packages/ha1_ai_agent.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
+  },
+  {
+    "flattened": "packages__ha1_automations_battery_1_3.yaml",
+    "original": "packages/ha1_automations_battery_1_3.yaml",
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__ha1_automations_core_1_3.yaml",
     "original": "packages/ha1_automations_core_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__ha1_automations_ev_1_3.yaml",
     "original": "packages/ha1_automations_ev_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__ha1_compat_1_3.yaml",
     "original": "packages/ha1_compat_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__ha1_price_and_interval_compat_1_3.yaml",
     "original": "packages/ha1_price_and_interval_compat_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__helpers_1_3.yaml",
     "original": "packages/helpers_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__huawei_solar_1_3.yaml",
     "original": "packages/huawei_solar_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__logging_1_3.yaml",
     "original": "packages/logging_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__logging_diagnostics_1_3.yaml",
     "original": "packages/logging_diagnostics_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__utility_meters_peak_1_3.yaml",
     "original": "packages/utility_meters_peak_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__verisure_1_3.yaml",
     "original": "packages/verisure_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "packages__weather_environment_1_3.yaml",
     "original": "packages/weather_environment_1_3.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "scripts__push-ha.ps1",
     "original": "scripts/push-ha.ps1",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "scripts__sync-ha-and-public.md",
     "original": "scripts/sync-ha-and-public.md",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "scripts__sync-ha-and-public.ps1",
     "original": "scripts/sync-ha-and-public.ps1",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   },
   {
     "flattened": "scripts.yaml",
     "original": "scripts.yaml",
-    "synced_at": "2025-11-20T16:24:34.4169236+00:00"
+    "synced_at": "2025-11-20T19:20:45.7733934+00:00"
   }
 ]

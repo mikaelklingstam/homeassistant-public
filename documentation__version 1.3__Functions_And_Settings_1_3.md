@@ -1,4 +1,4 @@
-Last updated: 2025-01-21 15:55 (CET) — Authorized by ChatGPT
+Last updated: 2025-11-20 19:16 (CET) — Authorized by ChatGPT
 
 # ⚙️ Functions & Settings – HomeAssistant 1.3
 
@@ -122,6 +122,78 @@ Use the battery to:
 - `sensor.ha1_huawei_battery_soc` – SOC for all thresholds.
 - `sensor.ha1_huawei_battery_power` – signed kW for charge/discharge logic (positive = charging).
 - `sensor.ha1_huawei_solar_power` – PV power reference when coordinating with price or peak logic.
+
+## 🧠 HA1 Battery Automations – Phase 1 (Task 23)
+
+**Purpose**  
+Provide safe, deterministic baseline control for the Huawei LUNA2000 battery before introducing forecasting, AI-driven scheduling, or price-optimized strategies.
+
+### Min SOC Protection
+
+The battery is protected by two SOC thresholds:
+
+- **Normal minimum SOC**: `input_number.ha1_battery_min_soc_normal`
+- **Peak minimum SOC**: `input_number.ha1_battery_min_soc_peak`
+
+Behavior:
+
+- When SOC drops below the **normal minimum**, the system writes a logbook entry and the battery should not be used for non-essential optimizations.
+- When SOC drops below the **peak minimum** while peak shaving is enabled, the system writes a logbook entry indicating that the battery should no longer be used for peak shaving.
+- Phase 1 does not directly force Huawei to stop discharging; instead, all future peak/price/export automations must check SOC against these thresholds and must not intentionally drive SOC below them.
+
+### Grid Charging Control
+
+Grid charging is controlled via:
+
+- `input_boolean.ha1_battery_allow_grid_charge`
+- `input_number.ha1_battery_max_soc_charging`
+- The following scripts:
+  - `script.ha1_battery_allow_grid_charge_on`
+  - `script.ha1_battery_allow_grid_charge_off`
+  - `script.ha1_battery_apply_grid_charge_limit`
+
+Behavior:
+
+- When `input_boolean.ha1_battery_allow_grid_charge` is turned **on**, the system:
+  - Calls `script.ha1_battery_allow_grid_charge_on`.
+  - Calls `script.ha1_battery_apply_grid_charge_limit` to apply the configured grid charge power limit (within Huawei’s constraints).
+  - Writes a logbook entry under the name **“HA1 Battery”**.
+- When `input_boolean.ha1_battery_allow_grid_charge` is turned **off**, the system:
+  - Calls `script.ha1_battery_allow_grid_charge_off`.
+  - Writes a logbook entry indicating that grid charging was disabled.
+- When the battery SOC reaches or exceeds `input_number.ha1_battery_max_soc_charging`, an automation:
+  - Calls `script.ha1_battery_allow_grid_charge_off`.
+  - Logs that grid charging was stopped at the configured target SOC.
+
+### “No Export While Battery Needs Charge” (Phase 1 Observability)
+
+The system monitors whether the battery still “needs charge” while export is happening.
+
+- The battery is considered to **need charge** when:
+  - `sensor.ha1_huawei_battery_soc` is below `input_number.ha1_battery_max_soc_charging`.
+- Export is detected when either:
+  - `sensor.ha1_flow_solar_to_grid` is greater than ~300 W, or
+  - `sensor.ha1_net_grid_power` is less than –300 W (net export to grid).
+
+In this Phase 1 implementation:
+
+- A periodic automation (every 5 minutes) checks these conditions.
+- If export is happening while the battery SOC is still below the export target, it writes a logbook entry under **“HA1 Battery”** explaining that export is ongoing while the battery is not yet at its target SOC.
+- No actuator changes are done yet in Phase 1; this is an observability layer. Future export/price strategies must respect this rule and avoid export while the battery still needs charge.
+
+### Guardrails and Dependencies
+
+All HA1 battery automations introduced in Task 23 respect the HA1 automation framework and only run when:
+
+- `input_boolean.ha1_automations_master_enable` = **on**
+- `input_boolean.ha1_battery_automation_enabled` = **on**
+
+Additionally, many automations also respect:
+
+- `input_boolean.ha1_debug_freeze_optimizers` = **off**  
+  (When this debug flag is on, optimizers are allowed to pause.)
+
+These guardrails keep the battery logic aligned with the general HA1.3 automation framework (Tasks 21–22) and make it easy to temporarily pause or globally disable HA1 automations.
 
 ---
 
