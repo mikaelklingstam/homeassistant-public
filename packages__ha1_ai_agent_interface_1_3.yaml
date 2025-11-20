@@ -1,0 +1,99 @@
+###############################################################################
+# HA1.3 – AI Agent Interface (EV domain)
+#
+# Connects external AI agent to Home Assistant for EV decisions.
+#
+# - REST sensor reads AI result from: http://192.168.2.32:5001/suggestion
+# - Template sensors expose clean / friendly states
+# - Automation applies EV scripts only when:
+#     * Global AI mode = auto
+#     * Global master automations = on
+#     * EV automations = on
+###############################################################################
+
+sensor:
+  # Raw EV suggestion from the external AI agent.
+  # NOTE: This will most likely have entity_id: sensor.ha1_ai_ev_suggestion
+  # based on the name below. That is OK – we treat it as the "raw" sensor.
+  - platform: rest
+    name: HA1 – AI EV suggestion
+    unique_id: ha1_ai_ev_suggestion_raw
+    resource: http://192.168.2.32:5001/suggestion
+    method: GET
+    scan_interval: 10
+    timeout: 2
+    value_template: "{{ value_json.suggestion | default('none') }}"
+
+  # Template sensors built on top of the raw sensor.
+  - platform: template
+    sensors:
+      ha1_ai_ev_decision:
+        friendly_name: "HA1 – AI EV decision"
+        value_template: >
+          {% set s = states('sensor.ha1_ai_ev_suggestion_raw') %}
+          {% if s in ['start_charging', 'stop_charging', 'none'] %}
+            {{ s }}
+          {% else %}
+            none
+          {% endif %}
+
+      ha1_ai_ev_decision_friendly:
+        friendly_name: "HA1 – AI EV decision (friendly)"
+        value_template: >
+          {% set s = states('sensor.ha1_ai_ev_decision') %}
+          {% if s == 'start_charging' %}
+            Start EV charging
+          {% elif s == 'stop_charging' %}
+            Stop EV charging
+          {% elif s == 'none' %}
+            No EV action
+          {% else %}
+            No EV action
+          {% endif %}
+
+automation:
+  # Apply EV AI suggestions when:
+  # - Global AI mode = auto
+  # - Global automations master = on
+  # - EV automations = on
+  - id: ha1_ai_ev_apply_suggestion
+    alias: "HA1 – AI: apply EV decision"
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: sensor.ha1_ai_ev_decision
+
+    condition:
+      - condition: state
+        entity_id: input_select.ha1_ai_mode
+        state: "auto"
+
+      - condition: state
+        entity_id: input_boolean.ha1_automations_master_enable
+        state: "on"
+
+      - condition: state
+        entity_id: input_boolean.ha1_ev_automation_enabled
+        state: "on"
+
+    action:
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: sensor.ha1_ai_ev_decision
+                state: "start_charging"
+            sequence:
+              - service: script.turn_on
+                target:
+                  entity_id: script.ha1_ev_start_charging
+
+          - conditions:
+              - condition: state
+                entity_id: sensor.ha1_ai_ev_decision
+                state: "stop_charging"
+            sequence:
+              - service: script.turn_on
+                target:
+                  entity_id: script.ha1_ev_stop_charging
+
+        default: []

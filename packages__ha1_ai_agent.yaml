@@ -1,8 +1,58 @@
+# HA1.3 - AI Agent (Global State & Documentation)
+#
+# This package defines the **global AI mode** for HA1.3 and basic
+# documentation hooks. It does NOT contain domain-specific automations.
+#
+# Concepts:
+# - Global AI mode (off / suggest / auto) controls whether any AI-driven
+#   action is applied in HA.
+# - Domain-specific packages (EV, battery, peak, etc.) are free to
+#   reference this global mode and their own domain-level toggles.
+#
+# Current implemented domain: EV charging.
+# Future domains: battery control, peak shaving, export control, comfort, etc.
+#
+# All AI logic (training, models, policies) lives OUTSIDE Home Assistant
+# on the dedicated AI agent VM. Home Assistant only:
+#   - reads AI suggestions
+#   - applies them in a safe, transparent way
+#   - respects global + domain-level toggles
+# -------------------------------------------------------------------------------
 
+input_select:
+  ha1_ai_mode:
+    name: HA1 - AI global mode
+    icon: mdi:robot
+    options:
+      - off
+      - suggest
+      - auto
+    initial: suggest
 
+# Optional: simple status sensor hooks (can be populated later via templates)
 sensor:
-  - platform: rest
-    name: ha1_ai_ev_suggestion
-    resource: http://ha-ai-agent.local:5001/suggestion
-    value_template: "{{ value_json.suggestion }}"
-    scan_interval: 5
+  - platform: template
+    sensors:
+      ha1_ai_status:
+        friendly_name: "HA1 - AI status"
+        value_template: >
+          {% set mode = states('input_select.ha1_ai_mode') %}
+          {% if mode == 'off' %}
+            Disabled
+          {% elif mode == 'suggest' %}
+            Suggest-only
+          {% elif mode == 'auto' %}
+            Auto-apply
+          {% else %}
+            Unknown
+          {% endif %}
+
+      ha1_ai_last_domain:
+        friendly_name: "HA1 - AI last active domain"
+        value_template: >
+          {{ state_attr('sensor.ha1_ai_last_domain', 'domain') | default('EV', true) }}
+
+# NOTE:
+# - Domain-specific logic (EV, battery, peak) will live in other packages.
+# - This file is intentionally minimal and acts as the central AI mode anchor.
+# -------------------------------------------------------------------------------
