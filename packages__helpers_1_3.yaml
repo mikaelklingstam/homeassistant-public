@@ -203,6 +203,16 @@ input_number:
     mode: slider
     icon: mdi:current-ac
 
+  # --- HA 1.3 Helpers – Comfort overrides ---
+  ha1_comfort_override_duration_hours:
+    name: "HA1 – Comfort override duration (hours)"
+    min: 0.5
+    max: 12
+    step: 0.5
+    unit_of_measurement: "h"
+    mode: slider
+    icon: mdi:timer-outline
+
   # --- HA 1.3 Helpers – EV price thresholds (SEK/kWh) ---
   ha1_ev_price_cheap_max:
     name: "HA1 – EV price: cheap max"
@@ -230,6 +240,13 @@ input_number:
     unit_of_measurement: "SEK/kWh"
     mode: slider
     icon: mdi:currency-sek
+
+input_datetime:
+  ha1_comfort_override_until:
+    name: "HA1 – Comfort override until"
+    has_date: true
+    has_time: true
+    icon: mdi:timer-alert-outline
 
 input_select:
   # --- HA 1.3 Helpers – EV Charging ---

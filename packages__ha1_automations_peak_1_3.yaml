@@ -58,6 +58,10 @@ automation:
       - condition: state
         entity_id: input_boolean.ha1_ev_automation_enabled
         state: "on"
+      # Allow user to temporarily bypass peak protection
+      - condition: state
+        entity_id: binary_sensor.ha1_comfort_override_active
+        state: "off"
     action:
       # Soft action: pause/stop EV charging (script from EV Task 22).
       # If your EV stop script has a different id, adjust this entity_id.
@@ -96,6 +100,10 @@ automation:
       - condition: state
         entity_id: input_boolean.ha1_peak_shaving_enabled
         state: "on"
+      # Allow user to temporarily bypass peak protection
+      - condition: state
+        entity_id: binary_sensor.ha1_comfort_override_active
+        state: "off"
     action:
       - choose:
           # 2a) Always enforce EV stop if EV automation is enabled

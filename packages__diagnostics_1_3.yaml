@@ -110,7 +110,9 @@ group:
       - input_number.ha1_ev_min_soc_percent
       - input_number.ha1_ev_target_soc_percent
       - input_number.ha1_ev_max_charging_current
-      - input_boolean.ha1_comfort_override_active
+      - binary_sensor.ha1_comfort_override_active
+      - input_number.ha1_comfort_override_duration_hours
+      - input_datetime.ha1_comfort_override_until
       - input_boolean.ha1_force_charge_battery_now
       - input_boolean.ha1_force_charge_ev_now
 
@@ -219,3 +221,31 @@ template:
           {% set limit = states('input_number.ha1_peak_limit_kw') | float(0) %}
           {% set margin = states('input_number.ha1_peak_warning_margin_kw') | float(0) %}
           {{ p >= (limit - margin) }}
+
+      #######################################################################
+      # COMFORT OVERRIDE ACTIVE (boolean)
+      #######################################################################
+      - name: "HA1 Comfort Override Active"
+        unique_id: ha1_comfort_override_active
+        device_class: safety
+        state: >
+          {% set enabled = is_state('input_boolean.ha1_comfort_override_enabled', 'on') %}
+          {% set until_ts = as_timestamp(states('input_datetime.ha1_comfort_override_until')) %}
+          {% set valid_until = until_ts is not none and until_ts > 0 %}
+          {% if enabled %}
+            {% if valid_until %}
+              {{ now().timestamp() < until_ts }}
+            {% else %}
+              true
+            {% endif %}
+          {% else %}
+            false
+          {% endif %}
+        attributes:
+          expires_at: "{{ states('input_datetime.ha1_comfort_override_until') }}"
+          reason: >
+            {% if is_state('input_boolean.ha1_comfort_override_enabled', 'on') %}
+              Comfort override toggle is on{% if states('input_datetime.ha1_comfort_override_until') not in ['unknown','unavailable',''] %}, until {{ states('input_datetime.ha1_comfort_override_until') }}{% endif %}.
+            {% else %}
+              Inactive
+            {% endif %}

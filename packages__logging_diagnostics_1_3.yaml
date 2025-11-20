@@ -97,6 +97,9 @@ group:
       - input_boolean.ha1_force_ev_charge_now
       - input_boolean.ha1_comfort_override_enabled
       - input_boolean.ha1_allow_high_price_heating
+      - binary_sensor.ha1_comfort_override_active
+      - input_number.ha1_comfort_override_duration_hours
+      - input_datetime.ha1_comfort_override_until
       - input_boolean.ha1_debug_energy_logic
       - input_boolean.ha1_debug_notifications_enabled
       - input_boolean.ha1_debug_freeze_optimizers
