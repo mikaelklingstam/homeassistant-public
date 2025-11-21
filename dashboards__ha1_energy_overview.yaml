@@ -1,0 +1,117 @@
+# --- HomeAssistant 1.3 – Energy Overview ---
+# Primary user-facing dashboard for daily energy insight.
+# Solar → Battery → House → EV → Grid
+
+title: "HA1 – Energy Overview"
+icon: mdi:home-battery
+
+views:
+  - title: "HA1 – Energy Overview"
+    path: ha1-energy-overview
+    icon: mdi:home-battery
+    cards:
+      # --- HA1 – Energy Overview: Status strip ---
+      - type: entities
+        title: "Status"
+        show_header_toggle: false
+        entities:
+          - entity: sensor.ha1_net_grid_power
+            name: "Net grid power"
+          - entity: sensor.ha1_status_price_level
+            name: "Price level"
+          - entity: binary_sensor.ha1_status_peak_near_limit
+            name: "Peak near limit"
+          - entity: input_boolean.ha1_comfort_override_enabled
+            name: "Comfort override"
+
+      # --- HA1 – Energy Overview: Flows & core metrics ---
+      - type: vertical-stack
+        cards:
+          - type: glance
+            title: "Energy flows – now"
+            entities:
+              - entity: sensor.ha1_power_solar_ac
+                name: "Solar production"
+              - entity: sensor.ha1_power_battery_net
+                name: "Battery charge/discharge"
+              - entity: sensor.ha1_power_house_total
+                name: "House consumption"
+              - entity: sensor.ha1_power_ev_charger
+                name: "EV charging power"
+              - entity: sensor.ha1_net_grid_power
+                name: "Net grid import/export"
+
+      # --- HA1 – Energy Overview: EV panel ---
+      - type: vertical-stack
+        cards:
+          - type: entities
+            title: "EV charging"
+            show_header_toggle: false
+            entities:
+              - entity: input_boolean.ha1_ev_automation_enabled
+                name: "EV automation enabled"
+              - entity: input_select.ha1_ev_charging_mode
+                name: "EV charging mode"
+              - entity: sensor.ha1_flow_ev_charging_power
+                name: "EV charging power"
+              - entity: sensor.id4pro_charging_time_left
+                name: "Time left (est.)"
+
+      # --- HA1 – Energy Overview: Battery panel ---
+      - type: vertical-stack
+        cards:
+          - type: entities
+            title: "Battery"
+            show_header_toggle: false
+            entities:
+              - entity: sensor.huawei_battery_soc
+                name: "Battery SOC"
+              - entity: sensor.ha1_power_battery_net
+                name: "Charge/discharge power"
+              - entity: input_number.ha1_battery_grid_charge_limit_kw
+                name: "Grid charge limit (kW)"
+              - entity: input_boolean.ha1_battery_automation_enabled
+                name: "Battery automation enabled"
+
+      # --- HA1 – Energy Overview: Peaks & cost ---
+      - type: vertical-stack
+        cards:
+          - type: entities
+            title: "Peak power & cost"
+            show_header_toggle: false
+            entities:
+              - entity: input_number.ha1_peak_limit_kw
+                name: "Peak limit (kW)"
+              - entity: input_number.ha1_peak_warning_kw
+                name: "Peak warning (kW)"
+              - entity: sensor.ha1_monthly_peak_power_real
+                name: "Current monthly peak (kW)"
+              - entity: sensor.ha1_monthly_peak_power_cost_adjusted
+                name: "Cost-adjusted peak (kW)"
+
+      # --- HA1 – Energy Overview: Comfort & overrides ---
+      - type: entities
+        title: "Comfort & overrides"
+        show_header_toggle: false
+        entities:
+          - entity: input_boolean.ha1_comfort_override_enabled
+            name: "Global comfort override"
+          # Add more override toggles here if you have EV / battery-specific overrides.
+
+      # --- HA1 – Energy Overview: Mini history ---
+      - type: vertical-stack
+        cards:
+          - type: history-graph
+            title: "Net grid, solar & battery – last 6 hours"
+            hours_to_show: 6
+            refresh_interval: 60
+            entities:
+              - sensor.ha1_net_grid_power
+              - sensor.ha1_power_solar_ac
+              - sensor.huawei_battery_soc
+          - type: history-graph
+            title: "Nordpool price – last 24 hours"
+            hours_to_show: 24
+            refresh_interval: 300
+            entities:
+              - sensor.nordpool_kwh_se3_sek_3_10_025

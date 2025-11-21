@@ -594,6 +594,14 @@ All EV operations are funneled through these HA1 scripts so that future optimiza
 - `script.ha1_debug_log_system_state_energy`  
   Sends a one-line snapshot of key HA1 energy values (grid, solar, battery, EV charger, available battery kWh and peak metrics) to the logbook for debugging and verification.
 
+### Energy Overview – User Dashboard (HA1)
+
+- Dashboard file: `dashboards/ha1_energy_overview.yaml`  
+- Dashboard ID/key: `ha1-energy-overview`  
+- Dashboard title/view: **HA1 – Energy Overview** (`path: ha1-energy-overview`, `icon: mdi:home-battery`)  
+- Purpose: primary user-facing daily view of solar → battery → house → EV → grid, with status tiles for price level, peak proximity and comfort override.  
+- Notes: includes entities for key helpers (EV/battery automation toggles, peak limit sliders) and mini histories for grid/solar/battery and Nordpool price.
+
 ### HA1 Debug – Energy & Peaks View
 
 **Purpose**  
