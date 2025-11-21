@@ -234,6 +234,20 @@ views:
             name: "Debug: freeze optimizers"
 
       - type: entities
+        title: "HA1 – Comfort override"
+        show_header_toggle: false
+        entities:
+          - entity: input_boolean.ha1_comfort_override_enabled
+            name: Comfort override (global)
+            icon: mdi:human-handsup
+          - entity: input_number.ha1_comfort_override_duration_hours
+            name: Comfort override duration (hours)
+            icon: mdi:timer-cog
+          - entity: timer.ha1_comfort_override
+            name: Comfort override timer (status)
+            icon: mdi:timer-outline
+
+      - type: entities
         title: "HA1 – EV price thresholds (SEK/kWh)"
         show_header_toggle: false
         entities:

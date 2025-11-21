@@ -14,6 +14,41 @@ views:
             content: |
               # 🧪 HA1.3 Debug Dashboard
               Live monitoring of Task 14 template sensors — raw powers, HA1 power layer, flows and sanity checks.
+#---------------------------------------------------------------------------
+#          # Test tools
+          - type: entities
+            title: HA1 – Comfort override (test)
+            show_header_toggle: false
+            entities:
+              - entity: input_boolean.ha1_comfort_override_enabled
+                name: Comfort override (global)
+              - entity: input_number.ha1_comfort_override_duration_hours
+                name: Override duration (hours)
+              - entity: timer.ha1_comfort_override
+                name: Override timer (status)
+              - entity: sensor.ha1_status_price_level
+                name: Status price level (read-only)
+              - entity: input_select.ha1_test_price_level_effective
+                name: TEST – Effective price level
+
+          - type: entities
+            title: HA1 – EV test tools
+            show_header_toggle: false
+            entities:
+              - entity: script.ha1_test_ev_start_balanced_with_result
+                name: Run EV balanced test (with result)
+              - entity: script.ha1_test_comfort_timer_finish
+                name: Fast-forward comfort override timer
+              - entity: script.ha1_test_ev_price_override_logic
+                name: TEST – EV price vs comfort override
+              - entity: input_boolean.ha1_testing_mode_enabled
+                name: Testing mode enabled
+              - entity: input_boolean.ha1_test_ev_balanced_actions_executed
+                name: EV balanced actions executed (result)
+              - entity: input_boolean.ha1_test_ev_price_override_result
+                name: RESULT – EV price/override logic OK
+
+#---------------------------------------------------------------------------
 
           # Key snapshot (HA1 power layer)
           - type: entities

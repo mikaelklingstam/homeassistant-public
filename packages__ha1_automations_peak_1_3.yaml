@@ -54,6 +54,9 @@ automation:
       - condition: state
         entity_id: input_boolean.ha1_peak_shaving_enabled
         state: "on"
+      - condition: state
+        entity_id: input_boolean.ha1_comfort_override_enabled
+        state: "off"
       # Domain guardrail – EV
       - condition: state
         entity_id: input_boolean.ha1_ev_automation_enabled
@@ -100,6 +103,9 @@ automation:
       - condition: state
         entity_id: input_boolean.ha1_peak_shaving_enabled
         state: "on"
+      - condition: state
+        entity_id: input_boolean.ha1_comfort_override_enabled
+        state: "off"
       # Allow user to temporarily bypass peak protection
       - condition: state
         entity_id: binary_sensor.ha1_comfort_override_active

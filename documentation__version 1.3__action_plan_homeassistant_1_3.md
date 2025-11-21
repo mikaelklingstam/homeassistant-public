@@ -1,4 +1,4 @@
-Last updated: 2025-11-20 19:58 (CET) — Authorized by ChatGPT
+Last updated: 2025-02-12 16:32 (CET) — Authorized by ChatGPT
 
 # ⚙️ Action Plan – HomeAssistant 1.3
 
@@ -209,3 +209,7 @@ Battery grid-charge suppression will be fully implemented in Phase 2.
 - Cheap-only & time-critical fallback finalized; balanced/aggressive scaffolds documented.
 
 ### ☐ Task 23 – EV charging — Phase 2 automation refinement (runtime tuning & edge cases)
+
+### ✅ Task 25 – Comfort Overrides & Exception Handling (Phase 1)
+- Comfort override toggle, timer, duration helper and dashboards added; EV price gating/very-expensive pause and peak shedding respect comfort override.
+- Auto-expire/cleanup automations log enable/disable/expiry; debug/testing tools added for effective price override checks.

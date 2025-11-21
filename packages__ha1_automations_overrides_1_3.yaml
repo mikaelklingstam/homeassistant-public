@@ -1,103 +1,119 @@
-###############################################################################
-# HomeAssistant 1.3 – Comfort Override Automations (Phase 1)
-# Scope:
-#   - Time-boxed comfort overrides (visible + logged)
-#   - Temporary relaxation of price/peak guardrails
-#   - Simple cleanup/reset to return to optimized behavior
-###############################################################################
+# --- HomeAssistant 1.3 – Comfort Override Automations (Phase 1) ---
+# Handles:
+# - Global comfort override ON/OFF
+# - Timer-based auto-expiration
+# - Logbook visibility
 
 automation:
 
   # ---------------------------------------------------------------------------
-  # Comfort override: enable/extend with expiry
+  # Comfort override turned ON
   # ---------------------------------------------------------------------------
-  - id: ha1_comfort_override_enable
-    alias: "HA1 – Comfort override: enable/extend"
-    mode: single
-    trigger:
-      - platform: state
+  - id: ha1_comfort_override_on
+    alias: "HA1 – Comfort override ON"
+    description: >
+      Starts the comfort override timer and logs that comfort override
+      is enabled. Comfort override allows EV and battery to relax price/peak
+      optimization, but master + safety rails still apply.
+    triggers:
+      - trigger: state
         entity_id: input_boolean.ha1_comfort_override_enabled
+        from: "off"
         to: "on"
-    condition: []
-    action:
-      - variables:
-          raw_hours: "{{ states('input_number.ha1_comfort_override_duration_hours') | float(2) }}"
-          duration_hours: "{{ [raw_hours, 0.5] | max }}"
-          until_ts: "{{ now().timestamp() + (duration_hours * 3600) }}"
-          until_dt: "{{ as_datetime(until_ts) | as_local }}"
-      - service: input_datetime.set_datetime
+    conditions:
+      - condition: state
+        entity_id: input_boolean.ha1_automations_master_enable
+        state: "on"
+    actions:
+      # Start timer with duration based on input_number.ha1_comfort_override_duration_hours
+      - action: timer.start
         target:
-          entity_id: input_datetime.ha1_comfort_override_until
+          entity_id: timer.ha1_comfort_override
         data:
-          date: "{{ until_dt.strftime('%Y-%m-%d') }}"
-          time: "{{ until_dt.strftime('%H:%M:%S') }}"
+          duration: >
+            {% set raw = states("input_number.ha1_comfort_override_duration_hours") | int(4) %}
+            {% set hours = 1 if raw < 1 else raw %}
+            {{ "%02d:00:00" | format(hours) }}
 
-      # Relax guardrails that are safe to override temporarily.
-      - service: input_boolean.turn_on
-        target:
-          entity_id: input_boolean.ha1_allow_high_price_heating
-      - service: input_boolean.turn_off
-        target:
-          entity_id: input_boolean.ha1_ev_obey_peak_limit
-
-      - service: logbook.log
+      # Log to logbook
+      - action: logbook.log
         data:
-          name: "HA1 Comfort"
+          name: "HA1 – Comfort override"
+          entity_id: input_boolean.ha1_comfort_override_enabled
           message: >
-            Comfort override enabled for {{ duration_hours | round(1) }}h
-            (until {{ until_dt.strftime('%Y-%m-%d %H:%M') }}).
-            Peak/price guardrails relaxed for heating and EV.
-          entity_id: input_boolean.ha1_comfort_override_enabled
+            Comfort override ENABLED – price/peak limits may be relaxed.
+          domain: automation
+
+    mode: single
 
   # ---------------------------------------------------------------------------
-  # Comfort override: auto-expire when the "until" timestamp passes
+  # Comfort override turned OFF manually
   # ---------------------------------------------------------------------------
-  - id: ha1_comfort_override_expire
-    alias: "HA1 – Comfort override: auto-expire"
-    mode: single
-    trigger:
-      - platform: template
-        value_template: >
-          {% set enabled = is_state('input_boolean.ha1_comfort_override_enabled', 'on') %}
-          {% set until_ts = as_timestamp(states('input_datetime.ha1_comfort_override_until')) %}
-          {{ enabled and until_ts is not none and until_ts > 0 and now().timestamp() >= until_ts }}
-    condition: []
-    action:
-      - service: input_boolean.turn_off
-        target:
-          entity_id: input_boolean.ha1_comfort_override_enabled
-
-  # ---------------------------------------------------------------------------
-  # Comfort override: cleanup + reset when disabled (manual or expired)
-  # ---------------------------------------------------------------------------
-  - id: ha1_comfort_override_cleanup
-    alias: "HA1 – Comfort override: cleanup/reset"
-    mode: single
-    trigger:
-      - platform: state
+  - id: ha1_comfort_override_off
+    alias: "HA1 – Comfort override OFF"
+    description: >
+      Cancels the comfort override timer and logs that comfort override
+      is disabled. Normal optimization rules apply again.
+    triggers:
+      - trigger: state
         entity_id: input_boolean.ha1_comfort_override_enabled
         from: "on"
         to: "off"
-    condition: []
-    action:
-      - variables:
-          until_ts: "{{ as_timestamp(states('input_datetime.ha1_comfort_override_until')) }}"
-          expired: >
-            {% set valid_until = until_ts is not none and until_ts > 0 %}
-            {{ valid_until and now().timestamp() >= until_ts }}
-
-      # Restore optimized defaults.
-      - service: input_boolean.turn_off
+    conditions:
+      - condition: state
+        entity_id: input_boolean.ha1_automations_master_enable
+        state: "on"
+    actions:
+      # Cancel timer (if running)
+      - action: timer.cancel
         target:
-          entity_id: input_boolean.ha1_allow_high_price_heating
-      - service: input_boolean.turn_on
-        target:
-          entity_id: input_boolean.ha1_ev_obey_peak_limit
+          entity_id: timer.ha1_comfort_override
 
-      - service: logbook.log
+      # Log to logbook
+      - action: logbook.log
         data:
-          name: "HA1 Comfort"
-          message: >
-            Comfort override {{ 'expired' if expired else 'disabled manually' }};
-            optimized price/peak behavior restored.
+          name: "HA1 – Comfort override"
           entity_id: input_boolean.ha1_comfort_override_enabled
+          message: >
+            Comfort override DISABLED – back to normal optimization.
+          domain: automation
+
+    mode: single
+
+  # ---------------------------------------------------------------------------
+  # Comfort override timer finished → auto-expire override
+  # ---------------------------------------------------------------------------
+  - id: ha1_comfort_override_auto_expire
+    alias: "HA1 – Comfort override auto-expire"
+    description: >
+      When the comfort override timer finishes, automatically turn off
+      the comfort override (if still on) and log the auto-expiration.
+    triggers:
+      - trigger: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.ha1_comfort_override
+    conditions:
+      - condition: state
+        entity_id: input_boolean.ha1_automations_master_enable
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.ha1_comfort_override_enabled
+        state: "on"
+    actions:
+      # Turn off comfort override
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.ha1_comfort_override_enabled
+
+      # Log to logbook
+      - action: logbook.log
+        data:
+          name: "HA1 – Comfort override"
+          entity_id: input_boolean.ha1_comfort_override_enabled
+          message: >
+            Comfort override AUTO-EXPIRED – timer reached
+            {{ states("input_number.ha1_comfort_override_duration_hours") | int(4) }}h.
+          domain: automation
+
+    mode: single

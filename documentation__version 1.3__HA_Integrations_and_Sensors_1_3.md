@@ -1,4 +1,4 @@
-Last updated: 2025-11-20 19:58 (CET) — Authorized by ChatGPT
+Last updated: 2025-02-12 16:32 (CET) — Authorized by ChatGPT
 
 # 🔌 Integrations & Sensors – HomeAssistant 1.3
 
@@ -58,6 +58,9 @@ Prevent monthly peak overruns by coordinating EV charging and battery grid-charg
 **Phase Status:**  
 Phase 1 provides a robust and safe foundation for peak shaving using EV control as the primary lever.  
 Battery grid-charge suppression will be fully implemented in Phase 2.
+
+**Comfort Override reference (Task 25):**
+- Global toggle `input_boolean.ha1_comfort_override_enabled` with timer `timer.ha1_comfort_override` and duration helper `input_number.ha1_comfort_override_duration_hours`; relaxes economic price/peak EV shedding while master/safety remain enforced. See Functions_And_Settings_1_3.md for full behavior.
 
 ## 📦 1. Core Energy Integrations
 

@@ -1,4 +1,4 @@
-Last updated: 2025-11-20 19:58 (CET) — Authorized by ChatGPT
+Last updated: 2025-02-12 16:32 (CET) — Authorized by ChatGPT
 
 # 🧭 HomeAssistant 1.3 – Documentation Index
 
@@ -12,6 +12,7 @@ Central index of all documentation, dashboards, and automation files.
 - [Functions & Settings](Functions_And_Settings_1_3.md)
 - [Integrations & Sensors Reference](HA_Integrations_and_Sensors_1_3.md)
 - [Task Procedure – HA1.3](Task_Procedure_HA1.3.md)
+- [Comfort Overrides & Exceptions – Phase 1](Functions_And_Settings_1_3.md#comfort-overrides--exceptions--phase-1-ha-13)
 
 ---
 
@@ -69,4 +70,3 @@ Prevent monthly peak overruns by coordinating EV charging and battery grid-charg
 **Phase Status:**  
 Phase 1 provides a robust and safe foundation for peak shaving using EV control as the primary lever.  
 Battery grid-charge suppression will be fully implemented in Phase 2.
-

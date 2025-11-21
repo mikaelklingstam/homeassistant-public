@@ -1,4 +1,4 @@
-Last updated: 2025-11-20 19:58 (CET) — Authorized by ChatGPT
+Last updated: 2025-02-12 16:32 (CET) — Authorized by ChatGPT
 
 # 🧭 HomeAssistant 1.3 – Rulebook
 
@@ -86,6 +86,10 @@ Each layer will be documented with:
 - Grid power: `+` = importing from grid, `-` = exporting to grid (kW).
 - Huawei battery power: `+` = charging, `-` = discharging (kW).
 - All HA1 power sensors report **kW**; HA1 energy sensors report **kWh**.
+
+**HA1 Comfort Override (reference to Task 25):**
+- Global toggle: `input_boolean.ha1_comfort_override_enabled`; relaxes economic rules (price gating, EV peak shedding) while master/safety limits stay enforced.
+- Timer-driven via `timer.ha1_comfort_override` with duration helper `input_number.ha1_comfort_override_duration_hours`; logs on enable/disable/auto-expire and visible in HA1 debug view.
 
 ### Peak Shaving Automations – Phase 1
 

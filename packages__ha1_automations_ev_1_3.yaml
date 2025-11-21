@@ -68,40 +68,53 @@ automation:
           {{ limit_w > 0 and net <= limit_w * 0.8 }}
 
       # --- Price / time window logic based on HA1 price level sensor ---
-      - condition: template
-        value_template: >
-          {% set level = states('sensor.ha1_ev_price_level') %}
+      - condition: or
+        conditions:
+          # Comfort override: always allow from a price perspective
+          - condition: state
+            entity_id: input_boolean.ha1_comfort_override_enabled
+            state: "on"
 
-          {% set is_cheap      = (level == 'cheap') %}
-          {% set is_normal     = (level == 'normal') %}
-          {% set is_expensive  = level in ['expensive', 'very_expensive'] %}
-
-          {% set raw_time = states('sensor.id4pro_charging_time_left') %}
-          {% set valid_time = raw_time not in ['unknown', 'unavailable', 'none', '', None] %}
-          {% if valid_time %}
-            {% if ':' in raw_time %}
-              {% set parts = raw_time.split(':') %}
-              {% if parts | length == 3 %}
-                {% set hours_left = parts[0] | int(0) + (parts[1] | int(0) / 60) + (parts[2] | int(0) / 3600) %}
-              {% elif parts | length == 2 %}
-                {% set hours_left = parts[0] | int(0) + (parts[1] | int(0) / 60) %}
-              {% else %}
-                {% set hours_left = raw_time | float(999) %}
+          # Normal optimization: existing price logic
+          - condition: template
+            value_template: >
+              {% set level = states('sensor.ha1_ev_price_level') %}
+              {% if is_state('input_boolean.ha1_testing_mode_enabled', 'on')
+                    and states('input_select.ha1_test_price_level_effective') not in
+                      ['unknown','unavailable','','use_real'] %}
+                {% set level = states('input_select.ha1_test_price_level_effective') %}
               {% endif %}
-            {% else %}
-              {% set hours_left = raw_time | float(999) %}
-            {% endif %}
-          {% else %}
-            {% set hours_left = 999 %}
-          {% endif %}
-          {% set time_critical = valid_time and hours_left <= 3 %}
 
-          (
-            is_cheap
-            or
-            (time_critical and is_normal)
-          )
-          and not is_expensive
+              {% set is_cheap      = (level == 'cheap') %}
+              {% set is_normal     = (level == 'normal') %}
+              {% set is_expensive  = level in ['expensive', 'very_expensive'] %}
+
+              {% set raw_time = states('sensor.id4pro_charging_time_left') %}
+              {% set valid_time = raw_time not in ['unknown', 'unavailable', 'none', '', None] %}
+              {% if valid_time %}
+                {% if ':' in raw_time %}
+                  {% set parts = raw_time.split(':') %}
+                  {% if parts | length == 3 %}
+                    {% set hours_left = parts[0] | int(0) + (parts[1] | int(0) / 60) + (parts[2] | int(0) / 3600) %}
+                  {% elif parts | length == 2 %}
+                    {% set hours_left = parts[0] | int(0) + (parts[1] | int(0) / 60) %}
+                  {% else %}
+                    {% set hours_left = raw_time | float(999) %}
+                  {% endif %}
+                {% else %}
+                  {% set hours_left = raw_time | float(999) %}
+                {% endif %}
+              {% else %}
+                {% set hours_left = 999 %}
+              {% endif %}
+              {% set time_critical = valid_time and hours_left <= 3 %}
+
+              (
+                is_cheap
+                or
+                (time_critical and is_normal)
+              )
+              and not is_expensive
 
     action:
       - service: script.ha1_ev_start_charging_simple
@@ -257,14 +270,27 @@ automation:
       # --- Current price level must be "normal", not cheap/expensive ---
       # (cheap case is handled by ha1_ev_start_cheap_only;
       #  we also never use this in expensive/very_expensive).
-      - condition: template
-        value_template: >
-          {% set level = states('sensor.ha1_ev_price_level') %}
-          {% set is_cheap      = (level == 'cheap') %}
-          {% set is_normal     = (level == 'normal') %}
-          {% set is_expensive  = level in ['expensive', 'very_expensive'] %}
+      - condition: or
+        conditions:
+          # Comfort override: always allow from a price perspective
+          - condition: state
+            entity_id: input_boolean.ha1_comfort_override_enabled
+            state: "on"
 
-          {{ (not is_cheap) and is_normal and (not is_expensive) }}
+          # Normal optimization: existing price logic
+          - condition: template
+            value_template: >
+              {% set level = states('sensor.ha1_ev_price_level') %}
+              {% if is_state('input_boolean.ha1_testing_mode_enabled', 'on')
+                    and states('input_select.ha1_test_price_level_effective') not in
+                      ['unknown','unavailable','','use_real'] %}
+                {% set level = states('input_select.ha1_test_price_level_effective') %}
+              {% endif %}
+              {% set is_cheap      = (level == 'cheap') %}
+              {% set is_normal     = (level == 'normal') %}
+              {% set is_expensive  = level in ['expensive', 'very_expensive'] %}
+
+              {{ (not is_cheap) and is_normal and (not is_expensive) }}
 
     action:
       - service: script.ha1_ev_start_charging_simple
@@ -337,49 +363,72 @@ automation:
           {{ limit_w > 0 and net <= limit_w * 0.9 }}
 
       # --- Price / time-left logic for balanced mode ---
-      - condition: template
-        value_template: >
-          {% set level = states('sensor.ha1_ev_price_level') %}
-          {% set is_cheap = (level == 'cheap') %}
-          {% set is_normal = (level == 'normal') %}
-          {% set is_expensive = (level == 'expensive') %}
-          {% set is_very_expensive = (level == 'very_expensive') %}
+      - condition: or
+        conditions:
+          # Comfort override: always allow from a price perspective
+          - condition: state
+            entity_id: input_boolean.ha1_comfort_override_enabled
+            state: "on"
 
-          {% set raw_time = states('sensor.id4pro_charging_time_left') %}
-          {% set valid_time = raw_time not in ['unknown', 'unavailable', 'none', '', None] %}
-
-          {% if valid_time %}
-            {% if ':' in raw_time %}
-              {% set parts = raw_time.split(':') %}
-              {% if parts | length == 3 %}
-                {% set hours_left = parts[0] | int(0)
-                  + (parts[1] | int(0) / 60)
-                  + (parts[2] | int(0) / 3600) %}
-              {% elif parts | length == 2 %}
-                {% set hours_left = parts[0] | int(0)
-                  + (parts[1] | int(0) / 60) %}
-              {% else %}
-                {% set hours_left = raw_time | float(999) %}
+          # Normal optimization: existing price logic
+          - condition: template
+            value_template: >
+              {% set level = states('sensor.ha1_ev_price_level') %}
+              {% if is_state('input_boolean.ha1_testing_mode_enabled', 'on')
+                    and states('input_select.ha1_test_price_level_effective') not in
+                      ['unknown','unavailable','','use_real'] %}
+                {% set level = states('input_select.ha1_test_price_level_effective') %}
               {% endif %}
-            {% else %}
-              {% set hours_left = raw_time | float(999) %}
-            {% endif %}
-          {% else %}
-            {% set hours_left = 999 %}
-          {% endif %}
+              {% set is_cheap = (level == 'cheap') %}
+              {% set is_normal = (level == 'normal') %}
+              {% set is_expensive = (level == 'expensive') %}
+              {% set is_very_expensive = (level == 'very_expensive') %}
 
-          {% set time_critical = valid_time and hours_left <= 1.0 %}
+              {% set raw_time = states('sensor.id4pro_charging_time_left') %}
+              {% set valid_time = raw_time not in ['unknown', 'unavailable', 'none', '', None] %}
 
-          {# Balanced: allow cheap/normal, and expensive only if time-critical #}
-          {% set allowed =
-              is_cheap
-              or is_normal
-              or (is_expensive and time_critical)
-          %}
+              {% if valid_time %}
+                {% if ':' in raw_time %}
+                  {% set parts = raw_time.split(':') %}
+                  {% if parts | length == 3 %}
+                    {% set hours_left = parts[0] | int(0)
+                      + (parts[1] | int(0) / 60)
+                      + (parts[2] | int(0) / 3600) %}
+                  {% elif parts | length == 2 %}
+                    {% set hours_left = parts[0] | int(0)
+                      + (parts[1] | int(0) / 60) %}
+                  {% else %}
+                    {% set hours_left = raw_time | float(999) %}
+                  {% endif %}
+                {% else %}
+                  {% set hours_left = raw_time | float(999) %}
+                {% endif %}
+              {% else %}
+                {% set hours_left = 999 %}
+              {% endif %}
 
-          {{ allowed and (not is_very_expensive) }}
+              {% set time_critical = valid_time and hours_left <= 1.0 %}
+
+              {# Balanced: allow cheap/normal, and expensive only if time-critical #}
+              {% set allowed =
+                  is_cheap
+                  or is_normal
+                  or (is_expensive and time_critical)
+              %}
+
+              {{ allowed and (not is_very_expensive) }}
 
     action:
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.ha1_testing_mode_enabled
+                state: "on"
+            sequence:
+              - service: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.ha1_test_ev_balanced_actions_executed
+
       # Optional: apply EV current limit from helper for balanced mode
       - service: script.ha1_ev_apply_current_limit_from_helper
 
@@ -446,48 +495,61 @@ automation:
           {{ limit_w > 0 and net <= limit_w * 0.95 }}
 
       # --- Price / time-left logic for aggressive mode ---
-      - condition: template
-        value_template: >
-          {% set level = states('sensor.ha1_ev_price_level') %}
-          {% set is_cheap = (level == 'cheap') %}
-          {% set is_normal = (level == 'normal') %}
-          {% set is_expensive = (level == 'expensive') %}
-          {% set is_very_expensive = (level == 'very_expensive') %}
+      - condition: or
+        conditions:
+          # Comfort override: always allow from a price perspective
+          - condition: state
+            entity_id: input_boolean.ha1_comfort_override_enabled
+            state: "on"
 
-          {% set raw_time = states('sensor.id4pro_charging_time_left') %}
-          {% set valid_time = raw_time not in ['unknown', 'unavailable', 'none', '', None] %}
-
-          {% if valid_time %}
-            {% if ':' in raw_time %}
-              {% set parts = raw_time.split(':') %}
-              {% if parts | length == 3 %}
-                {% set hours_left = parts[0] | int(0)
-                  + (parts[1] | int(0) / 60)
-                  + (parts[2] | int(0) / 3600) %}
-              {% elif parts | length == 2 %}
-                {% set hours_left = parts[0] | int(0)
-                  + (parts[1] | int(0) / 60) %}
-              {% else %}
-                {% set hours_left = raw_time | float(999) %}
+          # Normal optimization: existing price logic
+          - condition: template
+            value_template: >
+              {% set level = states('sensor.ha1_ev_price_level') %}
+              {% if is_state('input_boolean.ha1_testing_mode_enabled', 'on')
+                    and states('input_select.ha1_test_price_level_effective') not in
+                      ['unknown','unavailable','','use_real'] %}
+                {% set level = states('input_select.ha1_test_price_level_effective') %}
               {% endif %}
-            {% else %}
-              {% set hours_left = raw_time | float(999) %}
-            {% endif %}
-          {% else %}
-            {% set hours_left = 999 %}
-          {% endif %}
+              {% set is_cheap = (level == 'cheap') %}
+              {% set is_normal = (level == 'normal') %}
+              {% set is_expensive = (level == 'expensive') %}
+              {% set is_very_expensive = (level == 'very_expensive') %}
 
-          {% set time_critical = valid_time and hours_left <= 1.0 %}
+              {% set raw_time = states('sensor.id4pro_charging_time_left') %}
+              {% set valid_time = raw_time not in ['unknown', 'unavailable', 'none', '', None] %}
 
-          {# Aggressive: allow cheap/normal/expensive; allow very_expensive only if time-critical #}
-          {% set allowed =
-              is_cheap
-              or is_normal
-              or is_expensive
-              or (is_very_expensive and time_critical)
-          %}
+              {% if valid_time %}
+                {% if ':' in raw_time %}
+                  {% set parts = raw_time.split(':') %}
+                  {% if parts | length == 3 %}
+                    {% set hours_left = parts[0] | int(0)
+                      + (parts[1] | int(0) / 60)
+                      + (parts[2] | int(0) / 3600) %}
+                  {% elif parts | length == 2 %}
+                    {% set hours_left = parts[0] | int(0)
+                      + (parts[1] | int(0) / 60) %}
+                  {% else %}
+                    {% set hours_left = raw_time | float(999) %}
+                  {% endif %}
+                {% else %}
+                  {% set hours_left = raw_time | float(999) %}
+                {% endif %}
+              {% else %}
+                {% set hours_left = 999 %}
+              {% endif %}
 
-          {{ allowed }}
+              {% set time_critical = valid_time and hours_left <= 1.0 %}
+
+              {# Aggressive: allow cheap/normal/expensive; allow very_expensive only if time-critical #}
+              {% set allowed =
+                  is_cheap
+                  or is_normal
+                  or is_expensive
+                  or (is_very_expensive and time_critical)
+              %}
+
+              {{ allowed }}
 
     action:
       # Optional: apply EV current limit from helper for aggressive mode
@@ -550,7 +612,14 @@ automation:
       # --- Price must be very_expensive ---
       - condition: template
         value_template: >
-          {{ states('sensor.ha1_ev_price_level') == 'very_expensive' }}
+          {% set level = states('sensor.ha1_ev_price_level') %}
+          {% if is_state('input_boolean.ha1_testing_mode_enabled', 'on')
+                and states('input_select.ha1_test_price_level_effective') not in
+                  ['unknown','unavailable','','use_real'] %}
+            {% set level = states('input_select.ha1_test_price_level_effective') %}
+          {% endif %}
+          {{ is_state('input_boolean.ha1_comfort_override_enabled', 'off')
+             and level == 'very_expensive' }}
 
       # --- Mode-dependent time-left thresholds ---
       - condition: template

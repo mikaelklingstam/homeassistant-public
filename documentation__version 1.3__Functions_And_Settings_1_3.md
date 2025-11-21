@@ -1,4 +1,4 @@
-Last updated: 2025-11-20 19:58 (CET) — Authorized by ChatGPT
+Last updated: 2025-02-12 16:32 (CET) — Authorized by ChatGPT
 
 # ⚙️ Functions & Settings – HomeAssistant 1.3
 
@@ -777,20 +777,59 @@ Provide a consistent security layer that keeps the alarm state, perimeter sensor
 
 ---
 
-## 6. Comfort Overrides
+### Comfort Overrides & Exceptions – Phase 1 (HA 1.3)
 
-**Goal:**  
-Allow manual or automatic overrides that prioritize comfort over optimization, while keeping this fully visible in the UI.
+**Entity:** `input_boolean.ha1_comfort_override_enabled`  
+**Purpose:** Temporarily relax or bypass economic optimization rules when comfort takes priority.
 
-**Examples:**
-- “Heat now even if price is high.”
-- “Charge EV now regardless of peaks.”
-- “Disable export limitation temporarily.”
+#### What Comfort Override Does
+When **ON**:
+- EV charging is allowed even during “expensive” or “very_expensive” price levels.
+- EV “pause on very expensive” rules are skipped.
+- Peak-shaving EV-shedding automations do **not** activate.
+- Battery and peak logic treat override as “comfort has priority”.
+- Temporary exceptions are visually marked in UI and logged.
 
-Each override must:
-- Be clearly visible on the main dashboard.
-- Have a clear reset path.
-- Be logged or at least easy to see in history.
+When **OFF**:
+- Normal price-based logic applies.
+- Peak-shaving automations operate normally.
+- EV charging follows the economic strategy defined in Task 22.
+- No optimization rules are bypassed.
+
+#### Override Timer
+- Override activation starts a timer: `timer.ha1_comfort_override`
+- Duration set by: `input_number.ha1_comfort_override_duration_hours`
+- When the timer ends:
+  - `ha1_comfort_override_enabled` auto-turns **OFF**
+  - System returns to normal optimization
+  - A logbook entry is produced
+
+#### Logging & Visibility
+- Every ON/OFF/auto-expire event logs a message:
+  - *“HA1: Comfort override enabled – price/peak limits may be relaxed.”*
+  - *“HA1: Comfort override disabled – back to normal optimization.”*
+- Status is visible in:
+  - Debug dashboard (test card)
+  - Override timer state
+  - Helper toggle state
+
+#### Safety
+Comfort override relaxes **economic** limits only.  
+It does **not** disable:
+- Master automation guard
+- Physical or electrical safety checks
+- Charger state requirements
+- SOC constraints
+- Critical peak hard limits (system-designed failsafes)
+
+#### Testing Tools (Internal)
+For development and validation:
+- `script.ha1_test_ev_price_override_logic`
+- `input_boolean.ha1_test_ev_price_override_result`
+- Effective price override: `input_select.ha1_test_price_level_effective`
+- Testing mode: `input_boolean.ha1_testing_mode_enabled`
+
+These tools allow isolated testing of price-level vs comfort override logic without depending on real charger/car states.
 
 ---
 

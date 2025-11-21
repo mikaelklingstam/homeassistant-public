@@ -1,0 +1,113 @@
+input_boolean:
+  ha1_testing_mode_enabled:
+    name: "HA1 TEST – Testing mode enabled"
+    icon: mdi:flask
+
+  ha1_test_ev_balanced_actions_executed:
+    name: "HA1 TEST – EV balanced actions executed"
+    icon: mdi:check-circle-outline
+    # OFF = conditions blocked / actions not executed
+    # ON  = EV actions executed (balanced profile)
+
+  ha1_test_ev_price_override_result:
+    name: "HA1 TEST – EV price/override logic OK"
+    icon: mdi:check-decagram-outline
+    # OFF = logic says "do NOT allow start" for current inputs.
+    # ON  = logic says "OK to start" for current inputs.
+
+input_select:
+  ha1_test_price_level_effective:
+    name: "HA1 TEST – Effective price level"
+    icon: mdi:tag
+    options:
+      - cheap
+      - normal
+      - expensive
+      - very_expensive
+      - use_real
+    initial: use_real
+    # In testing mode, this can override the real price level used by
+    # EV automations. Outside testing, or when set to 'use_real', the
+    # real sensor.ha1_status_price_level is used.
+
+script:
+  ha1_test_ev_start_balanced:
+    alias: "HA1 TEST – EV start balanced (conditions)"
+    sequence:
+      - service: automation.trigger
+        target:
+          entity_id: automation.ha1_ev_start_balanced
+        data:
+          skip_condition: false
+    mode: single
+
+  ha1_test_ev_start_balanced_with_result:
+    alias: "HA1 TEST – EV start balanced (with result)"
+    sequence:
+      # Clear previous result flag
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.ha1_test_ev_balanced_actions_executed
+
+      # Enable testing mode so the EV automation can set the result flag
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.ha1_testing_mode_enabled
+
+      # Trigger the EV balanced automation WITH conditions
+      - service: automation.trigger
+        target:
+          entity_id: automation.ha1_ev_start_balanced
+        data:
+          skip_condition: false
+
+      # Short delay to allow the automation to run its actions
+      - delay: "00:00:02"
+
+      # (Optional) Leave testing_mode ON so I can run multiple tests in a row.
+      # If you prefer to auto-disable, you can turn it off here instead.
+
+    mode: single
+
+  ha1_test_comfort_timer_finish:
+    alias: "HA1 TEST – Finish comfort override timer"
+    sequence:
+      - service: timer.finish
+        target:
+          entity_id: timer.ha1_comfort_override
+    mode: single
+
+  ha1_test_ev_price_override_logic:
+    alias: "HA1 TEST – EV price vs comfort override"
+    sequence:
+      # Clear previous result first
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.ha1_test_ev_price_override_result
+
+      # Compute effective price level and evaluate logic
+      - variables:
+          ha1_test_effective_price_level: >
+            {% set level = states("sensor.ha1_status_price_level") %}
+            {% if is_state("input_boolean.ha1_testing_mode_enabled", "on")
+                  and states("input_select.ha1_test_price_level_effective")
+                      not in ["unknown", "unavailable", "", "use_real"] %}
+              {% set level = states("input_select.ha1_test_price_level_effective") %}
+            {% endif %}
+            {{ level }}
+
+          ha1_test_logic_ok: >
+            {{
+              is_state("input_boolean.ha1_comfort_override_enabled", "on")
+              or ha1_test_effective_price_level in ["cheap", "normal"]
+            }}
+
+      # If the logic says "OK", set the result flag ON
+      - choose:
+          - conditions: "{{ ha1_test_logic_ok }}"
+            sequence:
+              - service: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.ha1_test_ev_price_override_result
+
+    mode: single
