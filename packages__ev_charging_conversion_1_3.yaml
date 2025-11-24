@@ -1,0 +1,52 @@
+###############################################################################
+# HomeAssistant 1.3 – EV Charging Conversion Logic
+# File: packages/ev_charging_conversion_1_3.yaml
+#
+# Converts EV kW user slider → validated amps for Easee
+# Installation: 3-phase, 230 V, 6–16 A range
+###############################################################################
+
+template:
+  - sensor:
+      - name: "HA1 – EV max charging current"
+        unique_id: ha1_ev_max_charging_current
+        unit_of_measurement: "A"
+        icon: mdi:current-ac
+        state: >
+          {# User kW slider #}
+          {% set kw = states('input_number.ha1_ev_max_charging_power_kw') | float(0) %}
+
+          {# Installation parameters #}
+          {% set voltage = 230 %}
+          {% set phases = 3 %}
+
+          {# Raw current calculation in amps #}
+          {% set raw = (kw * 1000) / (voltage * phases) %}
+
+          {# Allow 6–16 A for your setup #}
+          {% set min_a = 6 %}
+          {% set max_a = 16 %}
+
+          {# Round up to whole amps and clamp #}
+          {% set rounded = raw | round(0, method='ceil') %}
+
+          {% if rounded < min_a %}
+            {{ min_a }}
+          {% elif rounded > max_a %}
+            {{ max_a }}
+          {% else %}
+            {{ rounded }}
+          {% endif %}
+
+script:
+  ha1_ev_apply_max_current:
+    alias: "HA1 – EV: apply max current"
+    mode: queued
+    sequence:
+      - variables:
+          amps: "{{ states('sensor.ha1_ev_max_charging_current_2') | int }}"
+      - service: easee.set_charger_dynamic_limit
+        target:
+          device_id: f0e8850e90d3ff8ce4e4c2870ec4de6d
+        data:
+          current: "{{ amps }}"

@@ -277,6 +277,7 @@ These entities must be available and stable before EV charging automations are e
   - `sensor.grid_import_export_power` > 0 → importing from grid
   - `sensor.grid_import_export_power` < 0 → exporting to grid
 - Huawei LUNA battery power uses a separate sign convention (discharge vs charge).
+- The Energy Overview uses `input_number.ha1_ev_max_charging_power_kw` (4–11 kW) as a user-friendly slider. A conversion sensor `sensor.ha1_ev_max_charging_current` maps this to a safe amp value (6–16 A) based on the actual installation (3×230 V). All Easee control scripts use the amp sensor, not the kW slider, so the user gets a human-friendly kW slider while the charger only ever receives valid current values.
 - Future automations will:
   - Limit EV charging current based on available capacity under the main fuse.
   - Shift charging to cheap/low-peak hours when `sensor.ev_charging_time_left` allows it.

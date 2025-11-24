@@ -1,0 +1,344 @@
+###############################################################################
+# Catflap 2 – Failsafe control package (SurePetcare/Petsure)
+# - Failsafe lock/unlock scripts med retry
+# - Sol-/tid-/manuell styrning
+# - Connectivity-watchdog
+# - Temperaturmedveten batteri-watchdog
+#
+# Anpassa:
+#  - binary_sensor.lucka2_connectivity
+#  - sensor.lucka2_battery_level
+#  - sensor.hue_carport_motion_sensor_temperature
+#  - flap_id (om nödvändigt)
+###############################################################################
+
+template:
+  - sensor:
+      - name: "Catflap 2 – Last lock"
+        unique_id: catflap2_last_lock
+        device_class: timestamp
+        state: "{{ state_attr('automation.catflap2_lock_failsafe','last_triggered') }}"
+      - name: "Catflap 2 – Last unlock"
+        unique_id: catflap2_last_unlock
+        device_class: timestamp
+        state: "{{ state_attr('automation.catflap2_unlock_failsafe','last_triggered') }}"
+    binary_sensor:
+      - name: "Catflap 2 – Expected locked"
+        unique_id: catflap2_expected_locked
+        device_class: lock
+        state: >
+          {% set lock = states('sensor.catflap_2_last_lock') %}
+          {% set unlock = states('sensor.catflap_2_last_unlock') %}
+          {# Inga tidsstämplar ännu → anta unlocked #}
+          {% if lock in ['unknown','unavailable',''] and unlock in ['unknown','unavailable',''] %}
+            off
+          {# Bara lock finns → låst #}
+          {% elif unlock in ['unknown','unavailable',''] %}
+            on
+          {# Bara unlock finns → upplåst #}
+          {% elif lock in ['unknown','unavailable',''] %}
+            off
+          {# Jämför senast åtgärd #}
+          {% else %}
+            {{ lock > unlock }}
+          {% endif %}
+
+
+###############################################################################
+# SCRIPT – FAILSAFE LOCK/UNLOCK
+###############################################################################
+
+script:
+
+  flap2_failsafe_lock:
+    alias: "Flap 2 – Failsafe Lock"
+    mode: single
+    sequence:
+      - alias: "Försök låsa direkt om lucka 2 är online"
+        choose:
+          - conditions:
+              - condition: state
+                entity_id: binary_sensor.lucka2_connectivity
+                state: "on"
+            sequence:
+              - service: surepetcare.set_lock_state
+                data:
+                  flap_id: "692585"    # <-- ändra vid behov
+                  lock_state: locked_in
+        default:
+          # === Försök 1 (efter 2 min) ===
+          - delay:
+              minutes: 2
+          - choose:
+              - conditions:
+                  - condition: state
+                    entity_id: binary_sensor.lucka2_connectivity
+                    state: "on"
+                sequence:
+                  - service: surepetcare.set_lock_state
+                    data:
+                      flap_id: "692585"
+                      lock_state: locked_in
+          # Om fortfarande offline → gå vidare
+          - condition: state
+            entity_id: binary_sensor.lucka2_connectivity
+            state: "off"
+
+          # === Försök 2 (ytterligare 2 min) ===
+          - delay:
+              minutes: 2
+          - choose:
+              - conditions:
+                  - condition: state
+                    entity_id: binary_sensor.lucka2_connectivity
+                    state: "on"
+                sequence:
+                  - service: surepetcare.set_lock_state
+                    data:
+                      flap_id: "692585"
+                      lock_state: locked_in
+          # Om fortfarande offline → gå vidare
+          - condition: state
+            entity_id: binary_sensor.lucka2_connectivity
+            state: "off"
+
+          # === Försök 3 (ytterligare 2 min) ===
+          - delay:
+              minutes: 2
+          - choose:
+              - conditions:
+                  - condition: state
+                    entity_id: binary_sensor.lucka2_connectivity
+                    state: "on"
+                sequence:
+                  - service: surepetcare.set_lock_state
+                    data:
+                      flap_id: "692585"
+                      lock_state: locked_in
+
+          # Om fortfarande offline efter alla försök → persistent notification
+          - condition: state
+            entity_id: binary_sensor.lucka2_connectivity
+            state: "off"
+          - service: persistent_notification.create
+            data:
+              title: "Kattlucka 2 – Failsafe Lock misslyckades"
+              message: >
+                Lucka 2 (flap_id 692585) kunde inte låsas eftersom den varit
+                offline trots flera försök. Kontrollera hubb/batteri.
+
+  flap2_failsafe_unlock:
+    alias: "Flap 2 – Failsafe Unlock"
+    mode: single
+    sequence:
+      - alias: "Försök låsa upp direkt om lucka 2 är online"
+        choose:
+          - conditions:
+              - condition: state
+                entity_id: binary_sensor.lucka2_connectivity
+                state: "on"
+            sequence:
+              - service: surepetcare.set_lock_state
+                data:
+                  flap_id: "692585"    # <-- ändra vid behov
+                  lock_state: unlocked
+        default:
+          # === Försök 1 (efter 2 min) ===
+          - delay:
+              minutes: 2
+          - choose:
+              - conditions:
+                  - condition: state
+                    entity_id: binary_sensor.lucka2_connectivity
+                    state: "on"
+                sequence:
+                  - service: surepetcare.set_lock_state
+                    data:
+                      flap_id: "692585"
+                      lock_state: unlocked
+          - condition: state
+            entity_id: binary_sensor.lucka2_connectivity
+            state: "off"
+
+          # === Försök 2 (ytterligare 2 min) ===
+          - delay:
+              minutes: 2
+          - choose:
+              - conditions:
+                  - condition: state
+                    entity_id: binary_sensor.lucka2_connectivity
+                    state: "on"
+                sequence:
+                  - service: surepetcare.set_lock_state
+                    data:
+                      flap_id: "692585"
+                      lock_state: unlocked
+          - condition: state
+            entity_id: binary_sensor.lucka2_connectivity
+            state: "off"
+
+          # === Försök 3 (ytterligare 2 min) ===
+          - delay:
+              minutes: 2
+          - choose:
+              - conditions:
+                  - condition: state
+                    entity_id: binary_sensor.lucka2_connectivity
+                    state: "on"
+                sequence:
+                  - service: surepetcare.set_lock_state
+                    data:
+                      flap_id: "692585"
+                      lock_state: unlocked
+
+          # Om fortfarande offline efter alla försök → persistent notification
+          - condition: state
+            entity_id: binary_sensor.lucka2_connectivity
+            state: "off"
+          - service: persistent_notification.create
+            data:
+              title: "Kattlucka 2 – Failsafe Unlock misslyckades"
+              message: >
+                Lucka 2 (flap_id 692585) kunde inte låsas upp eftersom den varit
+                offline trots flera försök. Kontrollera hubb/batteri.
+
+
+###############################################################################
+# AUTOMATIONER – LOCK/UNLOCK + WATCHDOGS
+###############################################################################
+
+automation:
+
+  # ---------------------------------------------------------------------------
+  # Catflap 2 – Lock automation (solnedgång, tid, manuell boolean)
+  # ---------------------------------------------------------------------------
+  - id: catflap2_lock_failsafe
+    alias: "Catflap 2 – Lock (failsafe)"
+    description: >
+      Låser lucka 2 vid solnedgång (med offset), senast kl 22:00 samt när
+      input_boolean.flap_2 slås av. Använder failsafe-skriptet.
+    mode: single
+    trigger:
+      - platform: sun
+        event: sunset
+        offset: "-00:30:00"
+      - platform: time
+        at: "22:00:00"
+      - platform: state
+        entity_id: input_boolean.flap_2
+        from: "on"
+        to: "off"
+        for: "00:00:05"
+    condition: []
+    action:
+      - service: script.flap2_failsafe_lock
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.flap_2
+
+  # ---------------------------------------------------------------------------
+  # Catflap 2 – Unlock automation (soluppgång, manuell boolean)
+  # ---------------------------------------------------------------------------
+  - id: catflap2_unlock_failsafe
+    alias: "Catflap 2 – Unlock (failsafe)"
+    description: >
+      Låser upp lucka 2 1 timme efter soluppgång samt när
+      input_boolean.flap_2 slås på. Använder failsafe-skriptet.
+    mode: single
+    trigger:
+      - platform: sun
+        event: sunrise
+        offset: "+01:00:00"
+      - platform: state
+        entity_id: input_boolean.flap_2
+        from: "off"
+        to: "on"
+        for: "00:00:05"
+    condition: []
+    action:
+      - service: script.flap2_failsafe_unlock
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.flap_2
+
+  # ---------------------------------------------------------------------------
+  # Catflap 2 – Connectivity watchdog (offline > 20 min)
+  # ---------------------------------------------------------------------------
+  - id: catflap2_connectivity_watchdog
+    alias: "Catflap 2 – Connectivity watchdog"
+    description: >
+      Skickar varning om lucka 2 varit offline längre än 20 minuter.
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.lucka2_connectivity
+        to: "off"
+        for: "00:20:00"
+    condition: []
+    action:
+      - service: persistent_notification.create
+        data:
+          title: "Kattlucka 2 – Offline"
+          message: >
+            Lucka 2 har varit offline i minst 20 minuter.
+            Detta kan bero på batterinivå eller radioproblem.
+            Kontrollera hubb/batteri och kontakta Helge-supporten (dvs du).
+
+  # ---------------------------------------------------------------------------
+  # Catflap 2 – Batteri-watchdog (temperaturmedveten)
+  # Körs 1 gång per dag kl 09:00.
+  # ---------------------------------------------------------------------------
+  - id: catflap2_battery_watchdog
+    alias: "Catflap 2 – Battery watchdog"
+    description: >
+      Kollar batterinivå i lucka 2 en gång per dag och tar hänsyn till
+      utetemperatur (carport) för att undvika falska larm vid kyla.
+    mode: single
+    trigger:
+      - platform: time
+        at: "09:00:00"
+    condition: []
+    action:
+      - variables:
+          batt: "{{ states('sensor.lucka2_battery_level') | int(0) }}"
+          temp: "{{ states('sensor.hue_carport_motion_sensor_temperature') | float(0) }}"
+      - choose:
+          # Extremt låg nivå – alltid varning
+          - conditions:
+              - condition: template
+                value_template: "{{ batt < 10 }}"
+            sequence:
+              - service: persistent_notification.create
+                data:
+                  title: "Kattlucka 2 – Extremt låg batterinivå"
+                  message: >
+                    Batterinivån i lucka 2 är {{ batt }}%.
+                    Detta är mycket lågt och luckan kan sluta svara när som helst.
+                    Byt batterier omgående.
+
+          # Varmt väder – normal tröskel
+          - conditions:
+              - condition: template
+                value_template: "{{ temp > 0 and batt < 22 }}"
+            sequence:
+              - service: persistent_notification.create
+                data:
+                  title: "Kattlucka 2 – Låg batterinivå (varmt väder)"
+                  message: >
+                    Batterinivån i lucka 2 är {{ batt }}%.
+                    Det är {{ temp }}°C ute, så detta är sannolikt en verkligt låg nivå.
+                    Planera batteribyte relativt snart.
+
+          # Kallt väder – lägre tröskel, kan vara kyldroppe
+          - conditions:
+              - condition: template
+                value_template: "{{ temp <= 0 and batt < 16 }}"
+            sequence:
+              - service: persistent_notification.create
+                data:
+                  title: "Kattlucka 2 – Låg batterinivå (kallt väder)"
+                  message: >
+                    Batterinivån i lucka 2 är {{ batt }}% och det är {{ temp }}°C ute.
+                    Detta kan delvis vara en effekt av kylan (kyldroppe),
+                    men håll koll och byt batterier om nivån fortsätter vara låg
+                    även vid mildare temperaturer.

@@ -514,3 +514,56 @@ workprofile_on_notification:
       message: Workprofile On
   alias: Workprofile On notification
   description: ''
+
+ha1_test_ev_charge_on:
+  alias: "TEST – EV: Start charging now"
+  mode: single
+  sequence:
+  - service: switch.turn_on
+    target:
+      entity_id: switch.ehxdyl83_charger_enabled
+  - service: easee.action_command
+    data:
+      device_id: "f0e8850e90d3ff8ce4e4c2870ec4de6d"
+      action_command: "resume"
+  - service: persistent_notification.create
+    data:
+      title: "TEST: EV Charging"
+      message: "Charging has been started manually."
+
+ha1_test_ev_apply_limit:
+  alias: "TEST – EV: Apply charger current limit"
+  mode: single
+  sequence:
+  - service: easee.set_charger_dynamic_limit
+    data:
+      device_id: "f0e8850e90d3ff8ce4e4c2870ec4de6d"
+      current: 6
+  - service: persistent_notification.create
+    data:
+      title: "TEST: EV Current Limit Set"
+      message: "Charger current limit set to 6 A."
+
+ha1_test_ev_start_with_limit:
+  alias: "TEST – EV: Start with limit"
+  mode: single
+  sequence:
+  - service: easee.set_charger_dynamic_limit
+    data:
+      device_id: "f0e8850e90d3ff8ce4e4c2870ec4de6d"
+      current: 6
+  - delay: "00:00:02"
+  - service: switch.turn_on
+    target:
+      entity_id: switch.ehxdyl83_charger_enabled
+  - service: easee.action_command
+    data:
+      device_id: "f0e8850e90d3ff8ce4e4c2870ec4de6d"
+      action_command: "resume"
+  - service: button.press
+    target:
+      entity_id: button.ehxdyl83_override_schedule
+  - service: persistent_notification.create
+    data:
+      title: "TEST: EV started with limit"
+      message: "Charging started with current limit 6 A."
