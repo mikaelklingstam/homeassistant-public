@@ -1,0 +1,417 @@
+###############################################################################
+# HomeAssistant 1.3 – HA1 Live Energy Flow View (Task 27 – Phase 1)
+#
+# File: dashboards/ha1_flow.yaml
+#
+# NOTE:
+# - Base image assumed at: /local/ha1/energy_flow_base.png
+# - Arrow overlay images are placeholders (you can replace with your own):
+#     /local/ha1/flow_arrow_solar_batt.png
+#     /local/ha1/flow_arrow_solar_house.png
+#     /local/ha1/flow_arrow_solar_grid.png
+#     /local/ha1/flow_arrow_batt_house.png
+#     /local/ha1/flow_arrow_ev.png
+#     /local/ha1/flow_arrow_grid.png
+#
+# - Flow sensors (adjust names if needed, but these are the canonical targets):
+#     sensor.ha1_flow_solar_to_battery
+#     sensor.ha1_flow_solar_to_house
+#     sensor.ha1_flow_solar_to_grid
+#     sensor.ha1_flow_battery_to_house
+#     sensor.ha1_flow_battery_to_grid      # optional
+#     sensor.ha1_flow_ev_charging_power    # or sensor.ehxdyl83_power
+#     sensor.ha1_net_grid_power            # (+/- for import/export)
+#
+# - Status / binary sensors (if present):
+#     binary_sensor.ha1_exporting_to_grid
+#     binary_sensor.ha1_ev_charging_now
+#
+# - Node numeric sensors (examples – adjust to your actual 1.3 entities):
+#     sensor.huawei_solar_input_power
+#     sensor.huawei_battery_charge_discharge_power
+#     sensor.ha1_huawei_battery_soc
+#     sensor.ha1_power_house_total
+#     sensor.ha1_power_ev_charger           # or sensor.ehxdyl83_power
+#     sensor.ha1_net_grid_power
+###############################################################################
+
+title: "HA1 – Live Energy Flow"
+views:
+  - title: "HA1 – Live Flow"
+    path: ha1-live-flow
+    icon: mdi:home-lightning-bolt
+    panel: true
+
+    cards:
+      - type: picture-elements
+        image: /local/ha1/House_energy.png
+        aspect_ratio: "15:10"
+
+        elements:
+          #####################################################################
+          # 🏗 Node icons – Solar / Battery / House / EV / Grid
+          #####################################################################
+
+          # ☀️ Solar panels
+          - type: icon
+            icon: mdi:solar-panel
+            style:
+              left: 27%
+              top: 14%
+              transform: translate(-50%, -50%)
+              color: "white"
+              text-shadow: "0 0 6px rgba(0,0,0,0.8)"
+              --mdc-icon-size: 36px
+
+          # 🔋 Battery (LUNA stack)
+          - type: icon
+            icon: mdi:battery-high
+            style:
+              left: 17%
+              top: 80%
+              transform: translate(-50%, -50%)
+              color: "white"
+              text-shadow: "0 0 6px rgba(0,0,0,0.8)"
+              --mdc-icon-size: 36px
+
+          # 🏠 House load
+          - type: icon
+            icon: mdi:home
+            style:
+              left: 36%
+              top: 56%
+              transform: translate(-50%, -50%)
+              color: "white"
+              text-shadow: "0 0 6px rgba(0,0,0,0.8)"
+              --mdc-icon-size: 36px
+
+          # 🚗 EV / charger
+          - type: icon
+            icon: mdi:car-electric
+            entity: binary_sensor.ha1_ev_charging_now
+            style:
+              left: 48%
+              top: 55%
+              transform: translate(-50%, -50%)
+              color: >
+                [[[
+                  const on = states['binary_sensor.ha1_ev_charging_now'];
+                  if (!on || on.state !== 'on') return "rgba(255,255,255,0.6)";
+                  return "var(--state-active-color)";
+                ]]]
+              text-shadow: "0 0 6px rgba(0,0,0,0.8)"
+              --mdc-icon-size: 36px
+
+          # 🌐 Grid / pole
+          - type: icon
+            icon: mdi:transmission-tower
+            style:
+              left: 88%
+              top: 85%
+              transform: translate(-50%, -50%)
+              color: "white"
+              text-shadow: "0 0 6px rgba(0,0,0,0.8)"
+              --mdc-icon-size: 36px
+
+          #####################################################################
+          # 🔄 Flow arrows – Solar → Battery / House / Grid
+          #####################################################################
+
+          # ☀️→🔋 Solar to Battery
+          - type: image
+            entity: sensor.ha1_flow_solar_to_battery
+            image: /local/ha1/flow_arrow_solar_batt.png
+            style:
+              left: 22%
+              top: 50%
+              width: 10%
+              transform: translate(-50%, -50%) rotate(95deg)
+              opacity: >
+                [[[
+                  const v = parseFloat(states['sensor.ha1_flow_solar_to_battery']?.state) || 0;
+                  if (v <= 0) return "0.0";   // hidden
+                  if (v < 500) return "0.3";  // gentle
+                  if (v < 2000) return "0.6"; // medium
+                  return "1.0";               // strong
+                ]]]
+            tap_action:
+              action: none
+            hold_action:
+              action: none
+
+          # ☀️→🏠 Solar to House
+          - type: image
+            entity: sensor.ha1_flow_solar_to_house
+            image: /local/ha1/flow_arrow_solar_house.png
+            style:
+              left: 30%
+              top: 36%
+              width: 16%
+              transform: translate(-50%, -50%) rotate(95deg)
+              opacity: >
+                [[[
+                  const v = parseFloat(states['sensor.ha1_flow_solar_to_house']?.state) || 0;
+                  if (v <= 0) return "0.0";   // hidden
+                  if (v < 500) return "0.3";  // gentle
+                  if (v < 2000) return "0.6"; // medium
+                  return "1.0";               // strong
+                ]]]
+            tap_action:
+              action: none
+            hold_action:
+              action: none
+
+          # ☀️→🌐 Solar direct to Grid (export)
+          - type: image
+            entity: sensor.ha1_flow_solar_to_grid
+            image: /local/ha1/flow_arrow_solar_grid.png
+            style:
+              left: 22%
+              top: 24%
+              width: 12%
+              transform: translate(-50%, -50%) rotate(95deg)
+            opacity: >
+              [[[
+                const v = parseFloat(states['sensor.ha1_flow_solar_to_grid']?.state) || 0;
+                if (v <= 0) return "0.0";   // hidden
+                if (v < 500) return "0.3";  // gentle
+                if (v < 2000) return "0.6"; // medium
+                return "1.0";               // strong
+              ]]]
+            tap_action:
+              action: none
+            hold_action:
+              action: none
+
+          # ☀️→🌐 Solar to Grid (lower run to meter)
+          - type: image
+            entity: sensor.ha1_flow_solar_to_grid
+            image: /local/ha1/flow_arrow_solar_grid.png
+            style:
+              left: 54%
+              top: 96%
+              width: 72%
+              transform: translate(-50%, -50%)
+              opacity: >
+                [[[
+                  const v = parseFloat(states['sensor.ha1_flow_solar_to_grid']?.state) || 0;
+                  if (v <= 0) return "0.0";   // hidden
+                  if (v < 500) return "0.3";  // gentle
+                  if (v < 2000) return "0.6"; // medium
+                  return "1.0";               // strong
+                ]]]
+            tap_action:
+              action: none
+            hold_action:
+              action: none
+
+          #####################################################################
+          # 🔄 Flow arrows – Battery → House / Grid
+          #####################################################################
+
+          # 🔋→🏠 Battery to House (discharge)
+          - type: image
+            entity: sensor.ha1_flow_battery_to_house
+            image: /local/ha1/flow_arrow_batt_house.png
+            style:
+              left: 13%
+              top: 72%
+              width: 12%
+              transform: translate(-50%, -50%) rotate(-70deg)
+              opacity: >
+                [[[
+                  const v = parseFloat(states['sensor.ha1_flow_battery_to_house']?.state) || 0;
+                  if (v <= 0) return "0.0";   // hidden
+                  if (v < 500) return "0.3";  // gentle
+                  if (v < 2000) return "0.6"; // medium
+                  return "1.0";               // strong
+                ]]]
+            tap_action:
+              action: none
+            hold_action:
+              action: none
+
+          # 🔋→🌐 Battery to Grid (if used)
+          - type: image
+            entity: sensor.ha1_flow_battery_to_grid
+            image: /local/ha1/flow_arrow_solar_grid.png
+            style:
+              left: 48%
+              top: 86%
+              width: 24%
+              transform: translate(-50%, -50%)
+              opacity: >
+                [[[
+                  const v = parseFloat(states['sensor.ha1_flow_battery_to_grid']?.state) || 0;
+                  if (v <= 0) return "0.0";   // hidden
+                  if (v < 500) return "0.3";  // gentle
+                  if (v < 2000) return "0.6"; // medium
+                  return "1.0";               // strong
+                ]]]
+            tap_action:
+              action: none
+            hold_action:
+              action: none
+
+          #####################################################################
+          # 🔄 Flow arrows – EV charging & Grid import/export
+          #####################################################################
+
+          # 🏠/🌐→🚗 EV charging power
+          - type: image
+            entity: sensor.ha1_flow_ev_charging_power
+            image: /local/ha1/flow_arrow_ev.png
+            style:
+              left: 30%
+              top: 60%
+              width: 18%
+              transform: translate(-50%, -50%) rotate(25deg)
+              opacity: >
+                [[[
+                  // Fallback to Easee power if ha1_flow_ev_charging_power missing
+                  const evFlow = states['sensor.ha1_flow_ev_charging_power'];
+                  const easee = states['sensor.ehxdyl83_power'];
+                  let v = 0;
+                  if (evFlow && !isNaN(parseFloat(evFlow.state))) {
+                    v = parseFloat(evFlow.state);
+                  } else if (easee && !isNaN(parseFloat(easee.state))) {
+                    v = parseFloat(easee.state);
+                  }
+                  if (v <= 0) return "0.0";   // hidden
+                  if (v < 500) return "0.3";  // gentle
+                  if (v < 2000) return "0.6"; // medium
+                  return "1.0";               // strong
+                ]]]
+            tap_action:
+              action: none
+            hold_action:
+              action: none
+
+          # 🌐↔🏠 Net grid flow (import vs export)
+          - type: image
+            entity: sensor.ha1_net_grid_power
+            image: /local/ha1/flow_arrow_grid.png
+            style:
+              left: 72%
+              top: 92%
+              width: 36%
+              transform: >
+                [[[
+                  const v = parseFloat(states['sensor.ha1_net_grid_power']?.state) || 0;
+                  // Positive = import (Grid -> House), Negative = export (House -> Grid)
+                  // Flip horizontally when exporting
+                  if (v < 0) {
+                    return "translate(-50%, -50%) scaleX(-1)";
+                  }
+                  return "translate(-50%, -50%)";
+                ]]]
+              opacity: >
+                [[[
+                  const v = Math.abs(parseFloat(states['sensor.ha1_net_grid_power']?.state) || 0);
+                  if (v <= 0) return "0.0";   // hidden
+                  if (v < 500) return "0.3";  // gentle
+                  if (v < 2000) return "0.6"; // medium
+                  return "1.0";               // strong
+                ]]]
+            tap_action:
+              action: none
+            hold_action:
+              action: none
+
+          #####################################################################
+          # 🔢 State labels – key numeric values
+          #####################################################################
+
+          # Solar power (W or kW depending on your sensor)
+          - type: state-label
+            entity: sensor.huawei_solar_input_power
+            style:
+              left: 27%
+              top: 20%
+              transform: translate(-50%, -50%)
+              color: "white"
+              font-size: 14px
+              font-weight: 600
+              text-shadow: "0 0 4px rgba(0,0,0,0.8)"
+            prefix: "Solar: "
+
+          # Battery SOC
+          - type: state-label
+            entity: sensor.ha1_huawei_battery_soc
+            style:
+              left: 23%
+              top: 78%
+              transform: translate(-50%, -50%)
+              color: "white"
+              font-size: 14px
+              font-weight: 600
+              text-shadow: "0 0 4px rgba(0,0,0,0.8)"
+            prefix: "SOC: "
+            suffix: " %"
+
+          # Battery charge/discharge power
+          - type: state-label
+            entity: sensor.huawei_battery_charge_discharge_power
+            style:
+              left: 23%
+              top: 85%
+              transform: translate(-50%, -50%)
+              color: "white"
+              font-size: 13px
+              text-shadow: "0 0 4px rgba(0,0,0,0.8)"
+            prefix: "Pbat: "
+
+          # House consumption
+          - type: state-label
+            entity: sensor.ha1_power_house_total
+            style:
+              left: 36%
+              top: 64%
+              transform: translate(-50%, -50%)
+              color: "white"
+              font-size: 14px
+              font-weight: 600
+              text-shadow: "0 0 4px rgba(0,0,0,0.8)"
+            prefix: "House: "
+
+          # EV charging power
+          - type: state-label
+            entity: sensor.ha1_power_ev_charger
+            style:
+              left: 48%
+              top: 61%
+              transform: translate(-50%, -50%)
+              color: "white"
+              font-size: 14px
+              font-weight: 600
+              text-shadow: "0 0 4px rgba(0,0,0,0.8)"
+            prefix: "EV: "
+
+          # Net grid import/export power
+          - type: state-label
+            entity: sensor.ha1_net_grid_power
+            style:
+              left: 88%
+              top: 91%
+              transform: translate(-50%, -50%)
+              color: "white"
+              font-size: 14px
+              font-weight: 600
+              text-shadow: "0 0 4px rgba(0,0,0,0.8)"
+            prefix: "Grid: "
+
+          #####################################################################
+          # 🧪 Status / hints
+          #####################################################################
+
+          # Export status hint (optional)
+          - type: state-label
+            entity: binary_sensor.ha1_exporting_to_grid
+            style:
+              left: 85%
+              top: 55%
+              transform: translate(-50%, -50%)
+              color: "white"
+              font-size: 12px
+              text-shadow: "0 0 4px rgba(0,0,0,0.8)"
+            prefix: "Exporting: "

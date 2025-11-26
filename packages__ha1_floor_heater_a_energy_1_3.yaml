@@ -1,0 +1,14 @@
+sensor:
+  - platform: integration
+    unique_id: ha1_floor_heater_a_energy_kwh
+    name: "HA1 – Floor Heater A energy"
+    source: sensor.sunricher_hk_ln_heater_a_power
+    unit_prefix: k
+    method: trapezoidal
+    round: 3
+
+utility_meter:
+  ha1_floor_heater_a_energy_daily_kwh:
+    name: "HA1 – Floor Heater A daily energy"
+    source: sensor.ha1_floor_heater_a_energy_kwh
+    cycle: daily

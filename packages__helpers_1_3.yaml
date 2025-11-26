@@ -205,6 +205,10 @@ input_number:
     mode: slider
     icon: mdi:current-ac
 
+###############################################################################
+# Template helpers (binary sensors)
+###############################################################################
+
   # --- HA 1.3 Helpers – EV price thresholds (SEK/kWh) ---
   ha1_ev_price_cheap_max:
     name: "HA1 – EV price: cheap max"
@@ -271,3 +275,34 @@ input_select:
       - "aggressive"
       - "manual"
     icon: mdi:ev-station
+
+template:
+  - binary_sensor:
+
+      # EV charging active (simple power threshold)
+      - name: "HA1 EV Charging Now"
+        unique_id: ha1_ev_charging_now
+        device_class: power
+        state: >
+          {% set ev_w = states('sensor.ha1_power_ev_charger') | float(0) %}
+          {{ ev_w > 50 }}
+        icon: >
+          {% set ev_w = states('sensor.ha1_power_ev_charger') | float(0) %}
+          {% if ev_w > 50 %}
+            mdi:ev-station
+          {% else %}
+            mdi:ev-station-off
+          {% endif %}
+
+      # Grid exporting flag (true when grid status reports export)
+      - name: "HA1 Exporting To Grid"
+        unique_id: ha1_exporting_to_grid
+        device_class: power
+        state: >
+          {{ states('sensor.ha1_grid_status') == 'export' }}
+        icon: >
+          {% if states('sensor.ha1_grid_status') == 'export' %}
+            mdi:transmission-tower-export
+          {% else %}
+            mdi:transmission-tower
+          {% endif %}
