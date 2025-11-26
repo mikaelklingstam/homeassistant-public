@@ -415,3 +415,1526 @@ views:
               font-size: 12px
               text-shadow: "0 0 4px rgba(0,0,0,0.8)"
             prefix: "Exporting: "
+
+  # Tab imported from dashboards/ha1_energy_overview.yaml (HA1 – Energy Overview)
+  - title: "HA1 – Energy Overview"
+    path: ha1-energy-overview
+    icon: mdi:home-battery
+    type: masonry
+
+    cards:
+
+      # --- HA1 – Energy Overview: Status & price strip ----------------------
+      - type: glance
+        title: "Status"
+        entities:
+          - entity: sensor.ha1_net_grid_power
+            name: Net grid
+          - entity: input_boolean.ha1_automations_master_enable
+            name: Automations
+          - entity: input_boolean.ha1_peak_shaving_enabled
+            name: Peak shaving
+          - entity: input_boolean.ha1_comfort_override_enabled
+            name: Comfort
+
+      - type: glance
+        title: "Price & peak"
+        entities:
+          - entity: sensor.nordpool_kwh_se3_sek_3_10_025
+            name: Nordpool
+          - entity: sensor.ha1_status_price_level
+            name: Price level
+          - entity: sensor.ha1_monthly_peak_power_cost_adjusted
+            name: Peak (adjusted)
+
+      # --- HA1 – Energy Overview: Flows & core metrics ----------------------
+      - type: entities
+        title: "Energy flows – Solar → Battery → House → EV → Grid"
+        show_header_toggle: false
+        entities:
+          - entity: sensor.ha1_power_solar_ac
+            name: Solar production (AC)
+          - entity: sensor.ha1_power_battery_net
+            name: Battery power (net)
+          - entity: sensor.ha1_huawei_battery_soc
+            name: Battery state of charge
+          - entity: sensor.ha1_power_house_total
+            name: House consumption
+          - entity: sensor.ha1_power_ev_charger
+            name: EV charging power
+          - entity: sensor.ha1_net_grid_power
+            name: Net grid import/export
+
+      - type: glance
+        title: "Flows snapshot"
+        entities:
+          - entity: sensor.ha1_power_solar_ac
+            name: Solar
+          - entity: sensor.ha1_power_battery_net
+            name: Battery
+          - entity: sensor.ha1_power_ev_charger
+            name: EV
+          - entity: sensor.ha1_net_grid_power
+            name: Grid
+
+      # --- HA1 – Energy Overview: EV panel ----------------------------------
+      - type: entities
+        title: "EV – Charging & Mode"
+        show_header_toggle: false
+        entities:
+          - entity: input_select.ha1_ev_charging_mode
+            name: EV charging mode
+          - entity: switch.ehxdyl83_charger_enabled
+            name: Charger output (Easee)
+          - entity: sensor.ha1_power_ev_charger
+            name: EV charger power
+          - entity: sensor.ev_charging_time_left   # sensor.id4pro_charging_time_left
+            name: ID.4 – time left
+
+          # EV battery SOC (alias of ID.4 level):
+          - entity: sensor.ev_battery_soc
+            name: EV battery SOC
+
+          # EV charging limit (kW):
+          - entity: input_number.ha1_ev_max_charging_power_kw
+            name: EV charging limit (kW)
+
+          # Derived EV max current (A) from conversion package:
+          - entity: sensor.ha1_ev_max_charging_current_2
+            name: EV max current (A)
+
+      # --- HA1 – Energy Overview: Battery panel -----------------------------
+      - type: entities
+        title: "Battery – SOC, power & grid charge"
+        show_header_toggle: false
+        entities:
+          - entity: sensor.ha1_huawei_battery_soc
+            name: Battery state of charge
+          - entity: sensor.ha1_power_battery_net
+            name: Battery power (net)
+          - entity: input_number.ha1_battery_grid_charge_limit_kw
+            name: Max grid charge power (kW)
+          - entity: input_number.ha1_battery_min_soc_normal
+            name: Min SOC – normal mode
+          - entity: input_number.ha1_batt_peak_shaving_soc
+            name: Min SOC – peak mode
+
+      # --- HA1 – Energy Overview: Peaks & cost ------------------------------
+      - type: entities
+        title: "Peaks & cost"
+        show_header_toggle: false
+        entities:
+          - entity: input_number.ha1_peak_limit_kw
+            name: Monthly peak limit (kW)
+          - entity: input_number.ha1_peak_warning_kw
+            name: Peak warning (kW)
+          - entity: input_number.ha1_peak_warning_margin_kw
+            name: Peak warning margin (kW)
+          - entity: sensor.ha1_monthly_peak_power_real_history_max_2
+            name: Current monthly peak (raw)
+          - entity: sensor.ha1_monthly_peak_power_cost_adjusted
+            name: Monthly peak (cost-adjusted)
+
+      # --- HA1 – Energy Overview: Mini history ------------------------------
+      - type: history-graph
+        title: "History – Net grid, price & battery SOC"
+        hours_to_show: 4
+        refresh_interval: 60
+        entities:
+          - entity: sensor.ha1_net_grid_power
+            name: Net grid power
+          - entity: sensor.nordpool_kwh_se3_sek_3_10_025
+            name: Nordpool price
+          - entity: sensor.ha1_huawei_battery_soc
+            name: Battery SOC
+
+  # --- HA1 – Live Energy Flow (picture-elements) ---------------------------
+  - title: "HA1 – Energy Flow"
+    path: ha1-energy-flow
+    icon: mdi:solar-power-variant
+    panel: true
+
+    cards:
+      - type: picture-elements
+        title: "Live Energy Flow – Solar → Battery → House → EV → Grid"
+        aspect_ratio: "3x2"
+        image: /local/power.jpg
+
+        elements:
+
+          # Solar node
+          - type: state-icon
+            entity: sensor.ha1_power_solar_ac
+            icon: mdi:solar-power-variant
+            title: "Solar production (AC)"
+            style:
+              left: 12%
+              top: 32%
+              '--mdc-icon-size': 42px
+              color: "#fdd835"
+              filter: drop-shadow(0px 0px 8px rgba(253, 216, 53, 0.6))
+              transform: translate(-50%, -50%)
+              transition: opacity 0.6s ease, filter 0.6s ease
+              opacity: >-
+                [[[
+                  const s = Math.max(0, parseFloat(states['sensor.ha1_power_solar_ac']?.state) || 0);
+                  return s > 0 ? 1 : 0.35;
+                ]]]
+            tap_action:
+              action: more-info
+
+          - type: state-label
+            entity: sensor.ha1_power_solar_ac
+            title: "Solar production (AC)"
+            text: >-
+              [[[ const s = Math.max(0, parseFloat(states['sensor.ha1_power_solar_ac']?.state) || 0);
+                  return `Solar: ${(s / 1000).toFixed(2)} kW`; ]]]
+            style:
+              left: 12%
+              top: 43%
+              transform: translate(-50%, -50%)
+              font-size: 14px
+              font-weight: 600
+              color: "#1b1b1b"
+              background: rgba(255, 255, 255, 0.75)
+              padding: 4px 8px
+              border-radius: 10px
+              box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25)
+
+          # Battery node
+          - type: state-icon
+            entity: sensor.ha1_power_battery_net
+            icon: mdi:battery-high
+            title: "Battery (net power)"
+            style:
+              left: 32%
+              top: 56%
+              '--mdc-icon-size': 42px
+              color: "#8bc34a"
+              filter: drop-shadow(0px 0px 8px rgba(139, 195, 74, 0.6))
+              transform: translate(-50%, -50%)
+              transition: opacity 0.6s ease, filter 0.6s ease
+              opacity: >-
+                [[[
+                  const b = parseFloat(states['sensor.ha1_power_battery_net']?.state) || 0;
+                  return Math.min(1, Math.max(0.4, Math.abs(b) / 4000));
+                ]]]
+            tap_action:
+              action: more-info
+
+          - type: state-label
+            entity: sensor.ha1_huawei_battery_soc
+            title: "Battery state of charge"
+            text: >-
+              [[[ const p = parseFloat(states['sensor.ha1_power_battery_net']?.state) || 0;
+                  const soc = parseFloat(states['sensor.ha1_huawei_battery_soc']?.state) || 0;
+                  const dir = p >= 0 ? 'Charging' : 'Discharging';
+                  return `Battery ${soc.toFixed(0)}% – ${dir} ${(Math.abs(p) / 1000).toFixed(2)} kW`; ]]]
+            style:
+              left: 32%
+              top: 67%
+              transform: translate(-50%, -50%)
+              font-size: 14px
+              font-weight: 600
+              color: "#1b1b1b"
+              background: rgba(255, 255, 255, 0.78)
+              padding: 4px 10px
+              border-radius: 10px
+              box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25)
+
+          # House node
+          - type: state-icon
+            entity: sensor.ha1_power_house_total
+            icon: mdi:home-lightning-bolt
+            title: "House consumption"
+            style:
+              left: 55%
+              top: 36%
+              '--mdc-icon-size': 44px
+              color: "#29b6f6"
+              filter: drop-shadow(0px 0px 8px rgba(41, 182, 246, 0.6))
+              transform: translate(-50%, -50%)
+              transition: opacity 0.6s ease, filter 0.6s ease
+              opacity: >-
+                [[[
+                  const h = Math.max(0, parseFloat(states['sensor.ha1_power_house_total']?.state) || 0);
+                  return Math.min(1, Math.max(0.4, h / 5000));
+                ]]]
+            tap_action:
+              action: more-info
+
+          - type: state-label
+            entity: sensor.ha1_power_house_total
+            title: "House consumption"
+            text: >-
+              [[[ const h = Math.max(0, parseFloat(states['sensor.ha1_power_house_total']?.state) || 0);
+                  return `House: ${(h / 1000).toFixed(2)} kW`; ]]]
+            style:
+              left: 55%
+              top: 47%
+              transform: translate(-50%, -50%)
+              font-size: 14px
+              font-weight: 600
+              color: "#1b1b1b"
+              background: rgba(255, 255, 255, 0.78)
+              padding: 4px 10px
+              border-radius: 10px
+              box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25)
+
+          # EV node
+          - type: state-icon
+            entity: sensor.ha1_power_ev_charger
+            icon: mdi:car-electric
+            title: "EV charging power"
+            style:
+              left: 74%
+              top: 64%
+              '--mdc-icon-size': 42px
+              color: "#5c6bc0"
+              filter: drop-shadow(0px 0px 8px rgba(92, 107, 192, 0.6))
+              transform: translate(-50%, -50%)
+              transition: opacity 0.6s ease, filter 0.6s ease
+              opacity: >-
+                [[[
+                  const ev = Math.max(0, parseFloat(states['sensor.ha1_power_ev_charger']?.state) || 0);
+                  return ev > 0 ? Math.min(1, 0.35 + ev / 6000) : 0.2;
+                ]]]
+            tap_action:
+              action: more-info
+
+          - type: state-label
+            entity: sensor.ha1_power_ev_charger
+            title: "EV charging power"
+            text: >-
+              [[[ const ev = Math.max(0, parseFloat(states['sensor.ha1_power_ev_charger']?.state) || 0);
+                  return `EV: ${(ev / 1000).toFixed(2)} kW`; ]]]
+            style:
+              left: 74%
+              top: 74%
+              transform: translate(-50%, -50%)
+              font-size: 14px
+              font-weight: 600
+              color: "#1b1b1b"
+              background: rgba(255, 255, 255, 0.78)
+              padding: 4px 10px
+              border-radius: 10px
+              box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25)
+
+          # Grid node
+          - type: state-icon
+            entity: sensor.ha1_net_grid_power
+            icon: mdi:transmission-tower
+            title: "Grid import (+) / export (-)"
+            style:
+              left: 90%
+              top: 32%
+              '--mdc-icon-size': 42px
+              color: "#ff9800"
+              filter: drop-shadow(0px 0px 8px rgba(255, 152, 0, 0.6))
+              transform: translate(-50%, -50%)
+              transition: opacity 0.6s ease, filter 0.6s ease
+              opacity: >-
+                [[[
+                  const g = Math.abs(parseFloat(states['sensor.ha1_net_grid_power']?.state) || 0);
+                  return Math.min(1, Math.max(0.35, g / 5000));
+                ]]]
+            tap_action:
+              action: more-info
+
+          - type: state-label
+            entity: sensor.ha1_net_grid_power
+            title: "Grid import/export"
+            text: >-
+              [[[ const g = parseFloat(states['sensor.ha1_net_grid_power']?.state) || 0;
+                  const dir = g >= 0 ? 'Import' : 'Export';
+                  return `Grid ${dir}: ${(Math.abs(g) / 1000).toFixed(2)} kW`; ]]]
+            style:
+              left: 90%
+              top: 43%
+              transform: translate(-50%, -50%)
+              font-size: 14px
+              font-weight: 600
+              color: "#1b1b1b"
+              background: rgba(255, 255, 255, 0.78)
+              padding: 4px 10px
+              border-radius: 10px
+              box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25)
+
+          # Solar -> Battery (charge)
+          - type: icon
+            icon: mdi:arrow-right-bold
+            title: "Solar charging battery"
+            style:
+              left: 22%
+              top: 46%
+              transform: translate(-50%, -50%) rotate(10deg)
+              '--mdc-icon-size': 40px
+              color: "#66bb6a"
+              transition: opacity 0.6s ease, filter 0.6s ease
+              opacity: >-
+                [[[
+                  const solar = Math.max(0, parseFloat(states['sensor.ha1_power_solar_ac']?.state) || 0);
+                  const battCharge = Math.max(0, parseFloat(states['sensor.ha1_power_battery_net']?.state) || 0);
+                  const flow = Math.min(solar, battCharge);
+                  if (flow <= 0) return 0.12;
+                  return Math.min(1, 0.25 + flow / 4000);
+                ]]]
+              filter: >-
+                [[[
+                  const solar = Math.max(0, parseFloat(states['sensor.ha1_power_solar_ac']?.state) || 0);
+                  const battCharge = Math.max(0, parseFloat(states['sensor.ha1_power_battery_net']?.state) || 0);
+                  const flow = Math.min(solar, battCharge);
+                  return flow > 0 ? 'drop-shadow(0 0 12px rgba(102, 187, 106, 0.6))' : 'none';
+                ]]]
+
+          # Solar -> House
+          - type: icon
+            icon: mdi:arrow-right-bold
+            title: "Solar feeding the house"
+            style:
+              left: 34%
+              top: 28%
+              transform: translate(-50%, -50%) rotate(2deg)
+              '--mdc-icon-size': 36px
+              color: "#ffeb3b"
+              transition: opacity 0.6s ease, filter 0.6s ease
+              opacity: >-
+                [[[
+                  const solar = Math.max(0, parseFloat(states['sensor.ha1_power_solar_ac']?.state) || 0);
+                  return solar > 0 ? Math.min(1, 0.25 + solar / 5000) : 0.12;
+                ]]]
+              filter: >-
+                [[[
+                  const solar = Math.max(0, parseFloat(states['sensor.ha1_power_solar_ac']?.state) || 0);
+                  return solar > 0 ? 'drop-shadow(0 0 10px rgba(255, 235, 59, 0.65))' : 'none';
+                ]]]
+
+          # Battery -> House (discharge)
+          - type: icon
+            icon: mdi:arrow-right-bold
+            title: "Battery discharging to house"
+            style:
+              left: 44%
+              top: 48%
+              transform: translate(-50%, -50%) rotate(-8deg)
+              '--mdc-icon-size': 38px
+              color: "#03a9f4"
+              transition: opacity 0.6s ease, filter 0.6s ease
+              opacity: >-
+                [[[
+                  const batt = parseFloat(states['sensor.ha1_power_battery_net']?.state) || 0;
+                  const discharge = batt < 0 ? -batt : 0;
+                  if (discharge <= 0) return 0.1;
+                  return Math.min(1, 0.25 + discharge / 4000);
+                ]]]
+              filter: >-
+                [[[
+                  const batt = parseFloat(states['sensor.ha1_power_battery_net']?.state) || 0;
+                  const discharge = batt < 0 ? -batt : 0;
+                  return discharge > 0 ? 'drop-shadow(0 0 12px rgba(3, 169, 244, 0.6))' : 'none';
+                ]]]
+
+          # House -> EV
+          - type: icon
+            icon: mdi:arrow-right-bold
+            title: "Power to EV charger"
+            style:
+              left: 64%
+              top: 52%
+              transform: translate(-50%, -50%) rotate(20deg)
+              '--mdc-icon-size': 38px
+              color: "#5c6bc0"
+              transition: opacity 0.6s ease, filter 0.6s ease
+              opacity: >-
+                [[[
+                  const ev = Math.max(0, parseFloat(states['sensor.ha1_power_ev_charger']?.state) || 0);
+                  return ev > 0 ? Math.min(1, 0.25 + ev / 7000) : 0.1;
+                ]]]
+              filter: >-
+                [[[
+                  const ev = Math.max(0, parseFloat(states['sensor.ha1_power_ev_charger']?.state) || 0);
+                  return ev > 0 ? 'drop-shadow(0 0 12px rgba(92, 107, 192, 0.55))' : 'none';
+                ]]]
+
+          # Grid -> House (import)
+          - type: icon
+            icon: mdi:arrow-left-bold
+            title: "Grid import"
+            style:
+              left: 82%
+              top: 32%
+              transform: translate(-50%, -50%)
+              '--mdc-icon-size': 38px
+              color: "#29b6f6"
+              transition: opacity 0.6s ease, filter 0.6s ease
+              opacity: >-
+                [[[
+                  const g = parseFloat(states['sensor.ha1_net_grid_power']?.state) || 0;
+                  const imp = g > 0 ? g : 0;
+                  return imp > 0 ? Math.min(1, 0.25 + imp / 5000) : 0.08;
+                ]]]
+              filter: >-
+                [[[
+                  const g = parseFloat(states['sensor.ha1_net_grid_power']?.state) || 0;
+                  return g > 0 ? 'drop-shadow(0 0 12px rgba(41, 182, 246, 0.6))' : 'none';
+                ]]]
+
+          # House -> Grid (export)
+          - type: icon
+            icon: mdi:arrow-right-bold
+            title: "Grid export"
+            style:
+              left: 82%
+              top: 44%
+              transform: translate(-50%, -50%)
+              '--mdc-icon-size': 38px
+              color: "#66bb6a"
+              transition: opacity 0.6s ease, filter 0.6s ease
+              opacity: >-
+                [[[
+                  const g = parseFloat(states['sensor.ha1_net_grid_power']?.state) || 0;
+                  const exp = g < 0 ? -g : 0;
+                  return exp > 0 ? Math.min(1, 0.25 + exp / 5000) : 0.08;
+                ]]]
+              filter: >-
+                [[[
+                  const g = parseFloat(states['sensor.ha1_net_grid_power']?.state) || 0;
+                  const exp = g < 0 ? -g : 0;
+                  return exp > 0 ? 'drop-shadow(0 0 12px rgba(102, 187, 106, 0.6))' : 'none';
+                ]]]
+
+  # Tab imported from dashboards/ha1_debug.yaml (HA1 Debug)
+  - title: HA1 Debug
+    path: ha1-debug
+    icon: mdi:test-tube
+    panel: true
+    cards:
+      - type: vertical-stack
+        cards:
+
+          - type: markdown
+            content: |
+              # 🧪 HA1.3 Debug Dashboard
+              Live monitoring of Task 14 template sensors — raw powers, HA1 power layer, flows and sanity checks.
+#---------------------------------------------------------------------------
+#          # Test tools
+          - type: entities
+            title: HA1 – Comfort override (test)
+            show_header_toggle: false
+            entities:
+              - entity: input_boolean.ha1_comfort_override_enabled
+                name: Comfort override (global)
+              - entity: input_number.ha1_comfort_override_duration_hours
+                name: Override duration (hours)
+              - entity: timer.ha1_comfort_override
+                name: Override timer (status)
+              - entity: sensor.ha1_status_price_level
+                name: Status price level (read-only)
+              - entity: input_select.ha1_test_price_level_effective
+                name: TEST – Effective price level
+
+          - type: entities
+            title: HA1 – EV test tools
+            show_header_toggle: false
+            entities:
+              - entity: script.ha1_test_ev_start_balanced_with_result
+                name: Run EV balanced test (with result)
+              - entity: script.ha1_test_comfort_timer_finish
+                name: Fast-forward comfort override timer
+              - entity: script.ha1_test_ev_price_override_logic
+                name: TEST – EV price vs comfort override
+              - entity: input_boolean.ha1_testing_mode_enabled
+                name: Testing mode enabled
+              - entity: input_boolean.ha1_test_ev_balanced_actions_executed
+                name: EV balanced actions executed (result)
+              - entity: input_boolean.ha1_test_ev_price_override_result
+                name: RESULT – EV price/override logic OK
+
+#---------------------------------------------------------------------------
+
+          # Key snapshot (HA1 power layer)
+          - type: entities
+            title: 🔌 Key Snapshot (HA1 Power Layer)
+            show_header_toggle: false
+            entities:
+              - entity: sensor.ha1_power_grid_total_net
+                name: Grid Total (net, +import)
+              - entity: sensor.ha1_power_solar_ac
+                name: Solar AC (PV)
+              - entity: sensor.ha1_power_battery_net
+                name: Battery Net (+charge / -discharge)
+              - entity: sensor.ha1_power_ev_charger
+                name: EV Charger Power
+              - entity: sensor.ha1_power_house_core
+                name: House Core (no EV)
+              - entity: sensor.ha1_power_house_total
+                name: House Total (incl. EV)
+
+          # Raw sensors
+          - type: entities
+            title: 🔎 Key Snapshot Raw Sensors
+            show_header_toggle: false
+            entities:
+              - entity: sensor.ha1_raw_grid_import_w
+                name: Grid Import (Easee)
+              - entity: sensor.ha1_raw_grid_export_w
+                name: Grid Export (Easee)
+              - entity: sensor.ha1_raw_ev_charger_w
+                name: Easee Charger (raw)
+              - entity: sensor.ha1_raw_battery_power_w
+                name: Battery Charge/Discharge (raw)
+              - entity: sensor.ha1_raw_solar_pv_input_w
+                name: Inverter Input Power (PV)
+              - entity: sensor.ha1_raw_huawei_meter_w
+                name: Huawei Power Meter (diagnostic)
+
+          # Power layer (final values)
+          - type: entities
+            title: ⚡ Power Layer (ha1_power_*)
+            show_header_toggle: false
+            entities:
+              - entity: sensor.ha1_power_grid_total_net
+                name: Grid Net (Total)
+              - entity: sensor.ha1_power_solar_ac
+                name: Solar AC
+              - entity: sensor.ha1_power_battery_net
+                name: Battery Net
+              - entity: sensor.ha1_power_ev_charger
+                name: EV Charger Power
+              - entity: sensor.ha1_power_house_core
+                name: House Core
+              - entity: sensor.ha1_power_house_total
+                name: House Total
+
+          # Flow layer
+          - type: entities
+            title: 🔀 Flow Layer (ha1_flow_*)
+            show_header_toggle: false
+            entities:
+              - entity: sensor.ha1_flow_grid_import
+                name: Grid Import
+              - entity: sensor.ha1_flow_grid_export
+                name: Grid Export
+              - entity: sensor.ha1_flow_ev_charging_power
+                name: EV Charging Power
+              - entity: sensor.ha1_flow_battery_discharge
+                name: Battery Discharge
+
+          # Sanity check section
+          - type: markdown
+            content: |
+              ## 🧩 Sanity Checks
+              **Model balance** uses the HA1-normalised powers > grid_total, solar, battery, house_total.  
+              **Grid meter mismatch** compares the Huawei meter against the modelled grid power.
+
+          # Model balance
+          - type: entities
+            title: Model Balance
+            show_header_toggle: false
+            entities:
+              - entity: sensor.ha1_power_balance_error
+                name: Model Balance Error (W)
+              - entity: sensor.ha1_power_balance_error_abs
+                name: Model Balance Error Absolute (W)
+              - entity: binary_sensor.ha1_flag_power_balance_bad
+                name: Model Balance Problem?
+
+          # Grid meter mismatch
+          - type: entities
+            title: Grid Meter Mismatch
+            show_header_toggle: false
+            entities:
+              - entity: sensor.ha1_grid_meter_mismatch
+                name: Meter Minus Model (W)
+              - entity: sensor.ha1_grid_meter_mismatch_abs
+                name: Meter Minus Model Absolute (W)
+              - entity: binary_sensor.ha1_flag_grid_meter_mismatch
+                name: Grid Meter Mismatch?
+
+          # Core power trends (short window)
+          - type: history-graph
+            title: 📈 Core Powers – last 1 hour
+            hours_to_show: 1
+            refresh_interval: 30
+            entities:
+              - entity: sensor.ha1_power_grid_total_net
+                name: Grid Net (+import / -export)
+              - entity: sensor.ha1_power_solar_ac
+                name: Solar AC
+              - entity: sensor.ha1_power_battery_net
+                name: Battery Net (+charge / -discharge)
+              - entity: sensor.ha1_power_ev_charger
+                name: EV Charger
+              - entity: sensor.ha1_power_house_total
+                name: House Total
+
+          # Flows & sanity trends (longer window)
+          - type: history-graph
+            title: 📊 Flows & Balance – last 24 hours
+            hours_to_show: 24
+            refresh_interval: 60
+            entities:
+              - entity: sensor.ha1_flow_grid_import
+                name: Grid Import
+              - entity: sensor.ha1_flow_grid_export
+                name: Grid Export
+              - entity: sensor.ha1_flow_ev_charging_power
+                name: EV Charging Power
+              - entity: sensor.ha1_flow_battery_discharge
+                name: Battery Discharge
+              - entity: sensor.ha1_power_balance_error_abs
+                name: Model Balance Error |abs|
+
+          # Control tools – master switches & knobs
+          - type: entities
+            title: ⚙️ Control Tools – Master Toggles & Targets
+            show_header_toggle: false
+            entities:
+              - entity: input_boolean.ha1_control_ev_auto
+                name: EV Charging – automation enabled
+              - entity: input_boolean.ha1_control_battery_auto
+                name: Battery Optimization – automation enabled
+              - type: divider
+              - entity: input_number.ha1_ev_limit_current_a
+                name: EV Max Current (A)
+              - entity: input_number.ha1_batt_grid_charge_max_kw
+                name: Battery Grid Charge Max (kW)
+              - entity: input_number.ha1_batt_peak_shaving_soc
+                name: Battery Peak-Shaving Target SOC (%)
+              - entity: input_number.ha1_batt_grid_charge_cutoff_soc
+                name: Battery Grid Charge Cutoff SOC (%)
+
+          # Control tools – EV scripts
+          - type: entities
+            title: 🚗 EV Control – Scripts
+            show_header_toggle: false
+            entities:
+              - entity: script.ha1_ev_start_charging
+                name: Start EV Charging
+              - entity: script.ha1_ev_stop_charging
+                name: Stop EV Charging
+              - entity: script.ha1_ev_pause_charging
+                name: Pause EV Charging
+              - entity: script.ha1_ev_resume_charging
+                name: Resume EV Charging
+              - entity: script.ha1_ev_override_schedule
+                name: Override Schedule
+              - entity: script.ha1_ev_set_dynamic_current_from_helper
+                name: Apply EV Dynamic Current from Helper
+
+          # Control tools – Battery scripts
+          - type: entities
+            title: 🔋 Battery Control – Scripts
+            show_header_toggle: false
+            entities:
+              - entity: script.ha1_batt_enable_grid_charge
+                name: Enable Grid Charge
+              - entity: script.ha1_batt_disable_grid_charge
+                name: Disable Grid Charge
+              - type: divider
+              - entity: script.ha1_batt_apply_peak_shaving_soc
+                name: Apply Peak-Shaving SOC from Helper
+              - entity: script.ha1_batt_apply_grid_charge_cutoff_soc
+                name: Apply Grid Charge Cutoff SOC from Helper
+          - entity: script.ha1_batt_apply_grid_charge_limit
+            name: Apply Grid Charge Max (kW) from Helper
+          - entity: script.ha1_batt_set_peak_shaving_mode
+            name: Set Working Mode = Peak Shaving
+
+  - title: HA1 Debug – Energy
+    path: ha1-debug-energy
+    icon: mdi:lightning-bolt-outline
+    cards:
+      - type: markdown
+        content: |
+          # ⚙️ HA1 Debug – Energy Layer
+          Engineering view for Task 19 — core HA1 flows, utility meters, helpers and diagnostic groupings. Everything is surfaced as raw data for troubleshooting.
+
+      - type: entities
+        title: 🔌 Core Power & Flow Snapshot
+        show_header_toggle: false
+        entities:
+          - entity: sensor.ha1_power_grid_total_net
+            name: Grid Net (W, +import)
+          - entity: sensor.ha1_power_net_load_kw
+            name: Grid Net (kW)
+          - entity: sensor.ha1_flow_grid_import
+            name: Grid Import Flow (W)
+          - entity: sensor.ha1_flow_grid_export
+            name: Grid Export Flow (W)
+          - type: divider
+          - entity: sensor.ha1_power_solar_ac
+            name: Solar AC Output (W)
+          - entity: sensor.ha1_power_house_total
+            name: House Total Load (W)
+          - entity: sensor.ha1_power_consumption_total_kw
+            name: House Total Load (kW)
+          - entity: sensor.ha1_power_house_core
+            name: House Core Load (W)
+          - type: divider
+          - entity: sensor.ha1_power_ev_charger
+            name: EV Charger Power (W)
+          - entity: sensor.ha1_flow_ev_charging_power
+            name: EV Charging Flow (W)
+          - entity: sensor.ha1_power_battery_net
+            name: Battery Net (+charge / -discharge)
+          - entity: sensor.ha1_flow_battery_discharge
+            name: Battery Discharge Flow (W)
+
+      - type: entities
+        title: 📊 Rolling Averages & Smoothing
+        show_header_toggle: false
+        entities:
+          - entity: sensor.ha1_power_grid_net_avg_1m
+            name: Grid Net Avg (1 min)
+          - entity: sensor.ha1_power_grid_net_avg_5m
+            name: Grid Net Avg (5 min)
+          - entity: sensor.ha1_flow_grid_import_avg_1m
+            name: Grid Import Avg (1 min)
+          - entity: sensor.ha1_flow_grid_import_avg_5m
+            name: Grid Import Avg (5 min)
+          - entity: sensor.ha1_flow_grid_export_avg_1m
+            name: Grid Export Avg (1 min)
+          - entity: sensor.ha1_flow_grid_export_avg_5m
+            name: Grid Export Avg (5 min)
+          - type: divider
+          - entity: sensor.ha1_power_house_total_avg_1m
+            name: House Load Avg (1 min)
+          - entity: sensor.ha1_power_ev_charger_avg_1m
+            name: EV Charger Avg (1 min)
+
+      - type: entities
+        title: 🏗️ Diagnostics – Grid (diagnostics_1_3)
+        show_header_toggle: false
+        entities:
+          - entity: sensor.ha1_import_power
+            name: Grid Import Power
+          - entity: sensor.ha1_export_power
+            name: Grid Export Power
+          - entity: sensor.ha1_net_grid_power
+            name: Net Grid Power (W)
+          - entity: sensor.ha1_net_grid_power_kw
+            name: Net Grid Power (kW)
+          - entity: sensor.ha1_grid_status
+            name: Grid Status Label
+          - type: divider
+          - entity: sensor.ha1_import_energy_15min
+            name: Import Energy (15 min)
+          - entity: sensor.ha1_import_energy_hourly
+            name: Import Energy (Hourly)
+          - entity: sensor.ha1_import_energy_daily
+            name: Import Energy (Daily)
+          - entity: sensor.ha1_import_energy_monthly
+            name: Import Energy (Monthly)
+          - type: divider
+          - entity: sensor.ha1_interval_power_real
+            name: Interval Power (Real)
+          - entity: sensor.ha1_interval_power_cost_adjusted
+            name: Interval Power (Cost Adjusted)
+          - entity: sensor.ha1_monthly_peak_power_real_history_max_2
+            name: Monthly Peak Power (Real)
+          - entity: sensor.ha1_monthly_peak_power_cost_adjusted
+            name: Monthly Peak Power (Cost Adjusted)
+
+      - type: entities
+        title: ☀️ Diagnostics – Solar & Battery (diagnostics_1_3)
+        show_header_toggle: false
+        entities:
+          - entity: sensor.huawei_solar_input_power
+            name: Huawei Solar Input Power
+          - entity: sensor.huawei_solar_output_power
+            name: Huawei Solar Output Power
+          - entity: sensor.huawei_battery_charge_discharge_power
+            name: Huawei Battery Charge/Discharge
+          - entity: sensor.huawei_battery_soc
+            name: Huawei Battery SOC (%)
+          - type: divider
+          - entity: sensor.ha1_flow_solar_to_house
+            name: Flow – Solar to House
+          - entity: sensor.ha1_flow_solar_to_battery
+            name: Flow – Solar to Battery
+          - entity: sensor.ha1_flow_battery_to_house
+            name: Flow – Battery to House
+          - entity: sensor.ha1_flow_house_from_grid
+            name: Flow – House From Grid
+          - entity: sensor.ha1_flow_ev_from_grid
+            name: Flow – EV From Grid
+
+      - type: entities
+        title: 🚗 Diagnostics – EV & Charger (diagnostics_1_3)
+        show_header_toggle: false
+        entities:
+          - entity: sensor.ehxdyl83_power
+            name: Easee Power (kW/W)
+          - entity: sensor.ehxdyl83_status
+            name: Easee Status
+          - entity: sensor.ehxdyl83_session_energy
+            name: Easee Session Energy
+          - entity: sensor.ehxdyl83_lifetime_energy
+            name: Easee Lifetime Energy
+          - entity: switch.ehxdyl83_charger_enabled
+            name: Charger Enabled
+          - type: divider
+          - entity: sensor.id4pro_charging_time_left
+            name: ID.4 Charging Time Left
+          - entity: binary_sensor.ev_is_charging
+            name: ID.4 Charging?
+          - entity: sensor.id4pro_battery_level
+            name: ID.4 Battery Level (%)
+          - entity: sensor.ha1_flow_ev_from_grid
+            name: Flow – EV From Grid
+
+      - type: entities
+        title: 💰 Diagnostics – Prices (diagnostics_1_3)
+        show_header_toggle: false
+        entities:
+          - entity: sensor.nordpool_kwh_se3_sek_3_10_025
+            name: Nordpool SE3 Price
+          - entity: sensor.ha1_price_current
+            name: HA1 Price Current
+          - entity: sensor.ha1_price_today_avg
+            name: Price Today Avg
+          - entity: sensor.ha1_price_today_min
+            name: Price Today Min
+          - entity: sensor.ha1_price_today_max
+            name: Price Today Max
+          - entity: sensor.ha1_status_price_level
+            name: Price Level (cheap/normal/expensive)
+          - entity: sensor.ha1_status_price_relative
+            name: Price Relative (% vs avg)
+
+      - type: entities
+        title: 📦 Utility Meters & Peak Tracking
+        show_header_toggle: false
+        entities:
+          - entity: sensor.ha1_grid_import_energy_daily
+            name: Grid Import Energy – Daily
+          - entity: sensor.ha1_grid_import_energy_weekly
+            name: Grid Import Energy – Weekly
+          - entity: sensor.ha1_grid_import_energy_monthly
+            name: Grid Import Energy – Monthly
+          - entity: sensor.ha1_grid_import_energy_hourly
+            name: Grid Import Energy – Hourly
+          - entity: sensor.ha1_grid_import_energy_quarter_hour
+            name: Grid Import Energy – 15 min
+          - type: divider
+          - entity: sensor.ha1_grid_export_energy_daily
+            name: Grid Export Energy – Daily
+          - entity: sensor.ha1_grid_export_energy_weekly
+            name: Grid Export Energy – Weekly
+          - entity: sensor.ha1_grid_export_energy_monthly
+            name: Grid Export Energy – Monthly
+          - type: divider
+          - entity: sensor.ha1_peak_billable_power_kw
+            name: Peak Billable Power (kW)
+          - entity: sensor.ha1_peak_power_interval_real
+            name: Peak Power Interval (Real)
+          - entity: sensor.ha1_peak_power_interval_cost_adjusted
+            name: Peak Power Interval (Cost Adjusted)
+          - entity: sensor.ha1_effective_peak_power_reference_kw
+            name: Effective Peak Reference (kW)
+          - entity: sensor.ha1_peak_margin_kw
+            name: Peak Margin (kW)
+          - entity: sensor.ha1_peak_billing_factor
+            name: Peak Billing Factor
+          - entity: sensor.ha1_import_energy_current_interval
+            name: Import Energy – Current Interval
+          - entity: sensor.ha1_peak_interval_length_hours
+            name: Peak Interval Length (h)
+          - entity: sensor.ha1_monthly_peak_power_cost_adjusted
+            name: Monthly Peak Power (Cost Adjusted Top3)
+          - entity: sensor.ha1_monthly_peak_cost_estimated
+            name: Monthly Peak Cost (SEK)
+
+      - type: entities
+        title: 📈 Diagnostics – Peaks & Top 3 (diagnostics_1_3)
+        show_header_toggle: false
+        entities:
+          - entity: sensor.ha1_interval_length_minutes
+            name: Interval Length (minutes)
+          - entity: sensor.ha1_interval_energy
+            name: Interval Energy (kWh)
+          - entity: sensor.ha1_interval_power_real
+            name: Interval Power (Real)
+          - entity: sensor.ha1_interval_power_cost_adjusted
+            name: Interval Power (Cost Adjusted)
+          - type: divider
+          - entity: sensor.ha1_top3_peak_1
+            name: Top #1 Peak (kW)
+          - entity: sensor.ha1_top3_peak_2
+            name: Top #2 Peak (kW)
+          - entity: sensor.ha1_top3_peak_3
+            name: Top #3 Peak (kW)
+          - entity: sensor.ha1_monthly_top3_avg_power_real
+            name: Monthly Avg Peak (Real)
+          - entity: sensor.ha1_monthly_top3_avg_power_cost_adjusted
+            name: Monthly Avg Peak (Cost Adjusted)
+          - entity: sensor.ha1_monthly_peak_power_real_history_max_2
+            name: Monthly Peak Power (Real)
+          - entity: sensor.ha1_monthly_peak_power_cost_adjusted
+            name: Monthly Peak Power (Cost Adjusted)
+
+      - type: entities
+        title: 🎚️ Helper Controls – Peaks & Modes
+        show_header_toggle: false
+        entities:
+          - entity: input_boolean.ha1_automations_master_enable
+            name: Automation Master Enable
+          - entity: input_boolean.ha1_peak_shaving_enabled
+            name: Peak Shaving Enabled
+          - entity: input_select.ha1_peak_interval_mode
+            name: Peak Interval Mode
+          - entity: input_number.ha1_peak_limit_kw
+            name: Peak Limit (kW)
+          - entity: input_number.ha1_peak_warning_kw
+            name: Peak Warning Threshold (kW)
+          - entity: input_number.ha1_daily_peak_power_cost_adjusted
+            name: Daily Peak (Cost Adjusted)
+          - type: divider
+          - entity: input_boolean.ha1_control_battery_auto
+            name: Battery Automations Enabled
+          - entity: input_boolean.ha1_control_ev_auto
+            name: EV Automations Enabled
+          - entity: input_boolean.ha1_ev_obey_peak_limit
+            name: EV Obeys Peak Limit
+          - entity: input_select.ha1_ev_charging_mode
+            name: EV Charging Mode
+          - entity: input_number.ha1_ev_limit_current_a
+            name: EV Current Limit (A)
+          - entity: input_number.ha1_ev_max_charging_power_kw
+            name: EV Max Charging Power (kW)
+
+      - type: entities
+        title: 🪫 Helper Controls – SOC, Comfort & Overrides
+        show_header_toggle: false
+        entities:
+          - entity: input_boolean.ha1_battery_allow_grid_charge
+            name: Allow Battery Grid Charge
+          - entity: input_boolean.ha1_battery_peak_support_enabled
+            name: Battery Peak Support Enabled
+          - entity: input_boolean.ha1_force_battery_charge_from_grid_now
+            name: Force Battery Grid Charge Now
+          - entity: input_boolean.ha1_force_ev_charge_now
+            name: Force EV Charge Now
+          - type: divider
+          - entity: input_number.ha1_battery_min_soc_normal
+            name: Battery Min SOC (Normal)
+          - entity: input_number.ha1_battery_max_soc_target
+            name: Battery Max SOC Target
+          - entity: input_number.ha1_batt_peak_shaving_soc
+            name: Battery Peak Shaving SOC (%)
+          - entity: input_number.ha1_batt_grid_charge_cutoff_soc
+            name: Battery Grid Charge Cutoff SOC (%)
+          - entity: input_number.ha1_batt_grid_charge_max_kw
+            name: Battery Grid Charge Max (kW)
+          - type: divider
+          - entity: input_boolean.ha1_comfort_override_enabled
+            name: Comfort Override Enabled
+          - entity: input_boolean.ha1_allow_high_price_heating
+            name: Allow High Price Heating
+          - entity: input_boolean.ha1_debug_energy_logic
+            name: Debug Energy Logic
+          - entity: input_boolean.ha1_debug_notifications_enabled
+            name: Debug Notifications
+          - entity: input_boolean.ha1_debug_freeze_optimizers
+            name: Freeze Optimizers
+
+      - type: entities
+        title: 🧠 System Status (diagnostics_1_3)
+        show_header_toggle: false
+        entities:
+          - entity: sensor.ha1_net_grid_power_kw
+            name: Net Grid Power (kW)
+          - entity: sensor.huawei_battery_soc
+            name: Huawei Battery SOC (%)
+          - entity: sensor.ehxdyl83_power
+            name: EV Charger Power
+          - entity: sensor.ha1_price_current
+            name: Current Price
+          - entity: sensor.ha1_interval_power_real
+            name: Interval Power (Real)
+          - entity: input_boolean.ha1_peak_shaving_enabled
+            name: Peak Shaving Enabled
+          - entity: sensor.ha1_status_price_level
+            name: Price Level
+          - entity: binary_sensor.ha1_status_peak_near_limit
+            name: Peak Near Limit?
+
+  - title: HA1 Status
+    path: ha1-status
+    icon: mdi:clipboard-pulse
+    cards:
+      - type: markdown
+        content: |
+          # 📋 HA1 System Status
+          Task 18 snapshot of HA1.3 core sensors, peak trackers and helper overrides.
+
+      - type: entities
+        title: ⚡ Core Power & Flow
+        show_header_toggle: false
+        entities:
+          - entity: sensor.ha1_power_consumption_total_kw
+            name: House Total Load (kW)
+          - entity: sensor.ha1_power_consumption_core_kw
+            name: House Core Load (kW)
+          - entity: sensor.ha1_power_net_load_kw
+            name: Grid Net Load (kW)
+          - type: divider
+          - entity: sensor.ha1_flow_grid_import
+            name: Grid Import (W)
+          - entity: sensor.ha1_flow_grid_export
+            name: Grid Export (W)
+          - entity: sensor.ha1_flow_ev_charging_power
+            name: EV Charging Flow (W)
+          # - entity: sensor.ha1_ev_share_of_house_load_pct
+          #   name: EV Share of House Load (%)  # TODO: reintroduce EV share metric in energy_metrics_1_3.yaml
+          - entity: sensor.ha1_power_balance_error_abs
+            name: Model Balance Error (W)
+          - entity: binary_sensor.ha1_flag_power_balance_bad
+            name: Model Balance Problem?
+
+      - type: entities
+        title: 🔋 Huawei Solar & Battery
+        show_header_toggle: false
+        entities:
+          - entity: sensor.ha1_huawei_solar_power
+            name: Huawei Solar Power (kW)
+          - entity: sensor.ha1_huawei_grid_power
+            name: Huawei Grid Power (kW)
+          - entity: sensor.ha1_huawei_battery_power
+            name: Huawei Battery Power (kW)
+          - entity: sensor.ha1_huawei_battery_soc
+            name: Huawei Battery SOC (%)
+          - entity: binary_sensor.ha1_huawei_battery_charging
+            name: Battery Charging?
+          - entity: binary_sensor.ha1_huawei_battery_discharging
+            name: Battery Discharging?
+          - type: divider
+          - entity: sensor.ha1_huawei_solar_energy_today
+            name: Solar Energy Today (kWh)
+          - entity: sensor.ha1_huawei_battery_energy_charged_today
+            name: Battery Charged Today (kWh)
+          - entity: sensor.ha1_huawei_battery_energy_discharged_today
+            name: Battery Discharged Today (kWh)
+          - type: divider
+          - entity: number.battery_grid_charge_maximum_power
+            name: Grid Charge Limit (W)
+          - entity: number.battery_maximum_charging_power
+            name: Total Charge Limit (W)
+          - entity: input_boolean.ha1_battery_allow_grid_charge
+            name: Allow Grid Charge
+          - entity: input_boolean.ha1_battery_peak_support_enabled
+            name: Peak Support Enabled
+
+      - type: entities
+        title: 🚗 EV Charger & Vehicle
+        show_header_toggle: false
+        entities:
+          - entity: binary_sensor.ev_is_charging
+            name: EV Charging?
+          - entity: sensor.ev_charger_power
+            name: EV Charger Power (kW)
+          - entity: sensor.ev_charger_power_w
+            name: EV Charger Power (W)
+          - entity: sensor.ev_charger_current
+            name: Charger Current (A)
+          - entity: sensor.ev_charger_current_limit
+            name: Charger Current Limit (A)
+          - type: divider
+          - entity: sensor.ev_session_energy
+            name: Session Energy (kWh)
+          - entity: sensor.ev_charging_time_left
+            name: Charging Time Left
+          - entity: sensor.ev_battery_soc
+            name: EV Battery SOC (%)
+          - entity: sensor.ev_estimated_range
+            name: EV Estimated Range (km)
+          - type: divider
+          - entity: input_number.ha1_ev_limit_current_a
+            name: EV Current Limit Helper (A)
+          - entity: input_boolean.ha1_force_ev_charge_now
+            name: Force Charge Now
+          - entity: input_boolean.ha1_control_ev_auto
+            name: EV Automations Enabled
+          - entity: input_boolean.ha1_ev_obey_peak_limit
+            name: Obey Peak Limit
+
+      - type: entities
+        title: 📈 Peak & Utility Summary
+        show_header_toggle: false
+        entities:
+          - entity: sensor.ha1_peak_billable_power_kw
+            name: Peak Billable Power (kW)
+          - entity: sensor.ha1_peak_power_interval_cost_adjusted
+            name: Peak Interval (Cost-Adjusted)
+          - entity: sensor.ha1_peak_power_interval_real
+            name: Peak Interval (Real)
+          - entity: sensor.ha1_monthly_peak_power_real_history_max_2
+            name: Monthly Peak (Real)
+          - entity: sensor.ha1_monthly_peak_power_cost_adjusted
+            name: Monthly Peak (Billable Top3)  # TODO: ensure entity slug matches template after HA reload
+          - entity: sensor.ha1_monthly_peak_cost_estimated
+            name: Monthly Peak Cost (SEK)
+          - type: divider
+          - entity: sensor.ha1_grid_import_energy_daily
+            name: Grid Import Daily (kWh)
+          - entity: sensor.ha1_grid_import_energy_monthly
+            name: Grid Import Monthly (kWh)
+          - entity: sensor.ha1_grid_export_energy_daily
+            name: Grid Export Daily (kWh)
+          - entity: sensor.ha1_grid_export_energy_monthly
+            name: Grid Export Monthly (kWh)
+          - type: divider
+          - entity: input_number.ha1_daily_peak_power_cost_adjusted
+            name: Daily Peak (Helper)
+          - entity: input_number.ha1_peak_limit_kw
+            name: Peak Limit (kW)
+          - entity: input_number.ha1_peak_warning_kw
+            name: Peak Warning (kW)
+          - entity: input_select.ha1_peak_interval_mode
+            name: Peak Interval Length
+          - entity: input_number.ha1_month_peak_top1_kw
+            name: Month Peak #1
+          - entity: input_number.ha1_month_peak_top2_kw
+            name: Month Peak #2
+          - entity: input_number.ha1_month_peak_top3_kw
+            name: Month Peak #3
+          - entity: input_number.ha1_peak_tariff_price_per_kw
+            name: Peak Tariff Price (SEK/kW)
+          - entity: input_text.ha1_peak_tariff_agreement_name
+            name: Tariff Agreement Name
+
+      - type: entities
+        title: 🎛️ System Helpers & Overrides
+        show_header_toggle: false
+        entities:
+          - entity: input_boolean.ha1_automations_master_enable
+            name: Master Automation Enable
+          - entity: input_boolean.ha1_peak_shaving_enabled
+            name: Peak Shaving Enabled
+          - entity: input_boolean.ha1_control_battery_auto
+            name: Battery Automations Enabled
+          - entity: input_boolean.ha1_control_ev_auto
+            name: EV Automations Enabled
+          - entity: input_boolean.ha1_battery_allow_grid_charge
+            name: Allow Grid Charge
+          - entity: input_boolean.ha1_battery_peak_support_enabled
+            name: Battery Peak Support
+          - entity: input_boolean.ha1_force_battery_charge_from_grid_now
+            name: Force Battery Grid Charge Now
+          - entity: input_boolean.ha1_force_ev_charge_now
+            name: Force EV Charge Now
+          - entity: input_boolean.ha1_comfort_override_enabled
+            name: Comfort Override Enabled
+          - entity: input_boolean.ha1_allow_high_price_heating
+            name: Allow High-Price Heating
+          - entity: input_boolean.ha1_debug_energy_logic
+            name: Debug Energy Logic
+          - entity: input_boolean.ha1_debug_notifications_enabled
+            name: Debug Notifications Enabled
+          - entity: input_boolean.ha1_debug_freeze_optimizers
+            name: Freeze Optimizers
+          - type: divider
+          - entity: input_number.ha1_battery_min_soc_normal
+            name: Battery Min SOC (Normal)
+          - entity: input_number.ha1_battery_max_soc_target
+            name: Battery Max SOC Target
+          - entity: input_number.ha1_batt_peak_shaving_soc
+            name: Battery Peak Shaving SOC
+          - entity: input_number.ha1_batt_grid_charge_cutoff_soc
+            name: Battery Grid Charge Cutoff SOC
+          - entity: input_number.ha1_batt_grid_charge_max_kw
+            name: Battery Grid Charge Max (kW)
+
+  # Tab imported from dashboards/ha1_debug_energy.yaml (HA1 Debug – Energy)
+  - title: "Energy & Peaks"
+    path: ha1-debug-energy
+    icon: mdi:math-compass
+    cards:
+
+      # ─────────────────────────────────────────
+      # System Status – high-level overview
+      # ─────────────────────────────────────────
+      - type: entities
+        title: "System Status"
+        show_header_toggle: false
+        entities:
+          - entity: group.ha1_system_status
+            name: HA1 system status (group)
+          - entity: sensor.ha1_net_grid_power_kw
+            name: Net grid power (kW)
+          - entity: sensor.nordpool_kwh_se3_sek_3_10_025
+            name: Nordpool SE3 price (SEK/kWh)
+          - entity: sensor.huawei_battery_soc
+            name: Battery SOC
+          - entity: sensor.ehxdyl83_power
+            name: EV charger power (Easee)
+          - entity: sensor.id4pro_charging_time_left
+            name: ID.4 – charging time left
+          - entity: input_boolean.ha1_peak_shaving_enabled
+            name: Peak shaving enabled
+          - entity: input_boolean.ha1_comfort_override_enabled
+            name: Comfort override enabled
+
+      # ─────────────────────────────────────────
+      # Grid & Peaks – real-time and monthly view
+      # ─────────────────────────────────────────
+      - type: entities
+        title: "Grid & Peaks – Power & Energy"
+        show_header_toggle: false
+        entities:
+          - entity: sensor.qp57qz4q_import_power
+            name: Grid import power (kW)
+          - entity: sensor.qp57qz4q_export_power
+            name: Grid export power (kW)
+          - entity: sensor.qp57qz4q_import_energy
+            name: Grid import energy (kWh)
+          - entity: sensor.qp57qz4q_export_energy
+            name: Grid export energy (kWh)
+          - entity: sensor.ha1_net_grid_power
+            name: HA1 net grid power (W)
+          - entity: sensor.ha1_peak_billable_power_kw
+            name: Peak billable power (kW)
+          - entity: sensor.ha1_effective_peak_power_reference_kw
+            name: Peak reference (kW)
+          - entity: sensor.ha1_peak_margin_kw
+            name: Peak margin (kW)
+          - entity: sensor.ha1_peak_power_interval_real
+            name: Interval peak power (real)
+          - entity: sensor.ha1_peak_power_interval_cost_adjusted
+            name: Interval peak power (cost-adjusted)
+          - entity: sensor.ha1_monthly_peak_power_cost_adjusted
+            name: Monthly peak power (cost-adjusted top3)
+          - entity: sensor.ha1_monthly_peak_power_real_history_max
+            name: Monthly peak power (real history max)
+          - entity: sensor.ha1_monthly_peak_cost_estimated
+            name: Estimated monthly peak cost (SEK)
+
+      - type: history-graph
+        title: "Grid Power & Peaks – last 24h"
+        hours_to_show: 24
+        refresh_interval: 60
+        entities:
+          - entity: sensor.qp57qz4q_import_power
+          - entity: sensor.qp57qz4q_export_power
+          - entity: sensor.ha1_net_grid_power
+
+      # ─────────────────────────────────────────
+      # Solar & Battery – production and flows
+      # ─────────────────────────────────────────
+      - type: entities
+        title: "Solar & Battery – Status"
+        show_header_toggle: false
+        entities:
+          - entity: sensor.huawei_solar_input_power
+            name: PV production power (W)
+          - entity: sensor.huawei_battery_charge_discharge_power
+            name: Battery charge/discharge power (W)
+          - entity: sensor.huawei_battery_soc
+            name: Battery SOC
+          - entity: sensor.ha1_power_solar_ac
+            name: Solar AC power (ha1)
+          - entity: sensor.ha1_power_battery_net
+            name: Battery net power (+charge/-discharge)
+          - entity: sensor.ha1_flow_battery_discharge
+            name: Battery discharge flow (W)
+
+      - type: history-graph
+        title: "Solar & Battery – last 24h"
+        hours_to_show: 24
+        refresh_interval: 60
+        entities:
+          - entity: sensor.huawei_solar_input_power
+          - entity: sensor.huawei_battery_charge_discharge_power
+          - entity: sensor.huawei_battery_soc
+
+      # ─────────────────────────────────────────
+      # EV / Easee – charger and car state
+      # ─────────────────────────────────────────
+      - type: entities
+        title: "EV & Easee – Charging"
+        show_header_toggle: false
+        entities:
+          - entity: sensor.ehxdyl83_power
+            name: Charger power (Easee)
+          - entity: sensor.ehxdyl83_status
+            name: Charger status
+          - entity: sensor.id4pro_charging_time_left
+            name: ID.4 – charging time left
+          - entity: sensor.ha1_power_ev_charger
+            name: EV charger power (ha1 W)
+          - entity: sensor.ha1_flow_ev_charging_power
+            name: EV charging flow (W)
+
+      - type: history-graph
+        title: "EV Charging – last 24h"
+        hours_to_show: 24
+        refresh_interval: 60
+        entities:
+          - entity: sensor.ehxdyl83_power
+          # - entity: sensor.ha1_ev_charging_power  # TODO
+
+      # ─────────────────────────────────────────
+      # Price & Planning – Nordpool view
+      # ─────────────────────────────────────────
+      - type: entities
+        title: "Price & Planning"
+        show_header_toggle: false
+        entities:
+          - entity: sensor.nordpool_kwh_se3_sek_3_10_025
+            name: Nordpool SE3 price (SEK/kWh)
+          - entity: sensor.ha1_price_current
+            name: HA1 price current (SEK/kWh)
+          - entity: sensor.ha1_price_today_avg
+            name: Price today average
+          - entity: sensor.ha1_price_today_min
+            name: Price today minimum
+          - entity: sensor.ha1_price_today_max
+            name: Price today maximum
+          - entity: sensor.ha1_status_price_level
+            name: Price level (cheap/normal/expensive)
+          - entity: sensor.ha1_status_price_relative
+            name: Price relative (% vs avg)
+
+      - type: history-graph
+        title: "Nordpool Price – last 48h"
+        hours_to_show: 48
+        refresh_interval: 300
+        entities:
+          - entity: sensor.nordpool_kwh_se3_sek_3_10_025
+
+      # ─────────────────────────────────────────
+      # Helpers & Modes – what the logic “thinks”
+      # ─────────────────────────────────────────
+      - type: entities
+        title: "Helpers & Modes – Peak, Battery, EV"
+        show_header_toggle: false
+        entities:
+          - entity: input_boolean.ha1_peak_shaving_enabled
+            name: Peak shaving enabled
+          - entity: input_select.ha1_peak_interval_mode
+            name: Peak interval mode
+          - entity: input_number.ha1_peak_limit_kw
+            name: Peak limit (kW)
+          - entity: input_number.ha1_peak_warning_kw
+            name: Peak warning (kW)
+          - entity: input_number.ha1_daily_peak_power_cost_adjusted
+            name: Daily peak (cost-adjusted)
+          - entity: input_number.ha1_month_peak_top1_kw
+            name: Month peak #1
+          - entity: input_number.ha1_month_peak_top2_kw
+            name: Month peak #2
+          - entity: input_number.ha1_month_peak_top3_kw
+            name: Month peak #3
+          - entity: input_number.ha1_peak_tariff_price_per_kw
+            name: Peak tariff price (SEK/kW)
+          - entity: input_text.ha1_peak_tariff_agreement_name
+            name: Peak tariff agreement
+
+          - entity: input_boolean.ha1_control_battery_auto
+            name: Battery automations enabled
+          - entity: input_boolean.ha1_battery_allow_grid_charge
+            name: Allow battery grid charge
+          - entity: input_boolean.ha1_battery_peak_support_enabled
+            name: Battery peak support enabled
+          - entity: input_boolean.ha1_force_battery_charge_from_grid_now
+            name: Force battery grid charge now
+          - entity: input_number.ha1_battery_min_soc_normal
+            name: Battery min SOC (normal)
+          - entity: input_number.ha1_batt_peak_shaving_soc
+            name: Battery peak-shaving SOC
+          - entity: input_number.ha1_battery_max_soc_target
+            name: Battery max SOC target
+          - entity: input_number.ha1_batt_grid_charge_max_kw
+            name: Battery grid charge max (kW)
+          - entity: input_number.ha1_batt_grid_charge_cutoff_soc
+            name: Battery grid charge cutoff SOC
+
+          - entity: input_boolean.ha1_control_ev_auto
+            name: EV automations enabled
+          - entity: input_boolean.ha1_ev_obey_peak_limit
+            name: EV obeys peak limit
+          - entity: input_boolean.ha1_force_ev_charge_now
+            name: Force EV charge now
+          - entity: input_select.ha1_ev_charging_mode
+            name: EV charging mode
+          - entity: input_number.ha1_ev_max_charging_power_kw
+            name: EV max charging power (kW)
+          - entity: input_number.ha1_ev_limit_current_a
+            name: EV current limit (A)
+
+          - entity: input_boolean.ha1_automations_master_enable
+            name: Automation master enable
+          - entity: input_boolean.ha1_comfort_override_enabled
+            name: Comfort override enabled
+          - entity: input_boolean.ha1_allow_high_price_heating
+            name: Allow high-price heating
+          - entity: input_boolean.ha1_debug_energy_logic
+            name: "Debug: energy logic"
+          - entity: input_boolean.ha1_debug_notifications_enabled
+            name: "Debug: notifications enabled"
+          - entity: input_boolean.ha1_debug_freeze_optimizers
+            name: "Debug: freeze optimizers"
+
+      - type: entities
+        title: "HA1 – Comfort override"
+        show_header_toggle: false
+        entities:
+          - entity: input_boolean.ha1_comfort_override_enabled
+            name: Comfort override (global)
+            icon: mdi:human-handsup
+          - entity: input_number.ha1_comfort_override_duration_hours
+            name: Comfort override duration (hours)
+            icon: mdi:timer-cog
+          - entity: timer.ha1_comfort_override
+            name: Comfort override timer (status)
+            icon: mdi:timer-outline
+
+      - type: entities
+        title: "HA1 – EV price thresholds (SEK/kWh)"
+        show_header_toggle: false
+        entities:
+          - entity: input_number.ha1_ev_price_cheap_max
+            name: Cheap max (SEK/kWh)
+          - entity: input_number.ha1_ev_price_normal_max
+            name: Normal max (SEK/kWh)
+          - entity: input_number.ha1_ev_price_expensive_max
+            name: Expensive max (SEK/kWh)
+
+      # ─────────────────────────────────────────
+      # Diagnostic Groups – Task 18
+      # ─────────────────────────────────────────
+      - type: entities
+        title: "Diagnostic Groups – Grid / Solar / EV / Peaks / Helpers"
+        show_header_toggle: false
+        entities:
+          - entity: group.ha1_diag_grid
+            name: Grid diagnostics
+          - entity: group.ha1_diag_solar_battery
+            name: Solar & battery diagnostics
+          - entity: group.ha1_diag_ev
+            name: EV / Easee diagnostics
+          - entity: group.ha1_diag_prices
+            name: Price diagnostics
+          - entity: group.ha1_diag_peaks
+            name: Peaks & intervals diagnostics
+          - entity: group.ha1_diag_helpers
+            name: Helpers & modes diagnostics
+
+      - type: entities
+        title: "HA1 – AI: EV & Battery decisions"
+        show_header_toggle: false
+        entities:
+          - entity: input_select.ha1_ai_mode
+            name: AI mode
+          - entity: input_boolean.ha1_automations_master_enable
+            name: Automations master
+          - entity: input_boolean.ha1_ev_automation_enabled
+            name: EV automations
+          - entity: input_boolean.ha1_battery_automation_enabled
+            name: Battery automations
+          - type: divider
+          - entity: sensor.ha1_ai_ev_decision_friendly
+            name: EV AI decision
+          - entity: sensor.ha1_ai_battery_decision_friendly
+            name: Battery AI decision
